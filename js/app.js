@@ -1239,8 +1239,9 @@ function addCustom(raw, name) {
 
 /* ── fullscreen HUD (FULL 모드) ────────────────────────────── */
 let hudTimer = null;
-function isFull() { return !!document.fullscreenElement; }
-function showHud(autoHide) {
+let prevLayout = null;        // 더블클릭 FULL 진입 직전에 보던 레이아웃
+let enteredFullByDbl = false; // 이번 전체화면이 ‘타일 더블클릭’으로 시작됐는지
+function isFull() { return !!document.fullscreenElement; }function showHud(autoHide) {
   if (!isFull()) return;
   document.body.classList.add('is-hud');
   clearTimeout(hudTimer);
@@ -1269,12 +1270,36 @@ function openExternal(i) {
   else url = ch.src;
   window.open(url, '_blank', 'noopener');
 }
-function showBig(i) {
+function showBig(i, fromDbl) {
   const ch = slotChannel(i);
+  const enterFull = !!fromDbl && !document.fullscreenElement;
+  // 더블클릭 FULL 진입은 ‘들어가기 전 화면’을 기억해 ESC로 돌아온다
+  if (enterFull && state.layout !== '1') { prevLayout = state.layout; enteredFullByDbl = true; }
   state.sets['1'] = [ch.id];
   save();
   applyLayout('1');
   toast('1×1 — ' + ch.name);
+  if (!enterFull) return;
+  document.documentElement.requestFullscreen().catch(() => {
+    // 전체화면이 막힌 환경: 1×1에 머물지 않고 원래 화면으로 되돌린다
+    if (enteredFullByDbl) {
+      enteredFullByDbl = false;
+      const back = prevLayout;
+      prevLayout = null;
+      if (back && LAYOUTS[back]) applyLayout(back);
+    }
+    toast('이 브라우저에서는 전체화면을 쓸 수 없습니다');
+  });
+}
+/* ESC(전체화면 종료) → 더블클릭으로 들어왔을 때만 이전 레이아웃으로 복귀 */
+function restoreAfterDblFull() {
+  if (!enteredFullByDbl) return;
+  enteredFullByDbl = false;
+  const back = prevLayout;
+  prevLayout = null;
+  if (!back || back === '1' || !LAYOUTS[back] || state.layout !== '1') return;
+  applyLayout(back);
+  toast('이전 화면으로 복귀 — ' + (START_NAMES[back] || back));
 }
 
 /* ── drag & drop: 타일 채널 자리 바꾸기 ────────────────────────
@@ -1476,7 +1501,7 @@ function bindEvents() {
   });
   grid.addEventListener('dblclick', e => {
     const t = e.target.closest('.tile'); if (!t) return;
-    showBig(parseInt(t.dataset.slot, 10));
+    showBig(parseInt(t.dataset.slot, 10), true);       // 1×1 + FULL, ESC → 이전 화면
   });
 
   // FULL 모드 HUD — 클릭 토글 + 상·하단 핫존 + 자동 숨김
@@ -1571,7 +1596,7 @@ function bindEvents() {
   document.addEventListener('fullscreenchange', () => {
     $('#btn-fullscreen').classList.toggle('is-active', !!document.fullscreenElement);
     if (document.fullscreenElement) { document.body.classList.add('is-full'); showHud(); }
-    else { document.body.classList.remove('is-full'); hideHud(); }
+    else { document.body.classList.remove('is-full'); hideHud(); restoreAfterDblFull(); }
     setTimeout(sizeGrid, 60);
   });
 }
@@ -1581,6 +1606,9 @@ window.WORLD_LIVE = {
   state: () => ({
     layout: state.layout, start: state.start, sort: state.sort, muted: state.muted, audio: state.audioId,
     selSlot: state.selSlot,
+    prevLayout: prevLayout,
+    enteredFullByDbl: enteredFullByDbl,
+    full: isFull(),
     sets: JSON.parse(JSON.stringify(state.sets)),
     count: chCount(),
     channels: CHANNELS.length,
