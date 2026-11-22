@@ -121,14 +121,10 @@ svg{display:block;}
 }
 .globe-mark .orbit-line{animation:orbitDash 26s linear infinite;}
 @keyframes orbitDash{to{stroke-dashoffset:-120px}}
-.globe-mark .beam{stroke-dasharray:2.2 3.4;animation:beamFlow 2.4s linear infinite;}
-.globe-mark .b-down{animation-delay:1.2s;}
-@keyframes beamFlow{
-  0%{stroke-dashoffset:6;opacity:0}
-  18%{opacity:1}
-  70%{opacity:.55}
-  100%{stroke-dashoffset:-6;opacity:0}
-}
+.globe-mark .wv{fill:none;stroke:#A6EEFF;stroke-linecap:round;}
+.globe-mark .wv1{stroke-width:.95;}
+.globe-mark .wv2{stroke-width:.85;}
+.globe-mark .wv3{stroke-width:.72;}
 .globe-mark .sat-halo{animation:satHalo 2.8s ease-in-out infinite;}
 @keyframes satHalo{0%,100%{opacity:.45}50%{opacity:.95}}
 .globe-mark .globe-rim-pulse{animation:rimPulse 5.6s ease-in-out infinite;}
@@ -153,8 +149,6 @@ svg{display:block;}
   0%,100%{filter:drop-shadow(0 0 5px rgba(228,203,150,.30)) drop-shadow(0 0 13px rgba(201,168,106,.16))}
   46%{filter:drop-shadow(0 0 9px rgba(255,247,224,.62)) drop-shadow(0 0 24px rgba(201,168,106,.46))}
 }
-.brand-slash{color:var(--gold-hi);opacity:.72;font-size:17px;letter-spacing:0;font-weight:400;
-  filter:drop-shadow(0 0 6px rgba(228,203,150,.35));}
 .brand-sub{
   margin-top:5px;font-size:8px;letter-spacing:.38em;color:#A9B8CC;
   font-weight:600;white-space:nowrap;
