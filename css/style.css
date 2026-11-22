@@ -691,3 +691,29 @@ body.is-full.is-hud .signal-strip::after{content:none;}
 @media (max-width:1500px){
   .sort-btn .sort-label,.sort-btn .cs-caret{display:none;}
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   v3 — FULL 모드: 순수 영상만 (오버레이 전부 숨김, 화면 꽉 채움)
+   영상 비율은 16:9 원본 유지 — 늘어남/잘림 없이 contain.
+   ═══════════════════════════════════════════════════════════════ */
+.tile-media iframe,.tile-media video{object-fit:contain;object-position:center;}
+
+body.is-full .stage{padding:0;}
+body.is-full .grid{gap:0 !important;}
+body.is-full .tile{border:0;border-radius:0;}
+body.is-full .tile::before{content:none;}
+body.is-full .grid[data-layout="all"] .tile{border-radius:0;}
+
+/* 타일 위 오버레이(좌상단 LIVE·채널명, 우상단 채널 변경, 하단 컨트롤) — 평소 완전 숨김 */
+body.is-full .tlay-top,
+body.is-full .tlay-ctrl,
+body.is-full .chan-switch{
+  opacity:0 !important;
+  pointer-events:none !important;
+  transition:opacity .18s;
+}
+
+/* HUD가 켜졌을 때만 컨트롤이 나타난다 (3.6초 뒤 자동 숨김) */
+body.is-full.is-hud .tlay-top{opacity:.95 !important;pointer-events:none !important;}
+body.is-full.is-hud .tlay-ctrl{opacity:1 !important;transform:none !important;pointer-events:auto !important;}
+body.is-full.is-hud .chan-switch{opacity:1 !important;pointer-events:auto !important;}

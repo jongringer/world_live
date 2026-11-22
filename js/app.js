@@ -121,7 +121,7 @@ function load() {
 function allChannels() { return CHANNELS.concat(state.custom); }
 function byId(id) { return CHANNEL_BY_ID[id] || state.custom.find(c => c.id === id) || null; }
 const SORT_MODES = {
-  zone:  { label: '지역·국가순', sub: '한국 → 미국 → 유럽 → 중동 → 아시아' },
+  zone:  { label: '지역·국가순', sub: '한국 → 일본·중국 → 미국 → 유럽 → 중동' },
   name:  { label: '이름순 (A-Z)', sub: '채널명 가나다·알파벳' },
   kr:    { label: '한국 우선', sub: '국내 뉴스를 맨 앞으로' }
 };
@@ -558,30 +558,38 @@ function applyLayout(layout, rebuild) {
   save();
 }
 
+function gridBox() {
+  // FULL(전체화면)에서는 여백·간격을 없애 16:9 화면을 꽉꽉 채운다 (영상 비율은 원본 유지)
+  const full = isFull();
+  return { gap: full ? 0 : GAP, pad: full ? 0 : 18 };
+}
+
 function sizeGrid() {
   if (state.layout === 'all') return sizeAll();
   const L = LAYOUTS[state.layout];
-  const availW = stage.clientWidth - 18;
-  const availH = stage.clientHeight - 18;
-  const byW = (availW - GAP * (L.cols - 1)) / L.cols;
-  const byH = ((availH - GAP * (L.rows - 1)) / L.rows) * (16 / 9);
+  const g = gridBox();
+  const availW = stage.clientWidth - g.pad;
+  const availH = stage.clientHeight - g.pad;
+  const byW = (availW - g.gap * (L.cols - 1)) / L.cols;
+  const byH = ((availH - g.gap * (L.rows - 1)) / L.rows) * (16 / 9);
   const w = Math.max(120, Math.min(byW, byH));
   const h = w * 9 / 16;
-  grid.style.width = (w * L.cols + GAP * (L.cols - 1)) + 'px';
-  grid.style.height = (h * L.rows + GAP * (L.rows - 1)) + 'px';
+  grid.style.width = (w * L.cols + g.gap * (L.cols - 1)) + 'px';
+  grid.style.height = (h * L.rows + g.gap * (L.rows - 1)) + 'px';
   grid.style.gridTemplateColumns = 'repeat(' + L.cols + ',' + w + 'px)';
   grid.style.gridTemplateRows = 'repeat(' + L.rows + ',' + h + 'px)';
-  grid.style.gap = GAP + 'px';
+  grid.style.gap = g.gap + 'px';
 }
 function sizeAll() {
-  const w = stage.clientWidth - 18;
+  const g = gridBox();
+  const w = stage.clientWidth - g.pad;
   const cols = w >= 2100 ? 4 : w >= 1240 ? 3 : 2;
   grid.style.setProperty('--all-cols', cols);
   grid.style.width = '100%';
   grid.style.height = 'auto';
   grid.style.gridTemplateColumns = 'repeat(' + cols + ',minmax(0,1fr))';
   grid.style.gridTemplateRows = '';
-  grid.style.gap = '8px';
+  grid.style.gap = (isFull() ? 0 : 8) + 'px';
 }
 
 function destroyAll() {
