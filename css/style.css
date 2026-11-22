@@ -91,12 +91,34 @@ svg{display:block;}
 
 /* brand */
 .brand{display:flex;align-items:center;gap:11px;flex:0 0 auto;}
-.brand-mark{width:30px;height:23px;color:var(--gold);opacity:.9;flex:0 0 auto;}
-.brand-mark .bm-fill{fill:currentColor;opacity:.35;}
-.brand-mark .b1{animation:bar 1.9s ease-in-out infinite;}
-.brand-mark .b2{animation:bar 1.9s ease-in-out .28s infinite;}
-.brand-mark .b3{animation:bar 1.9s ease-in-out .56s infinite;}
-@keyframes bar{0%,100%{opacity:.18}45%{opacity:.95}}
+.brand-mark{width:44px;height:34px;flex:0 0 auto;filter:drop-shadow(0 0 6px rgba(84,207,227,.18));}
+
+/* 지구본·위성 로고 애니메이션 */
+.globe-mark .globe-meridians{animation:meridians 7s linear infinite;transform-origin:14.5px 17px;}
+.globe-mark .globe-land{animation:land 7s linear infinite;transform-origin:14.5px 17px;}
+@keyframes meridians{
+  0%{transform:translateX(-9.2px)}
+  50%{transform:translateX(0)}
+  100%{transform:translateX(9.2px)}
+}
+@keyframes land{
+  0%{transform:translateX(-11px);opacity:0}
+  12%{opacity:1}
+  62%{opacity:1}
+  78%{transform:translateX(11px);opacity:0}
+  100%{transform:translateX(11px);opacity:0}
+}
+.globe-mark .sat-orbit{animation:orbit 9s linear infinite;transform-origin:26px 17px;}
+@keyframes orbit{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+.globe-mark .sat-panel{animation:panelGlint 2.6s ease-in-out infinite;}
+.globe-mark .sat-panel2{animation:panelGlint 2.6s ease-in-out 1.3s infinite;}
+@keyframes panelGlint{0%,100%{opacity:.55}50%{opacity:1}}
+.globe-mark .orbit{animation:orbitDash 9s linear infinite;}
+@keyframes orbitDash{to{stroke-dashoffset:-55px}}
+.globe-mark .beam{opacity:0;animation:beamUp 1.7s ease-in-out infinite;}
+.globe-mark .b-down{animation-delay:.85s;}
+@keyframes beamUp{0%{opacity:0;stroke-dashoffset:10}25%{opacity:1}55%{opacity:.25}70%{opacity:0}100%{opacity:0;stroke-dashoffset:-8}}
+.globe-mark .beams{stroke-dasharray:4 3;}
 .brand-line{display:flex;align-items:baseline;gap:6px;}
 .brand-name{
   font-size:15px;font-weight:700;letter-spacing:.3em;line-height:1;
@@ -656,3 +678,16 @@ body.is-full .signal-strip{background:linear-gradient(0deg,rgba(8,11,16,.95),rgb
 body.is-full .stage{cursor:default;}
 body.is-full.is-hud .topbar::after,
 body.is-full.is-hud .signal-strip::after{content:none;}
+
+/* 채널 정렬 버튼·메뉴 */
+.sort-wrap{position:relative;display:flex;align-items:center;}
+.sort-btn .sort-label{
+  font-family:var(--mono);font-size:9px;letter-spacing:.04em;
+  color:var(--gold-hi);padding-left:1px;
+}
+.sort-btn .cs-caret{color:var(--text-4);display:flex;}
+.sort-btn.is-open{color:var(--gold-hi);background:rgba(201,168,106,.1);border-color:var(--gold-dim);}
+.sort-menu{right:0;}
+@media (max-width:1500px){
+  .sort-btn .sort-label,.sort-btn .cs-caret{display:none;}
+}

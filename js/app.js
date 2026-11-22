@@ -30,6 +30,7 @@ function freshSets() {
 const state = {
   layout: '9',
   start: '9',
+  sort: 'zone',
   sets: freshSets(),
   custom: [],
   audioId: null,
@@ -53,7 +54,7 @@ let modalSlot = null;
 function save() {
   try {
     localStorage.setItem(LS_KEY, JSON.stringify({
-      layout: state.layout, start: state.start, sets: state.sets,
+      layout: state.layout, start: state.start, sort: state.sort, sets: state.sets,
       custom: state.custom, audioId: state.audioId, muted: state.muted
     }));
   } catch (e) {}
@@ -79,6 +80,7 @@ function load() {
         }
         if (LAYOUTS[d.layout]) state.layout = d.layout;
         if (LAYOUTS[d.start]) state.start = d.start;
+        if (typeof d.sort === 'string' && SORT_MODES[d.sort]) state.sort = d.sort;
         if (typeof d.audioId === 'string') state.audioId = d.audioId;
         if (typeof d.muted === 'boolean') state.muted = d.muted;
       }
@@ -105,8 +107,30 @@ function load() {
 /* ── channel helpers ───────────────────────────────────────── */
 function allChannels() { return CHANNELS.concat(state.custom); }
 function byId(id) { return CHANNEL_BY_ID[id] || state.custom.find(c => c.id === id) || null; }
+const SORT_MODES = {
+  zone:  { label: '지역·국가순', sub: '한국 → 아시아 → 유럽…' },
+  name:  { label: '이름순 (A-Z)', sub: '채널명 가나다·알파벳' },
+  kr:    { label: '한국 우선', sub: '국내 뉴스를 맨 앞으로' }
+};
+function sortedIds() {
+  const ids = ALL_LIVE_IDS.slice();
+  const kr = c => c.zone === 'KOREA' ? 0 : 1;
+  if (state.sort === 'name') {
+    ids.sort((a, b) => {
+      const ca = byId(a) || {}, cb = byId(b) || {};
+      return String(ca.name || '').localeCompare(String(cb.name || ''), 'ko');
+    });
+  } else if (state.sort === 'kr') {
+    ids.sort((a, b) => {
+      const ra = kr(byId(a) || {}), rb = kr(byId(b) || {});
+      if (ra !== rb) return ra - rb;
+      return ALL_LIVE_IDS.indexOf(a) - ALL_LIVE_IDS.indexOf(b);
+    });
+  }
+  return ids;
+}
 function slotIds() {
-  if (state.layout === 'all') return ALL_LIVE_IDS;
+  if (state.layout === 'all') return sortedIds();
   return state.sets[state.layout];
 }
 function slotChannel(i) {
@@ -620,6 +644,13 @@ function setStart(layout) {
   toast('첫 화면 — ' + (START_NAMES[layout] || layout) + ' 저장');
 }
 
+function refreshSortUI() {
+  $('#sort-label').textContent = SORT_MODES[state.sort].label;
+  document.querySelectorAll('#sort-menu [data-sort]').forEach(b => {
+    b.classList.toggle('is-current', b.dataset.sort === state.sort);
+  });
+}
+
 /* ── modal ─────────────────────────────────────────────────── */
 function openModal(slot) {
   modalSlot = (typeof slot === 'number' && state.layout !== 'all') ? slot : null;
@@ -648,19 +679,24 @@ function renderSources(q) {
   srcGrid.innerHTML = '';
   if (!list.length) { srcGrid.innerHTML = '<div class="empty-note">검색 결과가 없습니다.</div>'; return; }
 
-  const groups = {};
-  list.forEach(c => { const z = c.zone || 'ASIA'; (groups[z] = groups[z] || []).push(c); });
-  const order = ['KOREA', 'ASIA', 'OCEANIA', 'AMERICAS', 'EUROPE', 'MIDEAST', 'AFRICA', 'EXTERNAL', 'CUSTOM'];
   const frag = document.createDocumentFragment();
-  order.forEach(z => {
-    const arr = groups[z];
-    if (!arr) return;
-    const lab = document.createElement('div');
-    lab.className = 'src-group-label';
-    lab.innerHTML = '<span>' + esc(ZONE_LABEL[z] || z) + '</span><span class="sgl-count">' + arr.length + '</span>';
-    frag.appendChild(lab);
-    arr.forEach(c => frag.appendChild(srcCard(c, current)));
-  });
+  if (state.sort === 'name' && !query) {
+    list.sort((a, b) => String(a.name || '').localeCompare(String(b.name || ''), 'ko'));
+    list.forEach(c => frag.appendChild(srcCard(c, current)));
+  } else {
+    const groups = {};
+    list.forEach(c => { const z = c.zone || 'ASIA'; (groups[z] = groups[z] || []).push(c); });
+    const order = ['KOREA', 'ASIA', 'OCEANIA', 'AMERICAS', 'EUROPE', 'MIDEAST', 'AFRICA', 'EXTERNAL', 'CUSTOM'];
+    order.forEach(z => {
+      const arr = groups[z];
+      if (!arr) return;
+      const lab = document.createElement('div');
+      lab.className = 'src-group-label';
+      lab.innerHTML = '<span>' + esc(ZONE_LABEL[z] || z) + '</span><span class="sgl-count">' + arr.length + '</span>';
+      frag.appendChild(lab);
+      arr.forEach(c => frag.appendChild(srcCard(c, current)));
+    });
+  }
   srcGrid.appendChild(frag);
 }
 function srcCard(c, current) {
@@ -832,6 +868,24 @@ function bindEvents() {
   });
   document.addEventListener('click', e => {
     if (!e.target.closest('.start-wrap')) $('#start-menu').hidden = true;
+    if (!e.target.closest('.sort-wrap')) $('#sort-menu').hidden = true;
+  });
+
+  // 채널 정렬 메뉴
+  $('#btn-sort').addEventListener('click', e => {
+    e.stopPropagation();
+    const m = $('#sort-menu');
+    m.hidden = !m.hidden;
+  });
+  $('#sort-menu').addEventListener('click', e => {
+    const b = e.target.closest('[data-sort]');
+    if (!b) return;
+    state.sort = b.dataset.sort;
+    save();
+    refreshSortUI();
+    $('#sort-menu').hidden = true;
+    if (state.layout === 'all') applyLayout('all');
+    else { renderSources(srcSearch.value); toast('소스 목록 정렬 — ' + SORT_MODES[state.sort].label); }
   });
 
   grid.addEventListener('mouseover', e => {
@@ -943,7 +997,7 @@ function bindEvents() {
 /* ── debug hook ────────────────────────────────────────────── */
 window.WORLD_LIVE = {
   state: () => ({
-    layout: state.layout, start: state.start, muted: state.muted, audio: state.audioId,
+    layout: state.layout, start: state.start, sort: state.sort, muted: state.muted, audio: state.audioId,
     sets: JSON.parse(JSON.stringify(state.sets)),
     count: chCount(),
     channels: CHANNELS.length,
@@ -969,6 +1023,7 @@ function boot() {
   buildClocks();
   bindEvents();
   refreshStartUI();
+  refreshSortUI();
   applyLayout(state.layout, false);
   rebuildGrid();
   applyAudio();
