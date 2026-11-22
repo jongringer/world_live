@@ -923,7 +923,7 @@ function pvSetBadge(kind) {
   const b = $('#pv-badge'), t = $('#pv-badge-txt');
   if (!b || !t) return;
   b.className = 'pv-badge is-' + kind;
-  t.textContent = kind === 'live' ? 'LIVE' : kind === 'sync' ? 'CONNECTING' : kind === 'error' ? 'NO SIGNAL' : 'PREVIEW';
+  t.textContent = kind === 'live' ? 'LIVE' : kind === 'sync' ? 'CONNECTING' : kind === 'error' ? 'NO SIGNAL' : kind === 'ext' ? 'EXTERNAL LINK' : 'PREVIEW';
 }
 function pvCmd(func, args) {
   if (!pvIframe || !pvIframe.contentWindow) return;
@@ -1097,7 +1097,7 @@ function openPreview(ch) {
       + '<div class="pv-webnote-d">' + esc(ch.note || '이 채널은 방송사 공식 사이트에서만 재생됩니다. 새 창에서 확인해 주세요.') + '</div>'
       + '<a class="pv-btn pv-btn-gold" href="' + esc(ch.src) + '" target="_blank" rel="noopener">공식 페이지 열기</a>'
       + '</div>';
-    pvSetBadge('error');
+    pvSetBadge('ext');
   }
 
   pvRenderSlots();

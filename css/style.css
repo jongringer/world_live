@@ -848,6 +848,8 @@ body.is-full.is-hud .order-ctl{opacity:1 !important;pointer-events:auto !importa
 @keyframes livePulse{0%,100%{opacity:1}50%{opacity:.42}}
 .pv-badge.is-sync{color:#FFEFC9;border-color:rgba(201,168,106,.50);background:rgba(201,168,106,.14);}
 .pv-badge.is-sync .pv-dot{background:#E4CB96;box-shadow:0 0 9px rgba(228,203,150,.9);animation:livePulse 1.2s ease-in-out infinite;}
+.pv-badge.is-ext{color:#D8E2EF;border-color:rgba(255,255,255,.26);background:rgba(255,255,255,.08);}
+.pv-badge.is-ext .pv-dot{background:#B7C6D8;box-shadow:0 0 8px rgba(183,198,216,.8);}
 .pv-badge.is-error{color:#FFC2C8;border-color:rgba(255,59,78,.55);background:rgba(255,59,78,.14);}
 .pv-badge.is-error .pv-dot{background:#FF3B4E;box-shadow:0 0 9px #FF3B4E;}
 .pv-head-actions{display:flex;align-items:center;gap:7px;flex:0 0 auto;}
@@ -862,6 +864,7 @@ body.is-full.is-hud .order-ctl{opacity:1 !important;pointer-events:auto !importa
   transition:background .15s,border-color .15s,color .15s,box-shadow .15s;
 }
 .pv-btn svg{width:13px;height:13px;}
+.pv-btn[hidden]{display:none;}
 .pv-btn:hover{background:rgba(255,255,255,.15);border-color:rgba(255,255,255,.34);color:#fff;}
 .pv-btn-gold{border-color:rgba(228,203,150,.60);background:linear-gradient(180deg,rgba(228,203,150,.32),rgba(201,168,106,.14));color:#FFF3D8;}
 .pv-btn-gold:hover{background:linear-gradient(180deg,rgba(228,203,150,.48),rgba(201,168,106,.24));border-color:rgba(228,203,150,.88);color:#fff;box-shadow:0 0 20px -8px rgba(228,203,150,.9);}
