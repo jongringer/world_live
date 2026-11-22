@@ -51,6 +51,9 @@ const grid = $('#grid');
 const stage = $('#stage');
 const modalRoot = $('#modal-root');
 const srcGrid = $('#src-grid');
+let srcEntries = [];        // 모달 카드 캐시 — 검색은 다시 그리지 않고 hidden만 토글
+let srcGroupLabels = [];
+let srcEmptyNote = null;
 const srcSearch = $('#src-search');
 let modalSlot = null;
 
@@ -886,34 +889,68 @@ function openModal(slot) {
 }
 function closeModal() { modalRoot.hidden = true; modalSlot = null; $('#custom-error').hidden = true; }
 function renderSources(q) {
-  const query = (q || '').trim().toLowerCase();
-  const list = allChannels().filter(c => {
-    if (!query) return true;
-    return (c.name + ' ' + (c.country || '') + ' ' + (c.cc || '') + ' ' + (c.short || '')).toLowerCase().indexOf(query) >= 0;
-  });
+  // 모달을 열 때 ‘한 번만’ 카드를 그려 두고, 검색은 applySourceFilter()로 hidden만 토글한다
   const current = (modalSlot != null) ? slotIds()[modalSlot] : null;
   srcGrid.innerHTML = '';
-  if (!list.length) { srcGrid.innerHTML = '<div class="empty-note">검색 결과가 없습니다.</div>'; return; }
-
+  srcEntries = []; srcGroupLabels = [];
+  const list = allChannels().slice();
   const frag = document.createDocumentFragment();
-  if (state.sort === 'name' && !query) {
+
+  const addCard = (c, group) => {
+    const el = srcCard(c, current);
+    frag.appendChild(el);
+    srcEntries.push({
+      el: el, group: group,
+      hay: (c.name + ' ' + (c.country || '') + ' ' + (c.cc || '') + ' ' + (c.short || '')).toLowerCase()
+    });
+  };
+
+  if (state.sort === 'name') {
     list.sort((a, b) => String(a.name || '').localeCompare(String(b.name || ''), 'ko'));
-    list.forEach(c => frag.appendChild(srcCard(c, current)));
+    list.forEach(c => addCard(c, null));
   } else {
     const groups = {};
     list.forEach(c => { const z = c.zone || 'ASIA'; (groups[z] = groups[z] || []).push(c); });
-    const order = ZONE_ORDER;
-    order.forEach(z => {
+    ZONE_ORDER.forEach(z => {
       const arr = groups[z];
       if (!arr) return;
       const lab = document.createElement('div');
       lab.className = 'src-group-label';
-      lab.innerHTML = '<span>' + esc(ZONE_LABEL[z] || z) + '</span><span class="sgl-count">' + arr.length + '</span>';
+      lab.innerHTML = '<span class="sgl-name">' + esc(ZONE_LABEL[z] || z) + '</span><span class="sgl-count">' + arr.length + '</span>';
       frag.appendChild(lab);
-      arr.forEach(c => frag.appendChild(srcCard(c, current)));
+      srcGroupLabels.push({ el: lab, zone: z, countEl: lab.querySelector('.sgl-count') });
+      arr.forEach(c => addCard(c, z));
     });
   }
+
+  const empty = document.createElement('div');
+  empty.className = 'empty-note';
+  empty.textContent = '검색 결과가 없습니다.';
+  empty.hidden = true;
+  srcEmptyNote = empty;
+  frag.appendChild(empty);
+
   srcGrid.appendChild(frag);
+  applySourceFilter(q);
+}
+/* 검색 — DOM 재생성 없이 카드·그룹의 hidden만 즉시 토글 (한글 IME 조합 중에도 입력이 끊기지 않음) */
+function applySourceFilter(q) {
+  const query = (q || '').trim().toLowerCase();
+  let shown = 0;
+  const per = {};
+  for (let i = 0; i < srcEntries.length; i++) {
+    const e = srcEntries[i];
+    const ok = !query || e.hay.indexOf(query) >= 0;
+    if (ok !== !e.el.hidden) e.el.hidden = !ok;
+    if (ok) { shown++; if (e.group) per[e.group] = (per[e.group] || 0) + 1; }
+  }
+  for (let i = 0; i < srcGroupLabels.length; i++) {
+    const g = srcGroupLabels[i];
+    const n = per[g.zone] || 0;
+    g.el.hidden = n === 0;
+    if (g.countEl && g.countEl.textContent !== String(n)) g.countEl.textContent = String(n);
+  }
+  if (srcEmptyNote) srcEmptyNote.hidden = shown > 0;
 }
 function srcCard(c, current) {
   const b = document.createElement('button');
@@ -1576,7 +1613,7 @@ function bindEvents() {
     const card = e.target.closest('.src-card');
     if (card && !e.target.closest('[data-del]')) { /* handled per-card */ }
   });
-  srcSearch.addEventListener('input', () => renderSources(srcSearch.value));
+  srcSearch.addEventListener('input', () => applySourceFilter(srcSearch.value));
 
   // 채널 미리보기
   pvRoot.addEventListener('click', e => {
@@ -1670,7 +1707,10 @@ window.WORLD_LIVE = {
   hud: () => toggleHud(),
   full: () => toggleFullscreen(),
   showCleanFull: () => showCleanFull(),
-  showBig: i => showBig(i, true)
+  showBig: i => showBig(i, true),
+  rebuildSources: () => renderSources(''),
+  filterSources: q => applySourceFilter(q),
+  srcCount: () => srcEntries.length
 };
 
 /* ── boot ──────────────────────────────────────────────────── */
