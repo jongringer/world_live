@@ -381,7 +381,7 @@ function buildTile(i) {
       <div class="ctrl-btns">
         <button class="tbtn" data-act="audio" title="단독 음성">${ICONS.spkOff}</button>
         ${isAll ? '' : `<button class="tbtn" data-act="src" title="채널 변경">${ICONS.src}</button>`}
-        <button class="tbtn" data-act="max" title="1×1 전체화면">${ICONS.max}</button>
+        <button class="tbtn" data-act="max" title="1×1 전체화면 (ESC → 이전 화면)">${ICONS.max}</button>
         <button class="tbtn" data-act="pop" title="새 창에서 열기">${ICONS.pop}</button>
         <button class="tbtn" data-act="reload" title="이 피드 새로고침">${ICONS.re}</button>
       </div>
@@ -1422,7 +1422,6 @@ function bindEvents() {
     if (!state.muted && state.audioId) { clearAudio(); applyAudio(); save(); }
     else if (chCount()) selectSlot(0);
   });
-  $('#btn-reload').addEventListener('click', () => { rebuildGrid(); toast('모든 피드를 다시 연결합니다'); });
   $('#btn-sources').addEventListener('click', () => openModal(null));
   $('#btn-find').addEventListener('click', () => { openModal(null); });
 
@@ -1480,7 +1479,7 @@ function bindEvents() {
     if (act === 'mv-next') { moveAllOrder(slotChannel(i).id, 'next'); return; }
     if (act === 'mv-first') { moveAllOrder(slotChannel(i).id, 'first'); return; }
     if (act === 'audio') { setAudio(slotChannel(i).id); return; }
-    if (act === 'max') { showBig(i); return; }
+    if (act === 'max') { showBig(i, true); return; }   // 1×1 + FULL (ESC → 이전 화면)
     if (act === 'pop') { openExternal(i); return; }
     if (act === 'reload') { try { unmountSlot(i); } catch (x) {} mountSlot(i); toast(slotChannel(i).name + ' — 재연결'); return; }
     if (act === 'open') { openExternal(i); return; }
@@ -1588,7 +1587,6 @@ function bindEvents() {
     else if (k === 'f') toggleFullscreen();
     else if (k === 'h' && isFull()) toggleHud();
     else if (k === 'm') $('#btn-mute').click();
-    else if (k === 'r') rebuildGrid();
     else if (k === 's') openModal(null);
   });
 
