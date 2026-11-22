@@ -167,12 +167,14 @@ window.addEventListener('message', function (e) {
   if (!L) return;
   if (d.event === 'infoDelivery' && d.info) {
     const info = d.info;
-    L.ytConfirmed = true;
-    const tEl = live[slot] && live[slot].node;
-    if (tEl) tEl.classList.remove('pass');
     if (typeof info.playerState === 'number') {
+      L.ps = info.playerState;
       L.stateSrc = 'api';
-      if (info.playerState === 1) setTileState(slot, 'live');
+      if (info.playerState === 1) {
+        setTileState(slot, 'live');
+        const tEl = live[slot] && live[slot].node;
+        if (tEl) tEl.classList.remove('pass');
+      }
       else if (info.playerState === 3) setTileState(slot, 'sync');
       else if (info.playerState === 0 || info.playerState === 2) setTileState(slot, 'offline');
     }
@@ -677,7 +679,7 @@ function bindEvents() {
     if (act === 'retry') { mountSlot(i); return; }
     const L = live[i];
     const kd = slotChannel(i).kind;
-    if (L && (kd === 'youtube' || kd === 'youtube-video') && L.ytConfirmed !== true) {
+    if (L && (kd === 'youtube' || kd === 'youtube-video') && L.ps !== 1) {
       t.classList.add('pass');
       if (t.dataset.passTip !== '1') {
         toast(slotChannel(i).name + ' — 영상의 재생 버튼을 눌러 주세요');
@@ -758,7 +760,7 @@ window.WORLD_LIVE = {
   state: () => ({
     layout: state.layout, muted: state.muted, audio: state.audio, focused: state.focused,
     slots: state.slots.slice(),
-    tiles: Object.keys(live).map(k => ({ slot: +k, name: live[k].ch.name, kind: live[k].ch.kind, state: live[k].state, src: live[k].stateSrc || null, err: live[k].err || null }))
+    tiles: Object.keys(live).map(k => ({ slot: +k, name: live[k].ch.name, kind: live[k].ch.kind, state: live[k].state, ps: live[k].ps == null ? null : live[k].ps, err: live[k].err || null }))
   }),
   setLayout: l => applyLayout(l),
   setAudio: i => setAudio(i)
