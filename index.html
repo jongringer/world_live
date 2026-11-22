@@ -7,7 +7,7 @@
 <title>WORLD LIVE // GLOBAL NEWSROOM MONITOR</title>
 <meta name="description" content="전 세계 뉴스 채널 24시간 라이브 멀티뷰 — NHK·BBC·CNN FAST·CGTN·France 24·DW·ABC News Live·Al Jazeera HLS(백업 자동 전환)와 KBS NEWS 24·YTN·연합뉴스TV. 9분할·4분할 채널 직접 선택, 전체 스크롤 모드." />
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23080B10'/%3E%3Crect x='6' y='9' width='20' height='14' rx='2' fill='none' stroke='%23C9A86A' stroke-width='1.4'/%3E%3Ccircle cx='16' cy='16' r='2.4' fill='%23FF3B4E'/%3E%3C/svg%3E" />
-<link rel="stylesheet" href="css/style.css?v=19" />
+<link rel="stylesheet" href="css/style.css?v=20" />
 </head>
 <body>
 <div id="app" class="app">
@@ -19,27 +19,27 @@
         <defs>
           <!-- 바다: 표층 하이라이트 → 심해 -->
           <radialGradient id="gOcean" cx="30%" cy="23%" r="88%">
-            <stop offset="0%" stop-color="#9BE7F7"/>
-            <stop offset="16%" stop-color="#57BCD8"/>
-            <stop offset="40%" stop-color="#2181A3"/>
-            <stop offset="66%" stop-color="#0C4560"/>
-            <stop offset="86%" stop-color="#062A3D"/>
-            <stop offset="100%" stop-color="#03131E"/>
+            <stop offset="0%" stop-color="#7BD9EE"/>
+            <stop offset="15%" stop-color="#46A9C9"/>
+            <stop offset="38%" stop-color="#1B7597"/>
+            <stop offset="62%" stop-color="#0B4A66"/>
+            <stop offset="82%" stop-color="#05293C"/>
+            <stop offset="100%" stop-color="#02101A"/>
           </radialGradient>
           <!-- 대륙: 금빛 지형 -->
           <linearGradient id="gLand" x1="18%" y1="0%" x2="88%" y2="100%">
-            <stop offset="0%" stop-color="#F8EBC8"/>
-            <stop offset="34%" stop-color="#E2C58C"/>
-            <stop offset="70%" stop-color="#B08C51"/>
-            <stop offset="100%" stop-color="#6E5430"/>
+            <stop offset="0%" stop-color="#F6E4B4"/>
+            <stop offset="34%" stop-color="#DDBB7E"/>
+            <stop offset="70%" stop-color="#A47F45"/>
+            <stop offset="100%" stop-color="#5F4A26"/>
           </linearGradient>
           <!-- 구체 명암: 오른쪽·아래로 갈수록 어두워짐 -->
           <radialGradient id="gShade" cx="27%" cy="21%" r="94%">
             <stop offset="0%" stop-color="rgba(255,255,255,0)"/>
-            <stop offset="48%" stop-color="rgba(3,10,18,.04)"/>
-            <stop offset="76%" stop-color="rgba(3,9,16,.44)"/>
-            <stop offset="92%" stop-color="rgba(2,7,13,.80)"/>
-            <stop offset="100%" stop-color="rgba(1,4,9,.94)"/>
+            <stop offset="46%" stop-color="rgba(3,10,18,.06)"/>
+            <stop offset="70%" stop-color="rgba(3,9,16,.38)"/>
+            <stop offset="86%" stop-color="rgba(2,7,13,.74)"/>
+            <stop offset="100%" stop-color="rgba(1,4,9,.92)"/>
           </radialGradient>
           <!-- 대기권 링 -->
           <radialGradient id="gAtmo" cx="50%" cy="50%" r="50%">
@@ -77,7 +77,7 @@
           </filter>
           <path id="orbitPath" d="M44 24a21 8.2 0 1 0-42 0a21 8.2 0 1 0 42 0z"/>
           <!-- 대륙 세트 (회전용으로 두 번 배치) -->
-          <g id="landSet" fill="url(#gLand)" stroke="rgba(74,52,22,.42)" stroke-width=".28" stroke-linejoin="round">
+          <g id="landSet" fill="url(#gLand)" stroke="rgba(66,46,20,.34)" stroke-width=".18" stroke-linejoin="round">
             <path d="M12.3 14.9c1-1.5 2.6-2.1 4-1.4 1 .5 2.1.5 3-.1 1.4-.9 3.1-.4 3.8 1.1.6 1.2.1 2.5-1.1 3-.9.4-1.5 1.3-1.3 2.3.2 1.1-.5 2-1.6 2.2-1.2.2-2-.6-2.9-1-1-.4-2.3 0-3-.9-.6-.8-.2-1.9-.8-2.7-.7-1-.7-2.2-.1-2.5z"/>
             <path d="M22.2 21.4c1.6-.5 3 .5 3.2 2 .2 1.5-.7 2.7-1.7 3.6-.9.8-1.2 1.9-2.4 2.1-1.3.2-2.4-.9-2.3-2.2 0-1.4.6-2.6 1.5-3.6.6-.7 1.1-1.6 1.7-1.9z"/>
             <path d="M14.1 26.9c1.1-.6 2.4-.2 2.9.8.5 1 0 2.2-.9 2.7-.8.5-1 1.4-1.9 1.6-1.1.2-2.1-.5-2.2-1.5-.1-1.1.5-2 1.3-2.7.3-.3.5-.6.8-.9z"/>
@@ -116,16 +116,16 @@
 
         <!-- 입체 명암 · 하이라이트 · 림 -->
         <circle cx="23" cy="24" r="15.5" fill="url(#gShade)"/>
-        <ellipse cx="17.3" cy="17.4" rx="6.6" ry="4.4" fill="url(#gSpec)" transform="rotate(-26 17.3 17.4)" opacity=".75"/>
+        <ellipse cx="17.6" cy="17.8" rx="5.2" ry="3.4" fill="url(#gSpec)" transform="rotate(-26 17.6 17.8)" opacity=".62"/>
         <circle class="globe-rim-pulse" cx="23" cy="24" r="15.35" fill="none" stroke="url(#gRim)" stroke-width="1"/>
 
         <!-- 기울어진 3D 궤도 · 위성 · 신호 빔 -->
         <g transform="rotate(-18 23 24)">
-          <use href="#orbitPath" class="orbit-line" fill="none" stroke="rgba(228,203,150,.52)" stroke-width=".62" stroke-dasharray="2.2 2.8"/>
+          <use href="#orbitPath" class="orbit-line" fill="none" stroke="rgba(228,203,150,.45)" stroke-width=".55" stroke-dasharray="5 4.5"/>
           <path class="beam b-up" d="M37.8 19.4L41.3 20" stroke="url(#beamGrad)" stroke-width=".9" stroke-linecap="round" fill="none"/>
           <path class="beam b-down" d="M38 27.9L41.6 27.7" stroke="url(#beamGrad)" stroke-width=".9" stroke-linecap="round" fill="none"/>
           <g class="sat">
-            <circle class="sat-halo" r="2.6" fill="url(#satHalo)"/>
+            <circle class="sat-halo" r="2.3" fill="url(#satHalo)"/>
             <rect x="-1.15" y="-.68" width="2.3" height="1.36" rx=".3" fill="#FFF0CB"/>
             <rect x="-2.4" y="-.4" width="1.05" height=".8" fill="rgba(201,168,106,.95)"/>
             <rect x="1.35" y="-.4" width="1.05" height=".8" fill="rgba(201,168,106,.95)"/>
@@ -321,7 +321,7 @@
   </section>
 </div>
 
-<script src="js/channels.js?v=19"></script>
-<script src="js/app.js?v=19"></script>
+<script src="js/channels.js?v=20"></script>
+<script src="js/app.js?v=20"></script>
 </body>
 </html>
