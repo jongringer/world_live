@@ -152,9 +152,15 @@
 - HTML5 `draggable` 대신 투명 레이어 위 `pointerdown → pointermove → pointerup` + `document.elementFromPoint` 로 처리해 YouTube iframe·HLS 비디오 위에서도 동작합니다.
 - 9·4·6분할은 그 레이아웃 배치(`state.sets`)에 즉시 저장되고, 전체 스크롤에서는 자동으로 **‘내 순서’** 로 고정·저장됩니다. 듣고 있던 채널은 자리 바꿈 후에도 테두리·음성과 함께 이동합니다.
 
-## 검증 결과 (v5, 2026-11-22 KST)
+## 검증 결과 (v5, 2026-11-22 KST · 운영 페이지 1920×1080, 뷰포트 1920×993)
 
-- 1920×1080 실측: 타일 클릭 → 흰색 테두리 + `muted=false`, 다른 타일 클릭 → 이전 타일 `muted=true`·테두리 해제. 스크린샷 `downloads/world_live-screens/v5-audio-tally.png`.
+- **원클릭 오디오 탤리**: 9분할 3번 칸 NHK 클릭 → 해당 타일 `border: 3px solid rgb(255,255,255)`·opacity 1, `video.muted === false`, 나머지 8개 `muted === true`, 스트립 `AUDIO — NHK WORLD-JAPAN`. 이어 5번 칸 CNN FAST 클릭 → NHK `muted === true`·테두리 해제, CNN FAST 테두리 + `muted === false`, 스트립 `AUDIO — CNN FAST`. 스크린샷 `downloads/world_live-screens/v5-audio-tally.png`.
+- **M 음소거 연동**: 상단 M 클릭 → `audio=null`, `muted=true`, `is-tally` 0개, 스트립 `ALL MUTED`.
+- **드래그 자리 바꾸기(9분할)**: CNN FAST 타일을 CGTN 타일로 드래그 → `sets['9']` 가 `[…nhk, cnn_fast, cgtn…]` → `[…nhk, cgtn, cnn_fast…]` 로 맞바뀜, 듣던 CNN FAST가 새 자리(4번 칸)로 테두리·음성과 함께 이동. 새로고침 후에도 유지.
+- **드래그 자리 바꾸기(전체 스크롤)**: NHK를 CGTN 자리로 드래그 → 0번=CGTN, 1번=NHK, 정렬 라벨이 `내 순서`로 전환·저장. 새로고침 후에도 `내 순서`와 바뀐 순서 그대로.
+- **FULL 진입·복귀**: 타일의 `1×1 전체화면` 클릭 → `document.fullscreenElement` 설정, `layout='1'`, `prevLayout='9'`, `body.is-full`, HUD 자동 숨김(순수 영상), 1×1 타일에도 흰색 테두리 유지(`v5-full-tally.png`). 이어 **ESC 키를 실제로 눌러** 전체화면 종료 → `fullscreenchange`에서 `layout='9'`로 자동 복귀, `prevLayout=null`, CNN FAST 선택·테두리 유지.
+- **저장·복원**: 4분할에서 1번 칸을 DW NEWS로 교체 → 새로고침(`?cb=`) 후 **4분할 + 1번 칸 DW NEWS + 선택 채널 CNN FAST(2번 칸 테두리)** 그대로 복원. 이어 전체 스크롤로 전환·드래그 후 새로고침 → **전체 스크롤 + 내 순서 + CGTN·NHK 순서 + CNN FAST 음성 선택** 그대로 복원. `worldlive.v3` 키는 코드 버전(`?v=`)이 바뀌어도 초기화되지 않음.
+- **상단 새로고침 제거**: `#btn-reload` 없음(`hasReloadBtn:false`), `R` 단축키 미동작. 타일별 `↻`는 유지.
 
 ## 구조
 
