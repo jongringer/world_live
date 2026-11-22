@@ -276,10 +276,11 @@ function mountSlot(i) {
     iframe.title = ch.name + ' live';
     media.appendChild(iframe);
     live[i].iframe = iframe;
-    const handshake = () => { ytListen(i); ytCmd(i, muted ? 'mute' : 'unMute'); };
+    const handshake = () => { ytListen(i); ytCmd(i, muted ? 'mute' : 'unMute'); ytCmd(i, 'playVideo'); };
     iframe.addEventListener('load', () => { setTimeout(handshake, 350); setTimeout(handshake, 1400); });
     setTimeout(handshake, 1600);
-    setTimeout(() => { if (live[i]) ytCmd(i, 'addEventListener', ['onStateChange']); }, 2200);
+    setTimeout(handshake, 3200);
+    setTimeout(() => { if (live[i]) { ytCmd(i, 'playVideo'); ytCmd(i, 'addEventListener', ['onStateChange']); } }, 5000);
     setTimeout(() => { if (live[i] && live[i].state === 'loading') setTileState(i, 'live'); }, 9000);
 
   } else if (ch.kind === 'hls') {
