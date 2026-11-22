@@ -276,11 +276,14 @@ function mountSlot(i) {
     iframe.title = ch.name + ' live';
     media.appendChild(iframe);
     live[i].iframe = iframe;
-    const handshake = () => { ytListen(i); ytCmd(i, muted ? 'mute' : 'unMute'); ytCmd(i, 'playVideo'); };
+    const handshake = () => { ytListen(i); ytCmd(i, muted ? 'mute' : 'unMute'); };
     iframe.addEventListener('load', () => { setTimeout(handshake, 350); setTimeout(handshake, 1400); });
     setTimeout(handshake, 1600);
-    setTimeout(handshake, 3200);
-    setTimeout(() => { if (live[i]) { ytCmd(i, 'playVideo'); ytCmd(i, 'addEventListener', ['onStateChange']); } }, 5000);
+    setTimeout(() => {
+      if (!live[i]) return;
+      ytCmd(i, 'addEventListener', ['onStateChange']);
+      if (live[i].state !== 'live') ytCmd(i, 'playVideo');
+    }, 6500);
     setTimeout(() => { if (live[i] && live[i].state === 'loading') setTileState(i, 'live'); }, 9000);
 
   } else if (ch.kind === 'hls') {
@@ -669,6 +672,13 @@ function bindEvents() {
     if (act === 'reload') { mountSlot(i); toast(slotChannel(i).name + ' — 재연결'); return; }
     if (act === 'open') { openExternal(i); return; }
     if (act === 'retry') { mountSlot(i); return; }
+    const L = live[i];
+    const kd = slotChannel(i).kind;
+    if (L && (kd === 'youtube' || kd === 'youtube-video') && L.state !== 'live') {
+      t.classList.add('pass');
+      toast(slotChannel(i).name + ' — 영상 위 재생 버튼을 눌러 주세요');
+      setTimeout(() => t.classList.remove('pass'), 6000);
+    }
     setFocus(i);
   });
   grid.addEventListener('dblclick', e => {

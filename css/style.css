@@ -499,3 +499,6 @@ svg{display:block;}
   .modal{width:calc(100vw - 20px);}
   .src-grid{grid-template-columns:1fr;}
 }
+
+/* paused playback: let the click reach the player's own play button */
+.tile.pass .tile-hit{pointer-events:none;}
