@@ -122,9 +122,9 @@ svg{display:block;}
 .globe-mark .orbit-line{animation:orbitDash 26s linear infinite;}
 @keyframes orbitDash{to{stroke-dashoffset:-120px}}
 .globe-mark .wv{fill:none;stroke:#A6EEFF;stroke-linecap:round;}
-.globe-mark .wv1{stroke-width:.95;}
-.globe-mark .wv2{stroke-width:.85;}
-.globe-mark .wv3{stroke-width:.72;}
+.globe-mark .wv1{stroke-width:1.05;}
+.globe-mark .wv2{stroke-width:.95;}
+.globe-mark .wv3{stroke-width:.85;}
 .globe-mark .sat-halo{animation:satHalo 2.8s ease-in-out infinite;}
 @keyframes satHalo{0%,100%{opacity:.45}50%{opacity:.95}}
 .globe-mark .globe-rim-pulse{animation:rimPulse 5.6s ease-in-out infinite;}
