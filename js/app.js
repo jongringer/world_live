@@ -674,7 +674,7 @@ function bindEvents() {
     if (act === 'retry') { mountSlot(i); return; }
     const L = live[i];
     const kd = slotChannel(i).kind;
-    if (L && (kd === 'youtube' || kd === 'youtube-video') && L.state !== 'live') {
+    if (L && (kd === 'youtube' || kd === 'youtube-video') && (L.state !== 'live' || L.stateSrc !== 'api')) {
       t.classList.add('pass');
       toast(slotChannel(i).name + ' — 영상 위 재생 버튼을 눌러 주세요');
       setTimeout(() => t.classList.remove('pass'), 6000);
