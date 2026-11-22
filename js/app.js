@@ -258,7 +258,7 @@ function mountSlot(i) {
     });
     if (location.origin && location.origin !== 'null') params.set('origin', location.origin);
     const path = ch.kind === 'youtube'
-      ? 'live_stream?channel=' + encodeURIComponent(ch.src)
+      ? 'embed/live_stream?channel=' + encodeURIComponent(ch.src)
       : 'embed/' + encodeURIComponent(ch.src);
     const iframe = document.createElement('iframe');
     iframe.src = 'https://www.youtube.com/' + path + '&' + params.toString();
