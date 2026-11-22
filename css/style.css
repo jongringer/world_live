@@ -717,3 +717,20 @@ body.is-full .chan-switch{
 body.is-full.is-hud .tlay-top{opacity:.95 !important;pointer-events:none !important;}
 body.is-full.is-hud .tlay-ctrl{opacity:1 !important;transform:none !important;pointer-events:auto !important;}
 body.is-full.is-hud .chan-switch{opacity:1 !important;pointer-events:auto !important;}
+
+/* ═══════════════════════════════════════════════════════════════
+   v3 — 전체 스크롤 ‘내 순서’ 타일 컨트롤 (◀ ▶ ⤒)
+   FULL 모드에서는 다른 오버레이처럼 숨고, HUD가 켜졌을 때만 나타납니다.
+   ═══════════════════════════════════════════════════════════════ */
+.tlay-right{display:flex;align-items:center;gap:5px;pointer-events:none;}
+.order-ctl{display:flex;align-items:center;gap:3px;pointer-events:auto;}
+.order-ctl .tbtn.mv{
+  width:23px;height:23px;
+  color:rgba(233,238,246,.82);
+  border-color:rgba(255,255,255,.14);
+  background:rgba(10,14,20,.86);
+}
+.order-ctl .tbtn.mv:hover{color:#fff;border-color:rgba(201,168,106,.62);background:rgba(28,34,44,.95);}
+.grid[data-layout="all"] .chan-tag{max-width:calc(100% - 190px);}
+body.is-full .order-ctl{opacity:0 !important;pointer-events:none !important;transition:opacity .18s;}
+body.is-full.is-hud .order-ctl{opacity:1 !important;pointer-events:auto !important;}

@@ -33,6 +33,7 @@ const state = {
   start: '9',
   sort: 'zone',
   sets: freshSets(),
+  allOrder: [],            // ‘내 순서’ — 전체 스크롤(ALL LIVE) 채널 순서
   custom: [],
   audioId: null,
   muted: true,
@@ -56,6 +57,7 @@ function save() {
   try {
     localStorage.setItem(LS_KEY, JSON.stringify({
       layout: state.layout, start: state.start, sort: state.sort, sets: state.sets,
+      allOrder: state.allOrder,
       custom: state.custom, audioId: state.audioId, muted: state.muted
     }));
   } catch (e) {}
@@ -91,6 +93,7 @@ function applyStored(d) {
   if (LAYOUTS[d.layout]) state.layout = d.layout;
   if (LAYOUTS[d.start]) state.start = d.start;
   if (typeof d.sort === 'string' && SORT_MODES[d.sort]) state.sort = d.sort;
+  if (Array.isArray(d.allOrder)) state.allOrder = d.allOrder.filter(id => typeof id === 'string' && byId(id));
   if (typeof d.audioId === 'string' && byId(d.audioId)) { state.audioId = d.audioId; state.muted = false; }
   else if (typeof d.muted === 'boolean') state.muted = d.muted;
 }
@@ -122,6 +125,7 @@ function allChannels() { return CHANNELS.concat(state.custom); }
 function byId(id) { return CHANNEL_BY_ID[id] || state.custom.find(c => c.id === id) || null; }
 const SORT_MODES = {
   zone:  { label: '지역·국가순', sub: '일본·중국 → 미국 → 유럽 → 중동 → 한국' },
+  custom:{ label: '내 순서', sub: '전체 스크롤에서 ◀ ▶ 로 직접 정렬' },
   name:  { label: '이름순 (A-Z)', sub: '채널명 가나다·알파벳' },
   kr:    { label: '한국 우선', sub: '국내 뉴스를 맨 앞으로' }
 };
@@ -129,7 +133,44 @@ function zoneRank(c) {
   const i = ZONE_ORDER.indexOf((c && c.zone) || 'ASIA');
   return i < 0 ? ZONE_ORDER.length : i;
 }
+/* ‘내 순서’ — 저장된 순서를 먼저 두고, 빠진(새로 추가된) 채널은 뒤에 붙인다 */
+function allOrderIds() {
+  const seen = {};
+  const out = [];
+  state.allOrder.forEach(id => {
+    if (ALL_LIVE_IDS.indexOf(id) < 0 || seen[id]) return;
+    seen[id] = 1; out.push(id);
+  });
+  ALL_LIVE_IDS.forEach(id => { if (!seen[id]) { seen[id] = 1; out.push(id); } });
+  return out;
+}
+function moveAllOrder(id, dir) {
+  const order = allOrderIds();
+  const i = order.indexOf(id);
+  if (i < 0) return;
+  let j = dir === 'first' ? 0 : i + (dir === 'next' ? 1 : -1);
+  j = Math.max(0, Math.min(order.length - 1, j));
+  if (j === i) { toast(dir === 'first' ? '이미 맨 앞입니다' : '더 옮길 수 없습니다'); return; }
+  order.splice(i, 1);
+  order.splice(j, 0, id);
+  state.allOrder = order;
+  state.sort = 'custom';
+  refreshSortUI();
+  save();
+  const ch = byId(id) || {};
+  if (state.layout === 'all') {
+    const top = stage.scrollTop;
+    applyLayout('all');
+    stage.scrollTop = top;
+  } else {
+    renderSources(srcSearch.value);
+    toast('내 순서로 저장 — 전체 스크롤에서 확인하세요');
+    return;
+  }
+  toast('내 순서 — ' + (ch.name || id) + (dir === 'first' ? ' 맨 앞으로' : dir === 'next' ? ' 한 칸 뒤로' : ' 한 칸 앞으로'));
+}
 function sortedIds() {
+  if (state.sort === 'custom') return allOrderIds();
   const ids = ALL_LIVE_IDS.slice();
   const kr = c => c.zone === 'KOREA' ? 0 : 1;
   if (state.sort === 'name') {
@@ -288,7 +329,10 @@ const ICONS = {
   re:'<svg viewBox="0 0 16 16"><g fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><path d="M13.2 6.7A5.3 5.3 0 1 0 13.7 9"/><path d="M13.9 2.9v3.8H10"/></g></svg>',
   warn:'<svg viewBox="0 0 24 24"><path d="M12 3.4L21.2 19.6H2.8z" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/><path d="M12 9v5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><circle cx="12" cy="16.8" r=".9" fill="currentColor"/></svg>',
   link:'<svg viewBox="0 0 16 16"><g fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><path d="M6.6 9.4l2.8-2.8"/><path d="M9.2 4.6l1.2-1.2a2.6 2.6 0 0 1 3.7 3.7l-1.2 1.2"/><path d="M6.8 11.4l-1.2 1.2a2.6 2.6 0 0 1-3.7-3.7l1.2-1.2"/></g></svg>',
-  caret:'<svg viewBox="0 0 12 12" width="10" height="10"><path d="M2.6 4.6L6 8l3.4-3.4" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>'
+  caret:'<svg viewBox="0 0 12 12" width="10" height="10"><path d="M2.6 4.6L6 8l3.4-3.4" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>',
+  left:'<svg viewBox="0 0 16 16"><path d="M10 3.4L5.4 8l4.6 4.6" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  right:'<svg viewBox="0 0 16 16"><path d="M6 3.4L10.6 8 6 12.6" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  top:'<svg viewBox="0 0 16 16"><g fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M8 12.6V4.4M4.4 8L8 4.4 11.6 8"/><path d="M3.4 2.6h9.2"/></g></svg>'
 };
 function esc(s) {
   return String(s == null ? '' : s).replace(/[&<>"']/g, m => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[m]));
@@ -313,7 +357,14 @@ function buildTile(i) {
         <span class="chan-cc">${esc(ch.cc || '')}</span>
       </div>
       ${isAll
-        ? `<button class="chan-switch is-view" data-act="max" title="이 채널 1×1로 크게 보기">${ICONS.max}<span>크게 보기</span></button>`
+        ? `<div class="tlay-right">
+             <div class="order-ctl" role="group" aria-label="이 채널 순서 바꾸기">
+               <button class="tbtn mv" data-act="mv-first" title="맨 앞으로">${ICONS.top}</button>
+               <button class="tbtn mv" data-act="mv-prev" title="앞으로">${ICONS.left}</button>
+               <button class="tbtn mv" data-act="mv-next" title="뒤로">${ICONS.right}</button>
+             </div>
+             <button class="chan-switch is-view" data-act="max" title="이 채널 1×1로 크게 보기">${ICONS.max}<span>크게 보기</span></button>
+           </div>`
         : `<button class="chan-switch" data-act="src" title="이 칸의 채널 변경">${ICONS.src}<span>채널 변경</span>${ICONS.caret}</button>`}
     </div>
     <div class="tile-veil">
@@ -978,6 +1029,9 @@ function bindEvents() {
     const actBtn = e.target.closest('[data-act]');
     const act = actBtn ? actBtn.dataset.act : null;
     if (act === 'src') { openModal(i); return; }
+    if (act === 'mv-prev') { moveAllOrder(slotChannel(i).id, 'prev'); return; }
+    if (act === 'mv-next') { moveAllOrder(slotChannel(i).id, 'next'); return; }
+    if (act === 'mv-first') { moveAllOrder(slotChannel(i).id, 'first'); return; }
     if (act === 'audio') { setAudio(slotChannel(i).id); return; }
     if (act === 'max') { showBig(i); return; }
     if (act === 'pop') { openExternal(i); return; }
