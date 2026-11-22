@@ -1253,8 +1253,10 @@ let hudTimer = null;
 let prevLayout = null;        // FULL(전체화면) 진입 직전에 보던 레이아웃
 let enteredFullByDbl = false; // 이번 전체화면이 분할 화면에서 들어왔는지(ESC → 그 화면)
 let cleanFullEntry = false;   // 전체화면 버튼으로 들어와 HUD 없이 순수 영상으로 시작
+let hudGraceUntil = 0;        // 클린 진입 직후 전환 여파(바가 밀려나며 생기는 mouseleave)로 HUD가 켜지는 것을 막는 시간
 function isFull() { return !!document.fullscreenElement; }function showHud(autoHide) {
   if (!isFull()) return;
+  if (Date.now() < hudGraceUntil) return;
   document.body.classList.add('is-hud');
   clearTimeout(hudTimer);
   if (autoHide !== false) hudTimer = setTimeout(hideHud, 3600);
@@ -1310,9 +1312,11 @@ function showBigChannel(ch, fromDbl, clean) {
   toast((clean ? '전체화면' : '1×1') + ' — ' + ch.name);
   if (!enterFull) return;
   cleanFullEntry = !!clean;   // 전체화면 버튼이면 상하단 바·배지 없이 순수 영상으로 시작
+  if (clean) hudGraceUntil = Date.now() + 1200;
   document.documentElement.requestFullscreen().catch(() => {
     // 전체화면이 막힌 환경: 1×1에 머물지 않고 원래 화면으로 되돌린다
     cleanFullEntry = false;
+    hudGraceUntil = 0;
     if (enteredFullByDbl) {
       enteredFullByDbl = false;
       const back = prevLayout;
@@ -1633,6 +1637,7 @@ function bindEvents() {
       else showHud();
     }
     else { document.body.classList.remove('is-full'); hideHud(); restoreAfterDblFull(); }
+    hudGraceUntil = 0;
     setTimeout(sizeGrid, 60);
   });
 }
