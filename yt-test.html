@@ -12,6 +12,8 @@ pre{white-space:pre-wrap;font-size:11px;margin-top:8px}</style></head>
 <script>
 const p = new URLSearchParams(location.search);
 const chs = (p.get('chs') || '').split(',').filter(Boolean);
+const vids = (p.get('vids') || '').split(',').filter(Boolean);
+chs.forEach(v => vids.push('v:' + v));
 const WAIT = parseInt(p.get('wait') || '12000', 10);
 const results = {};
 const logEl = document.getElementById('log');
@@ -19,18 +21,21 @@ const t0 = Date.now();
 function log(m) { logEl.textContent += m + '\n'; }
 const grid = document.getElementById('grid');
 
-chs.forEach((ch, i) => {
-  const key = ch;
+chs.forEach((raw, i) => {
+  const isVid = raw.slice(0, 2) === 'v:';
+  const ch = isVid ? raw.slice(2) : raw;
+  const key = raw;
   results[key] = { ch: ch, events: [], err: null, state: null, ready: false };
   const cell = document.createElement('div');
   cell.className = 'cell';
   const f = document.createElement('iframe');
   f.allow = 'autoplay; encrypted-media';
   const q = new URLSearchParams({
-    channel: ch, autoplay: '1', mute: '1', controls: '0', rel: '0',
+    autoplay: '1', mute: '1', controls: '0', rel: '0',
     playsinline: '1', enablejsapi: '1', origin: location.origin
   });
-  f.src = 'https://www.youtube.com/embed/live_stream?' + q.toString();
+  if (!isVid) q.set('channel', ch);
+  f.src = 'https://www.youtube.com/embed/' + (isVid ? ch : 'live_stream') + '?' + q.toString();
   const lbl = document.createElement('div');
   lbl.className = 'lbl';
   lbl.textContent = i + ' : ' + ch;
