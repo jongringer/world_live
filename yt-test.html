@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><title>YT embed probe</title>
+<style>body{background:#0b0f16;color:#dfe7f2;font:12px/1.5 monospace;padding:10px;margin:0}
+.grid{display:flex;flex-wrap:wrap;gap:4px}
+.cell{width:300px}
+iframe{width:300px;height:169px;border:1px solid #333;background:#000}
+.lbl{font-size:10px;color:#8fa}
+pre{white-space:pre-wrap;font-size:11px;margin-top:8px}</style></head>
+<body>
+<div class="grid" id="grid"></div>
+<pre id="log"></pre>
+<script>
+const p = new URLSearchParams(location.search);
+const chs = (p.get('chs') || '').split(',').filter(Boolean);
+const WAIT = parseInt(p.get('wait') || '12000', 10);
+const results = {};
+const logEl = document.getElementById('log');
+const t0 = Date.now();
+function log(m) { logEl.textContent += m + '\n'; }
+const grid = document.getElementById('grid');
+
+chs.forEach((ch, i) => {
+  const key = ch;
+  results[key] = { ch: ch, events: [], err: null, state: null, ready: false };
+  const cell = document.createElement('div');
+  cell.className = 'cell';
+  const f = document.createElement('iframe');
+  f.allow = 'autoplay; encrypted-media';
+  const q = new URLSearchParams({
+    channel: ch, autoplay: '1', mute: '1', controls: '0', rel: '0',
+    playsinline: '1', enablejsapi: '1', origin: location.origin
+  });
+  f.src = 'https://www.youtube.com/embed/live_stream?' + q.toString();
+  const lbl = document.createElement('div');
+  lbl.className = 'lbl';
+  lbl.textContent = i + ' : ' + ch;
+  cell.appendChild(lbl); cell.appendChild(f);
+  grid.appendChild(cell);
+  results[key].iframe = f;
+  f.addEventListener('load', () => {
+    setTimeout(() => { try { f.contentWindow.postMessage(JSON.stringify({ event: 'listening', id: 'p' + i, channel: 'widget' }), '*'); } catch (e) {} }, 400);
+    setTimeout(() => { try { f.contentWindow.postMessage(JSON.stringify({ event: 'listening', id: 'p' + i, channel: 'widget' }), '*'); } catch (e) {} }, 1500);
+  });
+});
+
+window.addEventListener('message', (e) => {
+  if (!/youtube(-nocookie)?\.com$/.test(String(e.origin).replace(/^https?:\/\//, ''))) return;
+  let d = e.data;
+  if (typeof d === 'string') { try { d = JSON.parse(d); } catch (x) { return; } }
+  if (!d || !d.id || String(d.id).charAt(0) !== 'p') return;
+  const idx = parseInt(String(d.id).slice(1), 10);
+  const key = chs[idx];
+  if (!key || !results[key]) return;
+  const r = results[key];
+  if (d.event === 'onError') { r.err = d.info && (d.info.data != null ? d.info.data : d.info); r.events.push('onError ' + JSON.stringify(d.info)); }
+  else if (d.event === 'infoDelivery' && d.info) {
+    if (typeof d.info.playerState === 'number') { r.state = d.info.playerState; }
+    if (d.info.videoData) { r.title = d.info.videoData.title; r.videoId = d.info.videoData.video_id; }
+  } else if (d.event === 'onReady') { r.ready = true; }
+  else if (d.event === 'initialDelivery') { r.events.push('initial'); }
+});
+
+setTimeout(() => {
+  const out = chs.map(k => {
+    const r = results[k];
+    return k + ' | ready=' + r.ready + ' state=' + r.state + ' err=' + r.err + ' vid=' + (r.videoId || '-') + ' title=' + (r.title || '-');
+  }).join('\n');
+  log('=== RESULT after ' + Math.round((Date.now() - t0) / 1000) + 's ===\n' + out);
+  document.title = 'DONE';
+}, WAIT);
+</script>
+</body></html>
