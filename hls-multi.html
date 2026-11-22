@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><title>HLS multi probe</title>
+<style>body{background:#0b0f16;color:#dfe7f2;font:11px/1.4 monospace;padding:8px;margin:0}
+.wrap{display:flex;flex-wrap:wrap;gap:6px}
+.cell{width:300px}
+video{width:300px;height:169px;background:#000;display:block}
+.lbl{font-size:10px;color:#8fa;overflow:hidden;white-space:nowrap}
+pre{white-space:pre-wrap;font-size:11px;margin-top:8px}</style></head>
+<body>
+<div class="wrap" id="grid"></div>
+<pre id="log">loading…</pre>
+<script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.17/dist/hls.min.js"></script>
+<script>
+const p = new URLSearchParams(location.search);
+const WAIT = parseInt(p.get('wait') || '22000', 10);
+const raw = p.get('urls') || '';
+const items = raw.split(';;').filter(Boolean).map(s => { const i = s.indexOf('|'); return { name: s.slice(0, i), url: s.slice(i + 1) }; });
+const grid = document.getElementById('grid');
+const res = items.map(it => ({ name: it.name, url: it.url, levels: 0, w: 0, t: 0, err: null, ready: false }));
+const t0 = Date.now();
+
+items.forEach((it, idx) => {
+  const r = res[idx];
+  const cell = document.createElement('div'); cell.className = 'cell';
+  const v = document.createElement('video'); v.muted = true; v.playsInline = true; v.autoplay = true; v.setAttribute('playsinline', '');
+  const l = document.createElement('div'); l.className = 'lbl'; l.textContent = idx + ' · ' + it.name;
+  cell.appendChild(v); cell.appendChild(l); grid.appendChild(cell);
+  r.v = v;
+  const fail = (m) => { r.err = m; };
+  v.addEventListener('playing', () => { r.ready = true; });
+  v.addEventListener('error', () => fail('video-error'));
+  if (window.Hls && Hls.isSupported()) {
+    const hls = new Hls({ lowLatencyMode: false, manifestLoadingMaxRetry: 2, levelLoadingMaxRetry: 2, fragLoadingMaxRetry: 2 });
+    r.hls = hls;
+    hls.on(Hls.Events.MANIFEST_PARSED, (e, d) => { r.levels = d.levels.length; v.play().catch(x => fail('play:' + x.name)); });
+    hls.on(Hls.Events.ERROR, (e, d) => { if (d.fatal) fail(d.type + '/' + d.details + (d.response && d.response.code ? ' http=' + d.response.code : '')); });
+    hls.loadSource(it.url); hls.attachMedia(v);
+  } else { v.src = it.url; v.play().catch(x => fail('native:' + x.name)); }
+});
+
+setInterval(() => {
+  res.forEach(r => { if (r.v) { r.w = r.v.videoWidth; r.t = +r.v.currentTime.toFixed(1); } });
+}, 1000);
+
+setTimeout(() => {
+  const lines = res.map((r, i) => `${i} ${r.name} | play=${r.ready} w=${r.w} t=${r.t} levels=${r.levels} err=${r.err || '-'}`);
+  document.getElementById('log').textContent = '=== HLS RESULT after ' + Math.round((Date.now() - t0) / 1000) + 's ===\n' + lines.join('\n');
+  document.title = 'DONE';
+}, WAIT);
+</script>
+</body></html>
