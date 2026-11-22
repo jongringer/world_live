@@ -224,10 +224,6 @@ const CHANNELS = [
     kind:'web', src:'https://www.livenowfox.com/', status:'external',
     note:'LiveNOW는 자사 사이트에서 24시간 재생되며 YouTube 임베드는 차단되어 있습니다.' },
 
-  { id:'cctv13', name:'CCTV-13 뉴스', short:'C13', country:'중국', cc:'CN', zone:'EXTERNAL',
-    kind:'web', src:'https://tv.cctv.com/live/cctv13/', status:'external',
-    note:'CCTV-13은 중국 공식 웹 플레이어에서만 제공되며 외부 삽입이 차단되어 있습니다.' },
-
   { id:'tvbs', name:'TVBS NEWS', short:'TVBS', country:'대만', cc:'TW', zone:'EXTERNAL',
     kind:'web', src:'https://news.tvbs.com.tw/live', status:'external',
     note:'TVBS는 대만 지역 한정으로 YouTube 라이브가 잠겨 있어 공식 사이트에서 재생합니다.' }

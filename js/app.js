@@ -206,12 +206,9 @@ function chCount() { return slotIds().length; }
 
 /* ── clocks ────────────────────────────────────────────────── */
 const CLOCKS = [
-  { tz:'Asia/Seoul',    label:'SEOUL',  suf:'KST', local:true },
-  { tz:'Asia/Tokyo',    label:'TOKYO',  suf:'JST' },
-  { tz:'Asia/Shanghai', label:'BEIJING',suf:'CST' },
-  { tz:'Europe/London', label:'LONDON', suf:'GMT' },
+  { tz:'Asia/Seoul',       label:'SEOUL',    suf:'KST', local:true },
   { tz:'America/New_York', label:'NEW YORK', suf:'EST' },
-  { tz:'UTC',           label:'UTC',    suf:'UTC' }
+  { tz:'Europe/Paris',     label:'PARIS',    suf:'CET' }
 ];
 function buildClocks() {
   const wrap = $('#clocks');
