@@ -1448,7 +1448,8 @@ function bindEvents() {
     // 전체화면 버튼 = 선택 채널 1×1 + 클린 FULL (ESC → 이전 화면)
     b.addEventListener('click', () => b.dataset.layout === '1' ? showCleanFull() : applyLayout(b.dataset.layout));
   });
-  $('#btn-fullscreen').addEventListener('click', toggleFullscreen);
+  const fullBtn = $('#btn-fullscreen');
+  if (fullBtn) fullBtn.addEventListener('click', toggleFullscreen);
   $('#btn-mute').addEventListener('click', () => {
     // 음소거 = 테두리도 함께 해제 / 켜기 = 첫 칸 채널을 선택해 청취
     if (!state.muted && state.audioId) { clearAudio(); applyAudio(); save(); }
@@ -1624,7 +1625,8 @@ function bindEvents() {
 
   window.addEventListener('resize', () => sizeGrid());
   document.addEventListener('fullscreenchange', () => {
-    $('#btn-fullscreen').classList.toggle('is-active', !!document.fullscreenElement);
+    const fb = $('#btn-fullscreen');
+    if (fb) fb.classList.toggle('is-active', !!document.fullscreenElement);
     if (document.fullscreenElement) {
       document.body.classList.add('is-full');
       if (cleanFullEntry) { cleanFullEntry = false; hideHud(); }   // 전체화면 버튼 = 순수 영상

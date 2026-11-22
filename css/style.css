@@ -555,7 +555,6 @@ svg{display:block;}
   .lb-short{display:inline;}
   .start-btn .lb-txt{display:none;}
   .find-btn span{display:none;}
-  .full-btn .lb-txt{display:none;}
 }
 @media (max-width:1150px){
   .clock:nth-child(3){display:none;}
