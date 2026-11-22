@@ -737,3 +737,8 @@ body.is-full.is-hud .order-ctl{opacity:1 !important;pointer-events:auto !importa
 
 /* 전체 스크롤 타일 — 순서 이동 + 채널 변경 칩이 함께 놓이므로 이름 영역 확보 */
 .grid[data-layout="all"] .chan-tag{max-width:calc(100% - 212px);}
+
+/* 전체 스크롤 — 타일 우상단 컨트롤을 아이콘 위주로 압축해 채널명 가림 방지 */
+.grid[data-layout="all"] .chan-switch span{display:none;}
+.grid[data-layout="all"] .chan-switch{padding:0 6px;}
+.grid[data-layout="all"] .chan-tag{max-width:calc(100% - 148px);}
