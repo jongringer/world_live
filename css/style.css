@@ -1108,39 +1108,42 @@ body.is-full.is-hud .order-ctl { opacity: 1 !important; pointer-events: auto !im
     --gap: 8px;
   }
 
-  /* 1. 상단 바: 상태표시줄(시간, 배터리) 침범 방지 Safe Area 패딩 */
+  /* 1. 상단 바: 상태표시줄(시간, 배터리) 침범 방지 Safe Area 패딩 & 360px 무넘침 보장 */
   .topbar {
     height: var(--topbar-h) !important;
     flex: 0 0 var(--topbar-h) !important;
     padding-top: var(--sat) !important;
-    padding-left: max(var(--sal), 12px) !important;
-    padding-right: max(var(--sar), 12px) !important;
+    padding-left: max(var(--sal), 8px) !important;
+    padding-right: max(var(--sar), 8px) !important;
     padding-bottom: 0 !important;
-    gap: 8px !important;
+    gap: 5px !important;
     align-items: center !important;
+    justify-content: space-between !important;
   }
 
-  .brand { gap: 8px; }
-  .brand-name { font-size: 14px; letter-spacing: 0.04em; }
+  .brand { gap: 5px; cursor: pointer !important; min-width: 0; }
+  .brand-name { font-size: 13px; letter-spacing: 0.02em; white-space: nowrap; }
   .brand-sub { display: none; }
-  .brand-mark { width: 36px; height: 36px; }
+  .brand-mark { width: 32px; height: 32px; }
 
-  /* 모바일 상단 바 컨트롤: 4분할 / 9분할 / 전체 원클릭 스위처 */
-  .clocks, .sort-wrap, .nav-sep { display: none !important; }
+  /* 모바일 상단 바 컨트롤: 홈(로고) / 9분할 / 4분할 / 전체 스위처 상시 고정 */
+  .clocks, .sort-wrap, .nav-sep, .start-wrap, #btn-apk { display: none !important; }
   .layouts {
     display: inline-flex !important;
-    gap: 3px !important;
+    gap: 2px !important;
     padding: 2px !important;
-    background: rgba(255, 255, 255, 0.05) !important;
-    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    background: rgba(255, 255, 255, 0.06) !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
     border-radius: 6px !important;
+    flex-shrink: 0 !important;
   }
   .layout-btn {
     height: 28px !important;
-    padding: 0 8px !important;
+    padding: 0 7px !important;
     font-size: 11px !important;
     font-weight: 600 !important;
     border-radius: 4px !important;
+    white-space: nowrap !important;
   }
   .layout-btn svg,
   .layout-btn .lb-dim,
@@ -1153,11 +1156,15 @@ body.is-full.is-hud .order-ctl { opacity: 1 !important; pointer-events: auto !im
     font-size: 11px !important;
   }
 
-  .find-btn { height: 30px; padding: 0 7px; font-size: 10.5px; }
+  .actions { gap: 4px !important; flex-shrink: 0 !important; }
+  .find-btn { height: 28px; padding: 0 7px; font-size: 11px; }
   .find-btn span { display: none; }
-  .start-wrap { display: none !important; }
-  .icon-btn { width: 30px; height: 30px; }
-  .icon-btn { width: 32px; height: 32px; }
+  .icon-btn { width: 28px; height: 28px; }
+  @media (max-width: 460px) {
+    .brand-name { display: none !important; }
+    .topbar { padding-left: max(var(--sal), 6px) !important; padding-right: max(var(--sar), 6px) !important; gap: 4px !important; }
+    .layout-btn { padding: 0 6px !important; font-size: 10.5px !important; }
+  }
 
   /* 2. 하단 시그널 스트립: 제스처 내비게이션 바 Safe Area 확보 */
   .signal-strip {
@@ -1245,20 +1252,20 @@ body.is-full.is-hud .order-ctl { opacity: 1 !important; pointer-events: auto !im
 
   .grid .tile .tlay-top {
     position: absolute !important;
-    top: 4px !important;
-    left: 4px !important;
-    right: 4px !important;
+    top: 6px !important;
+    left: 6px !important;
+    right: 6px !important;
     display: flex !important;
     justify-content: space-between !important;
     align-items: center !important;
     pointer-events: none !important;
-    z-index: 2 !important;
+    z-index: 10 !important; /* .tile-hit 위에 배치해 채널 변경 버튼 터치 100% 보장 */
   }
 
   .grid .tile .chan-tag {
-    max-width: 88% !important;
-    padding: 2px 5px !important;
-    background: rgba(8, 12, 18, 0.82) !important;
+    max-width: calc(100% - 92px) !important;
+    padding: 3px 7px !important;
+    background: rgba(8, 12, 18, 0.84) !important;
     backdrop-filter: blur(6px) !important;
     border: 1px solid rgba(255, 255, 255, 0.14) !important;
     border-radius: 4px !important;
@@ -1280,8 +1287,31 @@ body.is-full.is-hud .order-ctl { opacity: 1 !important; pointer-events: auto !im
     font-size: 7px !important;
   }
 
+  /* 7. 각 분할 타일 상단 우측 소스 변경 버튼 상시 노출 */
   .grid .tile .chan-switch {
-    display: none !important; /* 모바일 타일 내부 채널변경 버튼 숨김 */
+    display: inline-flex !important;
+    pointer-events: auto !important;
+    height: 24px !important;
+    padding: 0 7px 0 6px !important;
+    font-size: 10px !important;
+    background: rgba(13, 18, 27, 0.88) !important;
+    backdrop-filter: blur(8px) !important;
+    border: 1px solid rgba(212, 175, 55, 0.6) !important;
+    border-radius: 4px !important;
+    color: var(--gold-hi) !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.7) !important;
+    align-items: center !important;
+    gap: 4px !important;
+    opacity: 1 !important;
+  }
+  .grid .tile .chan-switch span {
+    display: inline !important;
+    font-size: 9.5px !important;
+    font-weight: 600 !important;
+  }
+  .grid .tile .chan-switch svg {
+    width: 10px !important;
+    height: 10px !important;
   }
 
   /* 미니멀 베일 (신호 없음 오버레이) */
@@ -1321,7 +1351,9 @@ body.is-full.is-hud .order-ctl { opacity: 1 !important; pointer-events: auto !im
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
+    width: 100vw !important;
     height: 100vh !important;
+    background: #000 !important;
   }
   body.is-mobile-full .grid[data-layout="1"] {
     display: flex !important;
@@ -1329,16 +1361,53 @@ body.is-full.is-hud .order-ctl { opacity: 1 !important; pointer-events: auto !im
     height: 100vh !important;
     align-items: center !important;
     justify-content: center !important;
+    padding: 0 !important;
+    margin: 0 !important;
   }
-  body.is-mobile-full .grid[data-layout="1"] .tile {
-    width: 100vh !important;
-    height: 100vw !important;
+  body.is-mobile-full:not(.is-native-full) .grid[data-layout="1"] .tile {
+    width: min(100vh, calc(100vw * 16 / 9)) !important;
+    height: min(100vw, calc(100vh * 9 / 16)) !important;
     transform: rotate(90deg);
     transform-origin: center center;
     border-radius: 0 !important;
+    border: 0 !important;
   }
   body.is-mobile-full .topbar,
   body.is-mobile-full .signal-strip {
     display: none !important;
   }
+}
+
+/* APK 네이티브 가로(16:9 LANDSCAPE) 풀스크린 전역 스타일 */
+body.is-native-full .topbar,
+body.is-native-full .signal-strip {
+  display: none !important;
+}
+body.is-native-full .stage {
+  padding: 0 !important;
+  margin: 0 !important;
+  overflow: hidden !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  background: #000 !important;
+}
+body.is-native-full .grid[data-layout="1"] {
+  display: flex !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+body.is-native-full .grid[data-layout="1"] .tile {
+  width: min(100vw, calc(100vh * 16 / 9)) !important;
+  height: min(100vh, calc(100vw * 9 / 16)) !important;
+  aspect-ratio: 16 / 9 !important;
+  border-radius: 0 !important;
+  border: 0 !important;
+  transform: none !important;
 }

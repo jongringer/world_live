@@ -1352,18 +1352,38 @@ function showCleanFull() {
 }
 function showBigChannel(ch, fromDbl, clean) {
   if (!ch) return;
+  const nativeApp = typeof window.AndroidNative !== 'undefined';
+  const mobileMode = nativeApp || isPortrait();
   const enterFull = !!fromDbl && !document.fullscreenElement;
-  // 분할 화면에서 들어왔으면 ‘들어가기 전 화면’을 기억해 ESC로 돌아온다
-  if (fromDbl && state.layout !== '1') { prevLayout = state.layout; enteredFullByDbl = true; }
+  // 분할 화면에서 들어왔으면 ‘들어가기 전 화면’을 기억해 뒤로가기/ESC로 돌아온다
+  if (state.layout !== '1') { prevLayout = state.layout; enteredFullByDbl = true; }
   state.sets['1'] = [ch.id];
   save();
   applyLayout('1');
-  document.body.classList.add('is-mobile-full');
-  try {
-    if (screen.orientation && screen.orientation.lock) {
-      screen.orientation.lock('landscape').catch(() => {});
+
+  if (nativeApp) {
+    document.body.classList.add('is-mobile-full', 'is-native-full');
+    try { window.AndroidNative.enterFullscreen(); } catch (e) {}
+    toast('16:9 전체화면 — ' + ch.name + ' (뒤로가기 → 복귀)');
+    return;
+  }
+
+  if (mobileMode) {
+    document.body.classList.add('is-mobile-full');
+    try { history.pushState({ fullView: true }, ''); } catch (e) {}
+    try {
+      if (screen.orientation && screen.orientation.lock) {
+        screen.orientation.lock('landscape').catch(() => {});
+      }
+    } catch (e) {}
+    toast('16:9 전체화면 — ' + ch.name + ' (뒤로가기 → 복귀)');
+    if (enterFull) {
+      document.documentElement.requestFullscreen().catch(() => {});
     }
-  } catch (e) {}
+    return;
+  }
+
+  // 데스크톱 웹 기존 동작 100% 유지
   toast((clean ? '전체화면' : '1×1') + ' — ' + ch.name);
   if (!enterFull) return;
   cleanFullEntry = !!clean;   // 전체화면 버튼이면 상하단 바·배지 없이 순수 영상으로 시작
@@ -1381,9 +1401,14 @@ function showBigChannel(ch, fromDbl, clean) {
     toast('이 브라우저에서는 전체화면을 쓸 수 없습니다');
   });
 }
-/* ESC(전체화면 종료) → 분할 화면에서 들어왔을 때만 이전 레이아웃으로 복귀 */
+/* ESC / 뒤로가기 → 분할 화면에서 들어왔을 때 이전 레이아웃(없으면 홈 9분할)으로 복귀 */
 function restoreAfterDblFull() {
-  document.body.classList.remove('is-mobile-full');
+  document.body.classList.remove('is-mobile-full', 'is-native-full');
+  try {
+    if (window.AndroidNative && window.AndroidNative.exitFullscreen) {
+      window.AndroidNative.exitFullscreen();
+    }
+  } catch (e) {}
   try {
     if (screen.orientation && screen.orientation.unlock) {
       screen.orientation.unlock();
@@ -1392,11 +1417,10 @@ function restoreAfterDblFull() {
   if (document.fullscreenElement) {
     document.exitFullscreen().catch(() => {});
   }
-  if (!enteredFullByDbl) return;
+  const back = (prevLayout && prevLayout !== '1' && LAYOUTS[prevLayout]) ? prevLayout : '9';
   enteredFullByDbl = false;
-  const back = prevLayout;
   prevLayout = null;
-  if (!back || back === '1' || !LAYOUTS[back] || state.layout !== '1') return;
+  if (state.layout !== '1') return;
   applyLayout(back);
   toast('이전 화면으로 복귀 — ' + (START_NAMES[back] || back));
 }
@@ -1428,7 +1452,8 @@ function endDragListeners() {
 }
 function onTilePointerDown(e) {
   if (drag) return;
-  if (e.button != null && e.button !== 0) return;              // 좌클릭·터치만
+  if (e.pointerType === 'touch') return;                       // 터치는 전용 롱프레스 핸들러가 처리
+  if (e.button != null && e.button !== 0) return;              // 좌클릭만
   const hit = e.target.closest ? e.target.closest('.tile-hit') : null;
   if (!hit) return;
   const tile = hit.closest('.tile');
@@ -1607,10 +1632,19 @@ function bindEvents() {
   /* ── Mobile Touch Gestures: Double Tap & Pinch-Out/In ────────────────
      9:16 모바일/세로 화면에서 더블 탭 또는 핀치 아웃 시 풀화면 회전 확대,
      풀화면에서 더블 탭 또는 핀치 인 시 이전 4분할 스크롤 복귀 */
+  /* ── Mobile Touch Gestures: Double Tap, Pinch-Out/In & Long-Press Drag-to-Swap ──
+     1) 더블 탭 / 핀치 아웃: 16:9 가로 풀화면 회전 확대
+     2) 뒤로가기 / 더블 탭 / 핀치 인: 이전 분할 화면 복귀
+     3) 롱프레스(꾹 누르기 320ms): 손으로 눌러 소스 자리 바꾸기 (드래그 스왑) */
   let lastTouchTime = 0;
   let lastTouchSlot = -1;
   let pinchStartDist = 0;
   let pinchTile = null;
+
+  let touchStartPos = { x: 0, y: 0 };
+  let longPressTimer = null;
+  let touchDragSlot = -1;
+  let isTouchDragging = false;
 
   function touchDist(t1, t2) {
     const dx = t1.clientX - t2.clientX;
@@ -1619,28 +1653,52 @@ function bindEvents() {
   }
 
   grid.addEventListener('touchstart', e => {
+    // 2-finger pinch
     if (e.touches.length === 2) {
+      if (longPressTimer) { clearTimeout(longPressTimer); longPressTimer = null; }
+      if (isTouchDragging) { clearDragVisuals(); isTouchDragging = false; touchDragSlot = -1; }
       pinchStartDist = touchDist(e.touches[0], e.touches[1]);
       pinchTile = e.target.closest('.tile');
       return;
     }
+    // 1-finger: Double Tap or Long Press Drag
     if (e.touches.length === 1) {
-      const now = Date.now();
+      // 채널 변경 등 버튼 위 터치는 제스처/롱프레스 제외 (버튼 클릭 즉시 동작 보장)
+      if (e.target.closest('button, a, [data-act]')) return;
+      const touch = e.touches[0];
+      touchStartPos = { x: touch.clientX, y: touch.clientY };
       const t = e.target.closest('.tile');
-      if (t) {
-        const slot = parseInt(t.dataset.slot, 10);
-        if (now - lastTouchTime < 320 && lastTouchSlot === slot) {
-          e.preventDefault();
-          lastTouchTime = 0;
-          if (state.layout === '1') {
-            restoreAfterDblFull();
-          } else {
-            showBig(slot, true);
-          }
-          return;
+      if (!t) return;
+      const slot = parseInt(t.dataset.slot, 10);
+      const now = Date.now();
+
+      // 더블 탭 검사 (320ms)
+      if (now - lastTouchTime < 320 && lastTouchSlot === slot) {
+        if (longPressTimer) { clearTimeout(longPressTimer); longPressTimer = null; }
+        e.preventDefault();
+        lastTouchTime = 0;
+        if (state.layout === '1') {
+          restoreAfterDblFull();
+        } else {
+          showBig(slot, true);
         }
-        lastTouchTime = now;
-        lastTouchSlot = slot;
+        return;
+      }
+      lastTouchTime = now;
+      lastTouchSlot = slot;
+
+      // 롱프레스 (320ms 꾹 누르면 손으로 소스 위치 이동 활성화)
+      if (state.layout !== '1' && chCount() >= 2) {
+        if (longPressTimer) clearTimeout(longPressTimer);
+        longPressTimer = setTimeout(() => {
+          longPressTimer = null;
+          isTouchDragging = true;
+          touchDragSlot = slot;
+          t.classList.add('is-dragging');
+          document.body.classList.add('is-swapping');
+          if (navigator.vibrate) navigator.vibrate(60);
+          toast('채널 이동: 원하는 칸으로 끌어다 놓으세요');
+        }, 320);
       }
     }
   }, { passive: false });
@@ -1659,15 +1717,116 @@ function bindEvents() {
         pinchTile = null;
         restoreAfterDblFull();
       }
+      return;
     }
-  }, { passive: true });
+
+    if (e.touches.length === 1) {
+      const touch = e.touches[0];
+      const dx = touch.clientX - touchStartPos.x;
+      const dy = touch.clientY - touchStartPos.y;
+
+      // 아직 롱프레스 발동 전인데 손가락을 10px 이상 움직이면 -> 스크롤로 간주하여 롱프레스 취소
+      if (longPressTimer && Math.sqrt(dx * dx + dy * dy) > 10) {
+        clearTimeout(longPressTimer);
+        longPressTimer = null;
+      }
+
+      // 롱프레스 드래그가 활성화된 상태: 화면 스크롤을 막고 타겟 타일 하이라이트
+      if (isTouchDragging && touchDragSlot >= 0) {
+        e.preventDefault();
+        const to = tileUnder(touch.clientX, touch.clientY);
+        grid.querySelectorAll('.tile').forEach(el => {
+          const i = parseInt(el.dataset.slot, 10);
+          el.classList.toggle('is-drop-target', i === to && i !== touchDragSlot);
+        });
+      }
+    }
+  }, { passive: false });
 
   grid.addEventListener('touchend', e => {
+    if (longPressTimer) {
+      clearTimeout(longPressTimer);
+      longPressTimer = null;
+    }
     if (e.touches.length < 2) {
       pinchStartDist = 0;
       pinchTile = null;
     }
-  }, { passive: true });
+    if (isTouchDragging && touchDragSlot >= 0) {
+      const touch = e.changedTouches[0];
+      const to = tileUnder(touch.clientX, touch.clientY);
+      const fromSlot = touchDragSlot;
+      isTouchDragging = false;
+      touchDragSlot = -1;
+      clearDragVisuals();
+      suppressClickUntil = Date.now() + 450;
+      if (to >= 0 && to !== fromSlot) {
+        if (navigator.vibrate) navigator.vibrate([40, 50, 40]);
+        swapSlots(fromSlot, to);
+      }
+    }
+  }, { passive: false });
+
+  grid.addEventListener('touchcancel', () => {
+    if (longPressTimer) { clearTimeout(longPressTimer); longPressTimer = null; }
+    if (isTouchDragging) { clearDragVisuals(); isTouchDragging = false; touchDragSlot = -1; }
+    pinchStartDist = 0;
+    pinchTile = null;
+  });
+
+  // 로고 클릭 시 홈 화면(9분할)으로 즉시 복귀
+  const brand = $('.brand');
+  if (brand) {
+    brand.addEventListener('click', () => {
+      applyLayout('9');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      toast('홈 화면 (9분할)');
+    });
+  }
+
+  // ── 안드로이드 뒤로가기(Back Button) & 웹 브라우저 백 제스처 전역 핸들러 ──
+  let lastBackExitAt = 0;
+  window.handleAndroidBack = function() {
+    // 1. 채널 미리보기 모달 열려 있으면 닫기
+    const pv = $('#preview-root');
+    if (pv && !pv.hidden) { closePreview(true); return true; }
+
+    // 2. 소스 패치 베이 모달 열려 있으면 닫기
+    const sm = $('#modal-root');
+    if (sm && !sm.hidden) { closeModal(); return true; }
+
+    // 3. APK 모달 열려 있으면 닫기
+    const am = $('#apk-modal-root');
+    if (am && !am.hidden) { am.hidden = true; return true; }
+
+    // 4. 풀화면 (1x1 또는 FULL 모드) 상태이면 -> 직전 분할 화면으로 즉시 복귀!
+    if (state.layout === '1' || document.body.classList.contains('is-mobile-full') || isFull()) {
+      restoreAfterDblFull();
+      return true; // 뒤로가기 처리 완료 (앱 종료 방지!)
+    }
+
+    // 5. 4분할/6분할/전체 스크롤 상태이면 -> 기본 홈 화면(9분할)으로 복귀!
+    if (state.layout !== '9') {
+      applyLayout('9');
+      stage.scrollTop = 0;
+      toast('홈 화면 (9분할) 복귀');
+      return true; // 홈으로 복귀 완료
+    }
+
+    // 6. 이미 홈 화면(9분할) 상태: 2초 내 두 번 누르면 앱 종료 (실수 종료 방지)
+    const now = Date.now();
+    if (now - lastBackExitAt < 2000) {
+      return false; // 네이티브 앱 종료 허용
+    }
+    lastBackExitAt = now;
+    toast('한 번 더 누르면 앱이 종료됩니다');
+    return true;
+  };
+
+  // 브라우저 팝스테이트(뒤로가기 제스처) 연동
+  window.addEventListener('popstate', () => {
+    window.handleAndroidBack();
+  });
 
   // FULL 모드 HUD — 클릭 토글 + 상·하단 핫존 + 자동 숨김
   grid.addEventListener('mousemove', e => {
