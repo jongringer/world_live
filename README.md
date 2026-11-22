@@ -94,7 +94,7 @@
 
 ## KOREA · 국내 뉴스 (3사만 유지)
 
-- **KBS NEWS 24** (`zGFBJL_fhUU`) · **YTN 24시간 라이브** (`aZyD6EPl6KU`) · **연합뉴스TV 라이브** (`6QZ_qc75ihU`) — 24시간 고정 라이브, 클릭 없이 즉시 자동재생.
+- **KBS NEWS 24** (`nfnWxzTVJA4`, 2026-11-23 교체 · 이전 `zGFBJL_fhUU`는 재생 불가) · **YTN 24시간 라이브** (`aZyD6EPl6KU`) · **연합뉴스TV 라이브** (`6QZ_qc75ihU`) — 24시간 고정 라이브, 클릭 없이 즉시 자동재생.
 - MBC·SBS·JTBC·MBN·채널A·TV조선·아리랑 TV·TBS는 카탈로그에서 제거했습니다. 저장된 옛 배치에 그 ID가 남아 있으면 불러올 때 걸러지고 기본 채널로 대체됩니다(`localStorage` `worldlive.v3` 마이그레이션).
 
 ## HLS 소스 + 백업 자동 전환 (v3)

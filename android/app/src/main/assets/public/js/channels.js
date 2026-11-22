@@ -195,7 +195,7 @@ const CHANNELS = [
 
   /* ── KOREA (국내 뉴스 · 지역순에서는 맨 뒤, ‘한국 우선’ 정렬에서 맨 앞) ── */
   { id:'kbs24', name:'KBS NEWS 24', short:'KBS', country:'한국', cc:'KR', zone:'KOREA',
-    kind:'youtube-video', src:'zGFBJL_fhUU', status:'live' },
+    kind:'youtube-video', src:'nfnWxzTVJA4', status:'live' },
 
   { id:'ytn24', name:'YTN 24시간 라이브', short:'YTN', country:'한국', cc:'KR', zone:'KOREA',
     kind:'youtube-video', src:'aZyD6EPl6KU', status:'live' },
