@@ -1636,8 +1636,7 @@ function bindEvents() {
       if (cleanFullEntry) { cleanFullEntry = false; hideHud(); }   // 전체화면 버튼 = 순수 영상
       else showHud();
     }
-    else { document.body.classList.remove('is-full'); hideHud(); restoreAfterDblFull(); }
-    hudGraceUntil = 0;
+    else { document.body.classList.remove('is-full'); hideHud(); restoreAfterDblFull(); hudGraceUntil = 0; }
     setTimeout(sizeGrid, 60);
   });
 }
