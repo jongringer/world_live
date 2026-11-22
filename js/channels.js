@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════
-   WORLD LIVE — CHANNEL CATALOG  (v2 · 2026-11-22 KST)
+   WORLD LIVE — CHANNEL CATALOG  (v3 · 2026-11-22 KST)
    모든 소스는 이 페이지(https://jongringer.github.io/world_live/)에서
    실제로 iframe/HLS 재생이 되는지 브라우저로 확인한 것만 수록했습니다.
    kind: 'hls'      = .m3u8 (hls.js · CORS 확인) — 클릭 없이 즉시 재생
@@ -9,7 +9,11 @@
    status: 'live'     = 24시간 상시 송출 (검증)
            'event'    = 뉴스 편성·속보 때만 라이브 (평소 OFFLINE)
            'external' = 페이지 내 재생 불가 → 공식 링크
+   backup: .m3u8 백업 주소 — 1차 주소가 치명적 오류를 내면 자동 전환
    alt: true  = 같은 채널의 대체 소스(소스 선택 목록에만 표시)
+
+   지역 순서(지역·국가순 정렬 기준) =
+     KOREA → AMERICAS → EUROPE → MIDDLE EAST → ASIA → OCEANIA → AFRICA → EXTERNAL
    ═══════════════════════════════════════════════════════════════ */
 
 const CHANNELS = [
@@ -23,97 +27,24 @@ const CHANNELS = [
   { id:'yonhap24', name:'연합뉴스TV 라이브', short:'YTV', country:'한국', cc:'KR', zone:'KOREA',
     kind:'youtube-video', src:'6QZ_qc75ihU', status:'live' },
 
-  { id:'ytn', name:'YTN · 채널', short:'YTN', country:'한국', cc:'KR', zone:'KOREA',
-    kind:'youtube', src:'UChlgI3UHCOnwUGzWzbJ3H5w', status:'event', alt:true,
-    note:'YTN 채널 라이브 자동 추적 — 속보·편성 시간대 송출(평소 OFFLINE).' },
-
-  { id:'yonhap', name:'연합뉴스TV · 채널', short:'YTV', country:'한국', cc:'KR', zone:'KOREA',
-    kind:'youtube', src:'UCTHCOPwqNfZ0uiKOvFyhGwg', status:'event', alt:true,
-    note:'연합뉴스TV 채널 라이브 자동 추적 — 편성 시간대 송출(평소 OFFLINE).' },
-
-  { id:'mbc', name:'MBC NEWS', short:'MBC', country:'한국', cc:'KR', zone:'KOREA',
-    kind:'youtube', src:'UCF4Wxdo3inmxP-Y59wXDsFw', status:'event',
-    note:'MBC 뉴스 — 뉴스 편성 시간대에 라이브 송출(현재 오프라인).' },
-
-  { id:'sbs', name:'SBS 뉴스', short:'SBS', country:'한국', cc:'KR', zone:'KOREA',
-    kind:'youtube', src:'UCkinYTS9IHqOEwR1Sze2JTw', status:'event',
-    note:'SBS 뉴스 — 뉴스 편성 시간대에 라이브 송출(현재 오프라인).' },
-
-  { id:'jtbc', name:'JTBC NEWS', short:'JTBC', country:'한국', cc:'KR', zone:'KOREA',
-    kind:'youtube', src:'UCsU-I-vHLiaMfV_ceaYz5rQ', status:'event',
-    note:'JTBC 뉴스룸 등 편성 시간대에 라이브 송출(현재 오프라인).' },
-
-  { id:'mbn', name:'MBN News', short:'MBN', country:'한국', cc:'KR', zone:'KOREA',
-    kind:'youtube', src:'UCG9aFJTZ-lMCHAiO1KJsirg', status:'event',
-    note:'MBN — 편성 시간대에 라이브 송출(현재 오프라인).' },
-
-  { id:'channela', name:'채널A', short:'CHA', country:'한국', cc:'KR', zone:'KOREA',
-    kind:'youtube', src:'UCfq4V1DAuaojnr2ryvWNysw', status:'event',
-    note:'채널A — 편성 시간대에 라이브 송출(현재 오프라인).' },
-
-  { id:'tvchosun', name:'TV CHOSUN', short:'TVC', country:'한국', cc:'KR', zone:'KOREA',
-    kind:'youtube', src:'UCuw1hxBo5mDVUhgMzRDk3aw', status:'event',
-    note:'TV조선 — 편성 시간대에 라이브 송출(현재 오프라인).' },
-
-  { id:'arirang', name:'아리랑 TV (ARIRANG)', short:'ARI', country:'한국', cc:'KR', zone:'KOREA',
-    kind:'hls', src:'https://amdlive-ch01-ctnd-com.akamaized.net/arirang_1ch/smil:arirang_1ch.smil/playlist.m3u8', status:'live' },
-
-  { id:'tbs', name:'TBS 서울', short:'TBS', country:'한국', cc:'KR', zone:'KOREA',
-    kind:'hls', src:'https://cdntv.tbs.seoul.kr/tbs/tbs_tv_web.smil/playlist.m3u8', status:'live' },
-
-  /* ── ASIA / PACIFIC ─────────────────────────────────────────── */
-  { id:'nhk', name:'NHK WORLD-JAPAN', short:'NHK', country:'일본', cc:'JP', zone:'ASIA',
-    kind:'youtube', src:'UCSPEjw8F2nQDtmUKPFNF7_A', status:'live' },
-
-  { id:'nhk_hls', name:'NHK WORLD-JAPAN · HLS', short:'NHK', country:'일본', cc:'JP', zone:'ASIA',
-    kind:'hls', src:'https://cdn.pishow.tv/ott/live/455/master.m3u8', status:'live', alt:true },
-
-  { id:'cna', name:'CNA', short:'CNA', country:'싱가포르', cc:'SG', zone:'ASIA',
-    kind:'youtube', src:'UC83jt4dlz1Gjl58fzQrrKZg', status:'live' },
-
-  { id:'cna_hls', name:'CNA · HLS', short:'CNA', country:'싱가포르', cc:'SG', zone:'ASIA',
-    kind:'hls', src:'https://d2e1asnsl7br7b.cloudfront.net/7782e205e72f43aeb4a48ec97f66ebbe/index.m3u8', status:'live', alt:true },
-
-  { id:'cgtn', name:'CGTN', short:'CGTN', country:'중국', cc:'CN', zone:'ASIA',
-    kind:'hls', src:'https://amg00405-rakutentv-cgtn-rakuten-i9tar.amagi.tv/master.m3u8', status:'live' },
-
-  { id:'ndtv', name:'NDTV 24x7', short:'NDTV', country:'인도', cc:'IN', zone:'ASIA',
-    kind:'hls', src:'https://web-ndtv24x7-uk.akamaized.net/hls/live/2109290/ndtv24x7uk/master.m3u8', status:'live' },
-
-  { id:'indiatoday', name:'INDIA TODAY', short:'IT', country:'인도', cc:'IN', zone:'ASIA',
-    kind:'hls', src:'https://d2lk5u59tns74c.cloudfront.net/out/v1/d4435039c7d1433d9b9d0b6cdc9dd4ff/index.m3u8', status:'live' },
-
-  { id:'abp', name:'ABP NEWS', short:'ABP', country:'인도', cc:'IN', zone:'ASIA',
-    kind:'hls', src:'https://abpmitv.akamaized.net/hls/live/2042842/abpnews/master.m3u8', status:'live' },
-
-  { id:'aajtak', name:'AAJ TAK', short:'AT', country:'인도', cc:'IN', zone:'ASIA',
-    kind:'hls', src:'https://feeds.intoday.in/aajtak/api/aajtakhd/master.m3u8', status:'live' },
-
-  { id:'ddnews', name:'DD NEWS', short:'DD', country:'인도', cc:'IN', zone:'ASIA',
-    kind:'hls', src:'https://mumbai-edge.smartplaytv.in/DDNews/index.m3u8', status:'live' },
-
-  { id:'metrotv', name:'METRO TV', short:'METRO', country:'인도네시아', cc:'ID', zone:'ASIA',
-    kind:'hls', src:'https://edge.medcom.id/live-edge/smil:metro.smil/playlist.m3u8', status:'live' },
-
-  { id:'nationtv', name:'NATION TV', short:'NATION', country:'태국', cc:'TH', zone:'ASIA',
-    kind:'hls', src:'https://live-us1.thaimomo.com/live-as/chNation-3/playlist.m3u8', status:'live' },
-
-  /* ── OCEANIA ────────────────────────────────────────────────── */
-  { id:'abcau', name:'ABC NEWS (AUSTRALIA)', short:'ABC', country:'호주', cc:'AU', zone:'OCEANIA',
-    kind:'youtube', src:'UCVgO39Bk5sMo66-6o6Spn6Q', status:'live' },
-
-  { id:'skyau', name:'SKY NEWS AUSTRALIA', short:'SKY', country:'호주', cc:'AU', zone:'OCEANIA',
-    kind:'hls', src:'https://skynewsau-live.akamaized.net/hls/live/2002691/skynewsau-extra3/master.m3u8', status:'live' },
-
   /* ── AMERICAS ───────────────────────────────────────────────── */
-  { id:'cnn', name:'CNN INTERNATIONAL', short:'CNN', country:'미국', cc:'US', zone:'AMERICAS',
-    kind:'hls', src:'https://d3bp6dwmpbdajl.cloudfront.net/v1/master/3722c60a815c199d9c0ef36c5b73da68a62b09d1/cc-ury0meh5m4nzm/index.m3u8', status:'live' },
-
-  { id:'cnn_fast', name:'CNN FAST · GB', short:'CNN', country:'미국', cc:'US', zone:'AMERICAS',
-    kind:'hls', src:'https://d2sybdl23b9psq.cloudfront.net/v1/master/3722c60a815c199d9c0ef36c5b73da68a62b09d1/cc-bocx3i7bjz0dg/CNNFAST_GB.m3u8', status:'live', alt:true },
+  { id:'cnn_fast', name:'CNN FAST', short:'CNN', country:'미국', cc:'US', zone:'AMERICAS',
+    kind:'hls',
+    src:'https://d3hnx79nr9mhdw.cloudfront.net/v1/master/3722c60a815c199d9c0ef36c5b73da68a62b09d1/cc-1u2levt4fksmr/CNNFAST_GB.m3u8',
+    backup:'https://d2sybdl23b9psq.cloudfront.net/v1/master/3722c60a815c199d9c0ef36c5b73da68a62b09d1/cc-bocx3i7bjz0dg/CNNFAST_GB.m3u8',
+    status:'live' },
 
   { id:'abc', name:'ABC NEWS LIVE', short:'ABC', country:'미국', cc:'US', zone:'AMERICAS',
-    kind:'youtube', src:'UCBi2mrWuNuyYy4gbM6fU18Q', status:'live' },
+    kind:'hls',
+    src:'https://abc-news-dmd-streams-1.akamaized.net/out/v1/701126012d044971b3fa89406a440133/index_6.m3u8',
+    backup:'https://abc-news-dmd-streams-1.akamaized.net/out/v1/701126012d044971b3fa89406a440133/index.m3u8',
+    status:'live' },
+
+  { id:'abc_yt', name:'ABC NEWS LIVE · YouTube', short:'ABC', country:'미국', cc:'US', zone:'AMERICAS',
+    kind:'youtube', src:'UCBi2mrWuNuyYy4gbM6fU18Q', status:'live', alt:true },
+
+  { id:'cnn', name:'CNN INTERNATIONAL', short:'CNN', country:'미국', cc:'US', zone:'AMERICAS',
+    kind:'hls', src:'https://d3bp6dwmpbdajl.cloudfront.net/v1/master/3722c60a815c199d9c0ef36c5b73da68a62b09d1/cc-ury0meh5m4nzm/index.m3u8', status:'live' },
 
   { id:'nbc', name:'NBC NEWS NOW', short:'NBC', country:'미국', cc:'US', zone:'AMERICAS',
     kind:'youtube', src:'UCeY0bbntWzzVIaj2z3QigXg', status:'live' },
@@ -127,27 +58,40 @@ const CHANNELS = [
   { id:'scripps', name:'SCRIPPS NEWS', short:'SCR', country:'미국', cc:'US', zone:'AMERICAS',
     kind:'hls', src:'https://aka-live1050.delivery.roku.com/a48b72c9-5755-4ede-9dac-9e51e4ca5cc8/t2-origin/out/v1/live.m3u8', status:'live' },
 
-  { id:'reuters', name:'REUTERS TV', short:'RTR', country:'영국', cc:'GB', zone:'AMERICAS',
-    kind:'hls', src:'https://amg00453-reuters-amg00453c1-rakuten-uk-2110.playouts.now.amagi.tv/playlist/amg00453-reuters-reuters-rakutenuk/playlist.m3u8', status:'live' },
-
   { id:'cbc', name:'CBC NEWS NETWORK', short:'CBC', country:'캐나다', cc:'CA', zone:'AMERICAS',
     kind:'hls', src:'https://aka-live1050.delivery.roku.com/0c24a9ef-e9c3-485c-bf68-3f1ae5ef3e85/t2-origin/out/v1/live.m3u8', status:'live' },
 
   { id:'ntn24', name:'NTN24', short:'NTN', country:'콜롬비아', cc:'CO', zone:'AMERICAS',
     kind:'hls', src:'https://stream1.bitred.cl/ntn24/index.m3u8', status:'live' },
 
-  /* ── EUROPE ─────────────────────────────────────────────────── */
+  /* ── EUROPE (영국·유럽) ─────────────────────────────────────── */
+  { id:'bbc', name:'BBC NEWS', short:'BBC', country:'영국', cc:'GB', zone:'EUROPE',
+    kind:'hls',
+    src:'https://vs-hls-push-ww-live.akamaized.net/x=4/i=urn:bbc:pips:service:bbc_news_channel_hd/t=3840/v=pv10/b=1604032/main.m3u8',
+    backup:'https://vs-hls-push-ww-live.akamaized.net/x=4/i=urn:bbc:pips:service:bbc_news_channel_hd/t=3840/v=pv14/b=5070016/main.m3u8',
+    status:'live',
+    note:'BBC 뉴스 채널 HLS — 영국 외 지역에서 차단되면 백업 주소로, 그래도 실패하면 공식 페이지로 연결됩니다.' },
+
+  { id:'f24', name:'FRANCE 24 ENGLISH', short:'F24', country:'프랑스', cc:'FR', zone:'EUROPE',
+    kind:'hls', src:'https://live.france24.com/hls/live/2037218/F24_EN_HI_HLS/master_5000.m3u8', status:'live' },
+
+  { id:'f24_yt', name:'FRANCE 24 ENGLISH · YouTube', short:'F24', country:'프랑스', cc:'FR', zone:'EUROPE',
+    kind:'youtube', src:'UCQfwfsi5VrQ8yKZ-UWmAEFg', status:'live', alt:true },
+
   { id:'dw', name:'DW NEWS', short:'DW', country:'독일', cc:'DE', zone:'EUROPE',
-    kind:'youtube', src:'UCknLrEdhRCp1aegoMqRaCZg', status:'live' },
+    kind:'hls', src:'https://dwamdstream102.akamaized.net/hls/live/2015525/dwstream102/index.m3u8', status:'live' },
+
+  { id:'dw_yt', name:'DW NEWS · YouTube', short:'DW', country:'독일', cc:'DE', zone:'EUROPE',
+    kind:'youtube', src:'UCknLrEdhRCp1aegoMqRaCZg', status:'live', alt:true },
 
   { id:'dwar', name:'DW عربية', short:'DW', country:'독일', cc:'DE', zone:'EUROPE',
     kind:'hls', src:'https://dwamdstream103.akamaized.net/hls/live/2015526/dwstream103/master.m3u8', status:'live' },
 
-  { id:'f24', name:'FRANCE 24 ENGLISH', short:'F24', country:'프랑스', cc:'FR', zone:'EUROPE',
-    kind:'youtube', src:'UCQfwfsi5VrQ8yKZ-UWmAEFg', status:'live' },
-
   { id:'euronews', name:'EURONEWS ENGLISH', short:'EN', country:'유럽', cc:'EU', zone:'EUROPE',
     kind:'youtube', src:'UCSrZ3UV4jOidv8ppoVuvW9Q', status:'live' },
+
+  { id:'reuters', name:'REUTERS TV', short:'RTR', country:'영국', cc:'GB', zone:'EUROPE',
+    kind:'hls', src:'https://amg00453-reuters-amg00453c1-rakuten-uk-2110.playouts.now.amagi.tv/playlist/amg00453-reuters-reuters-rakutenuk/playlist.m3u8', status:'live' },
 
   { id:'gbnews', name:'GB NEWS', short:'GB', country:'영국', cc:'GB', zone:'EUROPE',
     kind:'hls', src:'https://amg01076-lightningintern-gbnewsau-samsungau-et7fz.amagi.tv/playlist/amg01076-lightningintern-gbnewsau-samsungau/playlist.m3u8', status:'live' },
@@ -158,12 +102,15 @@ const CHANNELS = [
   { id:'ert', name:'ERT NEWS', short:'ERT', country:'그리스', cc:'GR', zone:'EUROPE',
     kind:'hls', src:'https://ert-ucdn.broadpeak-aas.com/bpk-tv/ERTNews/default/index.m3u8', status:'live' },
 
-  /* ── MIDDLE EAST ────────────────────────────────────────────── */
+  /* ── MIDDLE EAST (알자지라 등) ──────────────────────────────── */
   { id:'aj', name:'AL JAZEERA ENGLISH', short:'AJ', country:'카타르', cc:'QA', zone:'MIDEAST',
-    kind:'youtube', src:'UCNye-wNBqNL5ZzHSJj3l8Bg', status:'live' },
+    kind:'hls',
+    src:'https://live-hls-apps-aje-fa.getaj.net/AJE/03.m3u8',
+    backup:'https://live-hls-apps-aje-fa.getaj.net/AJE/index.m3u8',
+    status:'live' },
 
-  { id:'aj_hls', name:'AL JAZEERA ENGLISH · HLS', short:'AJ', country:'카타르', cc:'QA', zone:'MIDEAST',
-    kind:'hls', src:'https://live-hls-apps-aje-fa.getaj.net/AJE/index.m3u8', status:'live', alt:true },
+  { id:'aj_yt', name:'AL JAZEERA ENGLISH · YouTube', short:'AJ', country:'카타르', cc:'QA', zone:'MIDEAST',
+    kind:'youtube', src:'UCNye-wNBqNL5ZzHSJj3l8Bg', status:'live', alt:true },
 
   { id:'aja', name:'AL JAZEERA ARABIC', short:'AJ', country:'카타르', cc:'QA', zone:'MIDEAST',
     kind:'hls', src:'https://live-hls-apps-aja-fa.getaj.net/AJA/01.m3u8', status:'live' },
@@ -198,6 +145,56 @@ const CHANNELS = [
   { id:'rudaw', name:'RUDAW TV', short:'RUDAW', country:'이라크', cc:'IQ', zone:'MIDEAST',
     kind:'hls', src:'https://hlspackager.akamaized.net/live/DB/RUDAW/HLS/RUDAW.m3u8', status:'live' },
 
+  /* ── ASIA / PACIFIC (일본·중국·인도 등) ─────────────────────── */
+  { id:'nhk', name:'NHK WORLD-JAPAN', short:'NHK', country:'일본', cc:'JP', zone:'ASIA',
+    kind:'hls', src:'https://masterpl.hls.nhkworld.jp/hls/w/live/master.m3u8', status:'live' },
+
+  { id:'nhk_yt', name:'NHK WORLD-JAPAN · YouTube', short:'NHK', country:'일본', cc:'JP', zone:'ASIA',
+    kind:'youtube', src:'UCSPEjw8F2nQDtmUKPFNF7_A', status:'live', alt:true },
+
+  { id:'cgtn', name:'CGTN ENGLISH', short:'CGTN', country:'중국', cc:'CN', zone:'ASIA',
+    kind:'hls',
+    src:'https://english-livebkali.cgtn.com/live/encgtn.m3u8',
+    backup:'https://amg00405-rakutentv-cgtn-rakuten-i9tar.amagi.tv/master.m3u8',
+    status:'live' },
+
+  { id:'ndtv', name:'NDTV 24x7', short:'NDTV', country:'인도', cc:'IN', zone:'ASIA',
+    kind:'hls',
+    src:'https://ndtv24x7elemarchana.akamaized.net/hls/live/2003678/ndtv24x7/master.m3u8',
+    backup:'https://ndtv24x7elemarchana.akamaized.net/hls/live/2003678/ndtv24x7/ndtv24x7master.m3u8',
+    status:'live' },
+
+  { id:'cna', name:'CNA', short:'CNA', country:'싱가포르', cc:'SG', zone:'ASIA',
+    kind:'youtube', src:'UC83jt4dlz1Gjl58fzQrrKZg', status:'live' },
+
+  { id:'cna_hls', name:'CNA · HLS', short:'CNA', country:'싱가포르', cc:'SG', zone:'ASIA',
+    kind:'hls', src:'https://d2e1asnsl7br7b.cloudfront.net/7782e205e72f43aeb4a48ec97f66ebbe/index.m3u8', status:'live', alt:true },
+
+  { id:'indiatoday', name:'INDIA TODAY', short:'IT', country:'인도', cc:'IN', zone:'ASIA',
+    kind:'hls', src:'https://d2lk5u59tns74c.cloudfront.net/out/v1/d4435039c7d1433d9b9d0b6cdc9dd4ff/index.m3u8', status:'live' },
+
+  { id:'abp', name:'ABP NEWS', short:'ABP', country:'인도', cc:'IN', zone:'ASIA',
+    kind:'hls', src:'https://abpmitv.akamaized.net/hls/live/2042842/abpnews/master.m3u8', status:'live' },
+
+  { id:'aajtak', name:'AAJ TAK', short:'AT', country:'인도', cc:'IN', zone:'ASIA',
+    kind:'hls', src:'https://feeds.intoday.in/aajtak/api/aajtakhd/master.m3u8', status:'live' },
+
+  { id:'ddnews', name:'DD NEWS', short:'DD', country:'인도', cc:'IN', zone:'ASIA',
+    kind:'hls', src:'https://mumbai-edge.smartplaytv.in/DDNews/index.m3u8', status:'live' },
+
+  { id:'metrotv', name:'METRO TV', short:'METRO', country:'인도네시아', cc:'ID', zone:'ASIA',
+    kind:'hls', src:'https://edge.medcom.id/live-edge/smil:metro.smil/playlist.m3u8', status:'live' },
+
+  { id:'nationtv', name:'NATION TV', short:'NATION', country:'태국', cc:'TH', zone:'ASIA',
+    kind:'hls', src:'https://live-us1.thaimomo.com/live-as/chNation-3/playlist.m3u8', status:'live' },
+
+  /* ── OCEANIA ────────────────────────────────────────────────── */
+  { id:'abcau', name:'ABC NEWS (AUSTRALIA)', short:'ABC', country:'호주', cc:'AU', zone:'OCEANIA',
+    kind:'youtube', src:'UCVgO39Bk5sMo66-6o6Spn6Q', status:'live' },
+
+  { id:'skyau', name:'SKY NEWS AUSTRALIA', short:'SKY', country:'호주', cc:'AU', zone:'OCEANIA',
+    kind:'hls', src:'https://skynewsau-live.akamaized.net/hls/live/2002691/skynewsau-extra3/master.m3u8', status:'live' },
+
   /* ── AFRICA ─────────────────────────────────────────────────── */
   { id:'africanews', name:'AFRICANEWS', short:'AF', country:'아프리카', cc:'AF', zone:'AFRICA',
     kind:'youtube', src:'UC1_E8NeF5QHY2dtdLRBCCLA', status:'live' },
@@ -206,9 +203,9 @@ const CHANNELS = [
     kind:'hls', src:'https://sabconetanw.cdn.mangomolo.com/news/smil:news.stream.smil/master.m3u8', status:'live' },
 
   /* ── 외부 공식 링크 (페이지 내 재생 불가) ────────────────────── */
-  { id:'bbc', name:'BBC NEWS · WATCH LIVE', short:'BBC', country:'영국', cc:'GB', zone:'EXTERNAL',
+  { id:'bbc_web', name:'BBC NEWS · WATCH LIVE', short:'BBC', country:'영국', cc:'GB', zone:'EXTERNAL',
     kind:'web', src:'https://www.bbc.com/watch-live-news', status:'external',
-    note:'BBC 뉴스 채널 라이브는 DASH 전용 송출+영국 지역 제한이라 페이지 내 삽입이 불가합니다. 새 창에서 공식 LIVE 페이지로 연결됩니다.' },
+    note:'BBC 뉴스 채널 공식 LIVE 페이지입니다. 내장 BBC HLS가 지역 제한으로 막힐 때 여기서 시청하세요.' },
 
   { id:'sky', name:'SKY NEWS', short:'SKY', country:'영국', cc:'GB', zone:'EXTERNAL',
     kind:'web', src:'https://news.sky.com/watch-live', status:'external',
@@ -231,20 +228,28 @@ const CHANNELS = [
     note:'TVBS는 대만 지역 한정으로 YouTube 라이브가 잠겨 있어 공식 사이트에서 재생합니다.' }
 ];
 
+/* 로컬스토리지에 남아 있던, 더 이상 쓰지 않는 채널 ID — 불러올 때 걸러집니다 */
+const RETIRED_IDS = [
+  'ytn', 'yonhap', 'mbc', 'sbs', 'jtbc', 'mbn', 'channela', 'tvchosun', 'arirang', 'tbs', 'nhk_hls'
+];
+
 /* 레이아웃별 기본 배치 — 4분할과 9분할은 서로 독립적으로 저장됩니다 */
 const DEFAULT_SETS = {
-  '9': ['cnn', 'kbs24', 'ytn24', 'nhk', 'aj', 'abc', 'dw', 'yonhap24', 'cna'],
-  '4': ['kbs24', 'ytn24', 'yonhap24', 'cnn'],
-  '6': ['cnn', 'kbs24', 'ytn24', 'yonhap24', 'nhk', 'aj'],
+  '9': ['kbs24', 'ytn24', 'yonhap24', 'nhk', 'cnn_fast', 'bbc', 'cgtn', 'abc', 'aj'],
+  '4': ['kbs24', 'nhk', 'cnn_fast', 'bbc'],
+  '6': ['kbs24', 'ytn24', 'yonhap24', 'nhk', 'cnn_fast', 'bbc'],
   '1': ['kbs24']
 };
 
 const KIND_LABEL = { youtube:'YT·LIVE', 'youtube-video':'YT·LIVE', hls:'HLS', web:'WEB' };
 const ZONE_LABEL = {
   KOREA:'KOREA · 국내 뉴스',
-  ASIA:'ASIA · PACIFIC', OCEANIA:'OCEANIA', AMERICAS:'AMERICAS', EUROPE:'EUROPE',
-  MIDEAST:'MIDDLE EAST', AFRICA:'AFRICA', EXTERNAL:'외부 공식 링크 (새 창)', CUSTOM:'CUSTOM SOURCES'
+  AMERICAS:'AMERICAS · 미주', EUROPE:'EUROPE · 영국·유럽', MIDEAST:'MIDDLE EAST · 중동',
+  ASIA:'ASIA · 아시아', OCEANIA:'OCEANIA · 오세아니아', AFRICA:'AFRICA · 아프리카',
+  EXTERNAL:'외부 공식 링크 (새 창)', CUSTOM:'CUSTOM SOURCES'
 };
+/* 지역·국가순 정렬 기준 — 한국 → 미국(미주) → 영국·유럽 → 중동 → 아시아 → 오세아니아 → 아프리카 */
+const ZONE_ORDER = ['KOREA', 'AMERICAS', 'EUROPE', 'MIDEAST', 'ASIA', 'OCEANIA', 'AFRICA', 'EXTERNAL', 'CUSTOM'];
 
 const CHANNEL_BY_ID = CHANNELS.reduce((m, c) => (m[c.id] = c, m), {});
 /* ALL LIVE 스크롤에 나오는 채널 = 페이지 내 재생이 검증된 상시 채널 */

@@ -7,7 +7,8 @@
 'use strict';
 
 /* ── constants ─────────────────────────────────────────────── */
-const LS_KEY = 'worldlive.v2';
+const LS_KEY = 'worldlive.v3';
+const LEGACY_LS_KEYS = ['worldlive.v2', 'worldlive.v1'];   // v3 마이그레이션 원본
 const LAYOUTS = {
   '9':  { cols: 3, rows: 3, count: 9, label: '9분할' },
   '4':  { cols: 2, rows: 2, count: 4, label: '4분할' },
@@ -59,47 +60,59 @@ function save() {
     }));
   } catch (e) {}
 }
-function normalizeSet(arr, n) {
+/* 저장된 배치를 검증한다. 사라진 채널 ID(예: 정리된 국내 채널)는 걸러내고
+   그 자리는 그 레이아웃의 기본 채널로 채운다 — 화면이 비거나 깨지지 않도록. */
+function normalizeSet(arr, key) {
   if (!Array.isArray(arr)) return null;
-  const out = arr.slice(0, n).filter(id => typeof id === 'string' && byId(id));
-  while (out.length < n) out.push(DEFAULT_SETS['9'][out.length % 9]);
+  const seeds = (DEFAULT_SETS[key] || DEFAULT_SETS['9']).slice();
+  const n = seeds.length;
+  const out = [];
+  arr.slice(0, n).forEach(id => {
+    if (typeof id !== 'string') return;
+    if (RETIRED_IDS.indexOf(id) >= 0) return;
+    if (!byId(id) || out.indexOf(id) >= 0) return;
+    out.push(id);
+  });
+  for (let k = 0; out.length < n && k < seeds.length * 8; k++) {
+    const id = seeds[k % seeds.length];
+    if (byId(id) && out.indexOf(id) < 0) out.push(id);
+  }
   return out;
+}
+function applyStored(d) {
+  if (!d || typeof d !== 'object') return;
+  if (Array.isArray(d.custom)) state.custom = d.custom.filter(c => c && c.id && c.kind && c.src);
+  if (d.sets && typeof d.sets === 'object') {
+    Object.keys(state.sets).forEach(k => {
+      const s = normalizeSet(d.sets[k], k);
+      if (s && s.length) state.sets[k] = s;
+    });
+  }
+  if (LAYOUTS[d.layout]) state.layout = d.layout;
+  if (LAYOUTS[d.start]) state.start = d.start;
+  if (typeof d.sort === 'string' && SORT_MODES[d.sort]) state.sort = d.sort;
+  if (typeof d.audioId === 'string' && byId(d.audioId)) { state.audioId = d.audioId; state.muted = false; }
+  else if (typeof d.muted === 'boolean') state.muted = d.muted;
 }
 function load() {
   try {
     const raw = localStorage.getItem(LS_KEY);
-    if (raw) {
-      const d = JSON.parse(raw);
-      if (d && typeof d === 'object') {
-        if (Array.isArray(d.custom)) state.custom = d.custom.filter(c => c && c.id && c.kind && c.src);
-        if (d.sets && typeof d.sets === 'object') {
-          Object.keys(state.sets).forEach(k => {
-            const s = normalizeSet(d.sets[k], state.sets[k].length);
-            if (s) state.sets[k] = s;
-          });
-        }
-        if (LAYOUTS[d.layout]) state.layout = d.layout;
-        if (LAYOUTS[d.start]) state.start = d.start;
-        if (typeof d.sort === 'string' && SORT_MODES[d.sort]) state.sort = d.sort;
-        if (typeof d.audioId === 'string') state.audioId = d.audioId;
-        if (typeof d.muted === 'boolean') state.muted = d.muted;
+    if (raw) { applyStored(JSON.parse(raw)); return; }
+    // v2 / v1 → v3 마이그레이션 (제거된 채널 ID는 기본 채널로 폴백)
+    for (let i = 0; i < LEGACY_LS_KEYS.length; i++) {
+      const old = localStorage.getItem(LEGACY_LS_KEYS[i]);
+      if (!old) continue;
+      const o = JSON.parse(old);
+      if (o && typeof o === 'object') {
+        applyStored({
+          layout: o.layout,
+          start: o.start || o.layout,
+          sort: o.sort,
+          sets: o.sets || (Array.isArray(o.slots) ? { '9': o.slots } : null),
+          custom: o.custom, audioId: o.audioId, muted: o.muted
+        });
       }
-      return;
-    }
-    // v1 → v2 마이그레이션
-    const old = localStorage.getItem('worldlive.v1');
-    if (!old) return;
-    const o = JSON.parse(old);
-    if (o && typeof o === 'object') {
-      if (Array.isArray(o.slots)) {
-        const s = normalizeSet(o.slots, 9);
-        if (s) state.sets['9'] = s;
-        const s4 = normalizeSet(o.slots, 4);
-        if (s4) state.sets['4'] = s4;
-      }
-      if (Array.isArray(o.custom)) state.custom = o.custom.filter(c => c && c.id && c.kind && c.src);
-      if (LAYOUTS[o.layout]) { state.layout = o.layout; state.start = o.layout; }
-      if (typeof o.muted === 'boolean') state.muted = o.muted;
+      break;
     }
   } catch (e) {}
 }
@@ -108,10 +121,14 @@ function load() {
 function allChannels() { return CHANNELS.concat(state.custom); }
 function byId(id) { return CHANNEL_BY_ID[id] || state.custom.find(c => c.id === id) || null; }
 const SORT_MODES = {
-  zone:  { label: '지역·국가순', sub: '한국 → 아시아 → 유럽…' },
+  zone:  { label: '지역·국가순', sub: '한국 → 미국 → 유럽 → 중동 → 아시아' },
   name:  { label: '이름순 (A-Z)', sub: '채널명 가나다·알파벳' },
   kr:    { label: '한국 우선', sub: '국내 뉴스를 맨 앞으로' }
 };
+function zoneRank(c) {
+  const i = ZONE_ORDER.indexOf((c && c.zone) || 'ASIA');
+  return i < 0 ? ZONE_ORDER.length : i;
+}
 function sortedIds() {
   const ids = ALL_LIVE_IDS.slice();
   const kr = c => c.zone === 'KOREA' ? 0 : 1;
@@ -119,6 +136,13 @@ function sortedIds() {
     ids.sort((a, b) => {
       const ca = byId(a) || {}, cb = byId(b) || {};
       return String(ca.name || '').localeCompare(String(cb.name || ''), 'ko');
+    });
+  } else if (state.sort === 'zone') {
+    // 한국 → 미주 → 영국·유럽 → 중동 → 아시아 → 오세아니아 → 아프리카 (같은 지역은 카탈로그 순서)
+    ids.sort((a, b) => {
+      const ra = zoneRank(byId(a)), rb = zoneRank(byId(b));
+      if (ra !== rb) return ra - rb;
+      return ALL_LIVE_IDS.indexOf(a) - ALL_LIVE_IDS.indexOf(b);
     });
   } else if (state.sort === 'kr') {
     ids.sort((a, b) => {
@@ -329,7 +353,7 @@ function mountSlot(i) {
     unmountSlot(i);
   }
   media.innerHTML = '';
-  live[i] = { node: el, media: media, ch: ch, state: 'loading', iframe: null, video: null, hls: null };
+  live[i] = { node: el, media: media, ch: ch, state: 'loading', iframe: null, video: null, hls: null, src: null, backupUsed: false };
   el.dataset.kind = ch.kind;
   el.dataset.state = 'loading';
   el.classList.remove('is-idle', 'pass');
@@ -377,8 +401,7 @@ function mountSlot(i) {
     live[i].video = v;
     v.addEventListener('playing', () => { setTileState(i, 'live'); v.dataset.ok = '1'; });
     v.addEventListener('waiting', () => { if (!v.dataset.ok) setTileState(i, 'sync'); });
-    v.addEventListener('error', () => failHls(i, '재생 오류'));
-    attachHls(i, v, ch.src);
+    attachHls(i, v, ch.src, ch.backup);
 
   } else if (ch.kind === 'web') {
     showVeil(i, '외부 공식 플레이어', ch.note || (ch.name + '은(는) 공식 사이트에서만 재생됩니다.'), '새 창에서 열기', 'open');
@@ -401,46 +424,91 @@ function unmountSlot(i) {
   delete live[i];
 }
 
-function attachHls(i, v, url) {
-  const nativeHls = v.canPlayType('application/vnd.apple.mpegurl');
-  if (window.Hls && window.Hls.isSupported()) {
-    const hls = new window.Hls({
-      lowLatencyMode: false,
-      liveSyncDurationCount: 4,
-      maxBufferLength: 24,
-      manifestLoadingMaxRetry: 3,
-      levelLoadingMaxRetry: 3,
-      fragLoadingMaxRetry: 3
-    });
-    live[i].hls = hls;
-    hls.loadSource(url);
-    hls.attachMedia(v);
-    hls.on(window.Hls.Events.MANIFEST_PARSED, () => {
-      v.play().catch(() => { v.muted = true; v.play().catch(() => {}); });
-    });
-    hls.on(window.Hls.Events.ERROR, (evt, data) => {
-      if (!data || !data.fatal) return;
-      if (data.type === window.Hls.ErrorTypes.NETWORK_ERROR) {
-        setTileState(i, 'sync');
-        setTimeout(() => { try { hls.startLoad(); } catch (e) {} }, 1500);
-      } else if (data.type === window.Hls.ErrorTypes.MEDIA_ERROR) {
-        try { hls.recoverMediaError(); } catch (e) {}
-      } else {
-        failHls(i, 'HLS 스트림 연결 실패');
-      }
-    });
-  } else if (nativeHls) {
-    v.src = url;
-    v.play().catch(() => {});
-  } else {
-    failHls(i, '이 브라우저는 HLS를 지원하지 않습니다');
+/* HLS 재생 — 1차 주소가 치명적 오류(매니페스트/세그먼트 실패)를 내면
+   백업(backup) 주소로 한 번 자동 전환한 뒤, 그래도 안 되면 오류 안내 */
+function attachHls(i, v, primary, backup) {
+  const urls = [primary].concat(backup ? [backup] : []);
+  let ui = 0;
+
+  function next(reason) {
+    const cur = live[i];
+    if (!cur) return;
+    try { if (cur.hls) { cur.hls.destroy(); cur.hls = null; } } catch (e) {}
+    ui++;
+    if (ui < urls.length) {
+      cur.backupUsed = true;
+      setTileState(i, 'sync');
+      toast(cur.ch.name + ' — 백업 소스로 전환');
+      start();
+    } else {
+      failHls(i, reason || 'HLS 스트림 연결 실패');
+    }
   }
+
+  function start() {
+    const cur = live[i];
+    if (!cur || !cur.video) return;
+    const url = urls[ui];
+    cur.src = url;
+    const nativeHls = v.canPlayType('application/vnd.apple.mpegurl');
+    if (window.Hls && window.Hls.isSupported()) {
+      let netRetry = 0, netRetriedAll = false;
+      let mediaRecovered = false;
+      const hls = new window.Hls({
+        lowLatencyMode: false,
+        liveSyncDurationCount: 4,
+        maxBufferLength: 24,
+        manifestLoadingMaxRetry: 2,
+        levelLoadingMaxRetry: 2,
+        fragLoadingMaxRetry: 2
+      });
+      cur.hls = hls;
+      hls.loadSource(url);
+      hls.attachMedia(v);
+      hls.on(window.Hls.Events.MANIFEST_PARSED, () => {
+        v.play().catch(() => { v.muted = true; v.play().catch(() => {}); });
+      });
+      hls.on(window.Hls.Events.ERROR, (evt, data) => {
+        if (!data || !data.fatal) return;
+        if (data.type === window.Hls.ErrorTypes.NETWORK_ERROR && netRetry < 2) {
+          netRetry++;
+          setTileState(i, 'sync');
+          setTimeout(() => { try { hls.startLoad(); } catch (e) {} }, 1500);
+          return;
+        }
+        if (data.type === window.Hls.ErrorTypes.NETWORK_ERROR && !netRetriedAll) {
+          // 네트워크 재시도 소진 → 같은 주소를 처음부터 한 번 더
+          netRetriedAll = true;
+          setTileState(i, 'sync');
+          setTimeout(() => {
+            try { hls.destroy(); } catch (e) {}
+            if (live[i]) { live[i].hls = null; start(); }
+          }, 1200);
+          return;
+        }
+        if (data.type === window.Hls.ErrorTypes.MEDIA_ERROR && !mediaRecovered) {
+          mediaRecovered = true;
+          try { hls.recoverMediaError(); return; } catch (e) {}
+        }
+        next('HLS 스트림 연결 실패');
+      });
+    } else if (nativeHls) {
+      v.onerror = () => next('재생 오류');
+      v.src = url;
+      v.play().catch(() => {});
+    } else {
+      failHls(i, '이 브라우저는 HLS를 지원하지 않습니다');
+    }
+  }
+
+  start();
 }
 
 function failHls(i, msg) {
   const ch = slotChannel(i);
   setTileState(i, 'error');
-  showVeil(i, '스트림 연결 실패', msg + ' — ' + ch.name + '. 잠시 후 다시 시도하거나 다른 소스를 선택하세요.', '다시 시도', 'retry');
+  const tail = ch.backup ? ' (백업 주소까지 실패)' : '';
+  showVeil(i, '스트림 연결 실패', msg + tail + ' — ' + ch.name + '. 잠시 후 다시 시도하거나 다른 소스를 선택하세요.', '다시 시도', 'retry');
 }
 
 /* ── veil ──────────────────────────────────────────────────── */
@@ -686,7 +754,7 @@ function renderSources(q) {
   } else {
     const groups = {};
     list.forEach(c => { const z = c.zone || 'ASIA'; (groups[z] = groups[z] || []).push(c); });
-    const order = ['KOREA', 'ASIA', 'OCEANIA', 'AMERICAS', 'EUROPE', 'MIDEAST', 'AFRICA', 'EXTERNAL', 'CUSTOM'];
+    const order = ZONE_ORDER;
     order.forEach(z => {
       const arr = groups[z];
       if (!arr) return;
@@ -1002,7 +1070,7 @@ window.WORLD_LIVE = {
     count: chCount(),
     channels: CHANNELS.length,
     allIds: ALL_LIVE_IDS.slice(),
-    tiles: Object.keys(live).map(k => ({ slot: +k, id: live[k].ch.id, name: live[k].ch.name, kind: live[k].ch.kind, state: live[k].state, ps: live[k].ps == null ? null : live[k].ps, err: live[k].err || null }))
+    tiles: Object.keys(live).map(k => ({ slot: +k, id: live[k].ch.id, name: live[k].ch.name, kind: live[k].ch.kind, state: live[k].state, backupUsed: !!live[k].backupUsed, src: live[k].src || null, ps: live[k].ps == null ? null : live[k].ps, err: live[k].err || null }))
   }),
   setLayout: l => applyLayout(l),
   setAudio: id => setAudio(id),
@@ -1015,7 +1083,7 @@ window.WORLD_LIVE = {
 /* ── boot ──────────────────────────────────────────────────── */
 function boot() {
   const qs = new URLSearchParams(location.search);
-  if (qs.has('reset')) { try { localStorage.removeItem(LS_KEY); } catch (e) {} }
+  if (qs.has('reset')) { try { localStorage.removeItem(LS_KEY); LEGACY_LS_KEYS.forEach(k => localStorage.removeItem(k)); } catch (e) {} }
   else load();
   const ql = qs.get('layout');
   if (ql && LAYOUTS[ql]) state.layout = ql;
