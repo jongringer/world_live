@@ -284,6 +284,7 @@ window.addEventListener('message', function (e) {
   let d = e.data;
   if (typeof d === 'string') { try { d = JSON.parse(d); } catch (x) { return; } }
   if (!d || typeof d !== 'object' || !d.id || String(d.id).indexOf('wl-') !== 0) return;
+  if (String(d.id) === 'wl-pv') { pvOnMessage(d); return; }
   const slot = parseInt(String(d.id).slice(3), 10);
   const L = live[slot];
   if (!L) return;
@@ -804,6 +805,8 @@ function openModal(slot) {
   srcSearch.value = '';
   renderSources('');
   modalRoot.hidden = false;
+  const hint = $('#modal-hint');
+  if (hint) hint.hidden = (modalSlot != null);
   setTimeout(() => srcSearch.focus(), 40);
 }
 function closeModal() { modalRoot.hidden = true; modalSlot = null; $('#custom-error').hidden = true; }
@@ -866,14 +869,7 @@ function srcCard(c, current) {
       return;
     }
     if (modalSlot == null) {
-      if (state.layout === 'all') {
-        state.sets['1'] = [c.id];
-        applyLayout('1');
-        closeModal();
-        toast('1×1 — ' + c.name);
-      } else {
-        toast('타일의 ‘채널 변경’ 버튼에서 칸을 지정할 수 있습니다');
-      }
+      openPreview(c);
       return;
     }
     assignSource(modalSlot, c.id);
@@ -910,6 +906,228 @@ function assignSource(slot, id) {
   mountSlot(slot);
   applyAudio();
   refreshStartUI();
+}
+
+/* ══ 채널 미리보기 — 채널 찾기에서 채널을 고르면 먼저 크게 띄우고,
+      그 화면에서 칸 추가 / 전체 스크롤 맨 앞 추가 / 닫기를 결정 ══ */
+const pvRoot = $('#preview-root');
+let pvCh = null, pvIframe = null, pvVideo = null, pvHls = null, pvAudioOn = false, pvBadgeTimer = null;
+
+function pvExternalUrl(ch) {
+  if (!ch) return '#';
+  if (ch.kind === 'youtube') return 'https://www.youtube.com/channel/' + ch.src + '/live';
+  if (ch.kind === 'youtube-video') return 'https://www.youtube.com/watch?v=' + ch.src;
+  return ch.src || '#';
+}
+function pvSetBadge(kind) {
+  const b = $('#pv-badge'), t = $('#pv-badge-txt');
+  if (!b || !t) return;
+  b.className = 'pv-badge is-' + kind;
+  t.textContent = kind === 'live' ? 'LIVE' : kind === 'sync' ? 'CONNECTING' : kind === 'error' ? 'NO SIGNAL' : 'PREVIEW';
+}
+function pvCmd(func, args) {
+  if (!pvIframe || !pvIframe.contentWindow) return;
+  try { pvIframe.contentWindow.postMessage(JSON.stringify({ event:'command', func: func, args: args || [] }), '*'); } catch (e) {}
+}
+function pvListen() {
+  if (!pvIframe || !pvIframe.contentWindow) return;
+  try { pvIframe.contentWindow.postMessage(JSON.stringify({ event:'listening', id:'wl-pv', channel:'widget' }), '*'); } catch (e) {}
+}
+function pvTeardown() {
+  clearTimeout(pvBadgeTimer); pvBadgeTimer = null;
+  try { if (pvHls) pvHls.destroy(); } catch (e) {}
+  pvHls = null;
+  try { if (pvVideo) { pvVideo.pause(); pvVideo.removeAttribute('src'); pvVideo.load(); } } catch (e) {}
+  pvVideo = null;
+  try { if (pvIframe) pvIframe.src = 'about:blank'; } catch (e) {}
+  pvIframe = null;
+  const st = $('#pv-stage');
+  if (st) st.innerHTML = '';
+}
+function pvOnMessage(d) {
+  if (!d) return;
+  if (d.event === 'onReady') {
+    pvCmd(pvAudioOn ? 'unMute' : 'mute');
+    if (pvAudioOn) pvCmd('setVolume', [85]);
+    setTimeout(() => pvCmd('playVideo'), 250);
+  }
+  if (d.event === 'infoDelivery' && d.info && typeof d.info.playerState === 'number') {
+    if (d.info.playerState === 1) pvSetBadge('live');
+    else if (d.info.playerState === 3) pvSetBadge('sync');
+  }
+  if (d.event === 'onError') {
+    const code = String((d.info && d.info.data) || '?');
+    pvSetBadge('error');
+    const st = $('#pv-stage');
+    if (st && !st.querySelector('.pv-err')) {
+      const div = document.createElement('div');
+      div.className = 'pv-err';
+      div.innerHTML = '이 채널은 방송사가 외부 삽입을 막았습니다 (오류 ' + esc(code) + ').<br><b>새 창에서 열기</b>로 확인해 주세요.';
+      st.appendChild(div);
+    }
+  }
+}
+function pvAttachHls(v, ch) {
+  const urls = [ch.src].concat(ch.backup ? [ch.backup] : []);
+  let ui = 0;
+  const start = () => {
+    const url = urls[ui];
+    if (!url) { pvSetBadge('error'); return; }
+    if (window.Hls && window.Hls.isSupported()) {
+      try { if (pvHls) { pvHls.destroy(); pvHls = null; } } catch (e) {}
+      const hls = new window.Hls({ lowLatencyMode: false, liveSyncDurationCount: 4, maxBufferLength: 24 });
+      pvHls = hls;
+      hls.loadSource(url);
+      hls.attachMedia(v);
+      hls.on(window.Hls.Events.MANIFEST_PARSED, () => { pvSetBadge('live'); v.play().catch(() => {}); });
+      hls.on(window.Hls.Events.ERROR, (ev, data) => {
+        if (!data || !data.fatal) return;
+        ui++;
+        if (ui < urls.length) { toast(ch.name + ' — 백업 소스로 전환'); pvSetBadge('sync'); start(); }
+        else pvSetBadge('error');
+      });
+    } else if (v.canPlayType('application/vnd.apple.mpegurl')) {
+      v.src = url;
+      v.play().catch(() => {});
+    } else {
+      pvSetBadge('error');
+    }
+  };
+  start();
+}
+function pvRenderSlots() {
+  const wrap = $('#pv-slots'), label = $('#pv-slot-label'), group = $('#pv-slot-group');
+  wrap.innerHTML = '';
+  if (state.layout === 'all') {
+    group.classList.add('is-all');
+    label.textContent = '전체 스크롤 — 아래 ‘맨 앞에 추가’를 쓰세요';
+    return;
+  }
+  group.classList.remove('is-all');
+  const L = LAYOUTS[state.layout];
+  label.textContent = (L.label || '') + ' 화면 — 칸을 골라 바로 추가';
+  for (let i = 0; i < L.count; i++) {
+    const cur = slotChannel(i);
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'pv-slot' + (pvCh && cur.id === pvCh.id ? ' is-here' : '');
+    b.textContent = String(i + 1);
+    b.title = (i + 1) + '번 칸 — 지금 ' + cur.name + ' · 눌러서 교체';
+    b.addEventListener('click', () => {
+      const ch = pvCh;
+      assignSource(i, ch.id);
+      closePreview(false);
+    });
+    wrap.appendChild(b);
+  }
+}
+function pvToggleAudio() {
+  pvAudioOn = !pvAudioOn;
+  const btn = $('#pv-audio');
+  btn.classList.toggle('is-on', pvAudioOn);
+  $('#pv-audio-txt').textContent = pvAudioOn ? '소리 끄기' : '소리 켜기';
+  if (pvVideo) pvVideo.muted = !pvAudioOn;
+  if (pvIframe) {
+    if (pvAudioOn) { pvCmd('unMute'); pvCmd('setVolume', [85]); }
+    else pvCmd('mute');
+  }
+}
+function openPreview(ch) {
+  if (!ch) return;
+  pvCh = ch;
+  pvAudioOn = false;
+  pvTeardown();
+  $('#pv-title').textContent = ch.name;
+  $('#pv-meta').textContent = [ch.cc, KIND_LABEL[ch.kind], ch.country].filter(Boolean).join(' · ');
+  $('#pv-pop').href = pvExternalUrl(ch);
+  $('#pv-audio').classList.remove('is-on');
+  $('#pv-audio-txt').textContent = '소리 켜기';
+  $('#pv-audio').hidden = !(ch.kind === 'youtube' || ch.kind === 'youtube-video' || ch.kind === 'hls');
+  pvSetBadge('preview');
+
+  const st = $('#pv-stage');
+  if (ch.kind === 'youtube' || ch.kind === 'youtube-video') {
+    const params = new URLSearchParams({
+      autoplay:'1', mute:'1', controls:'1', rel:'0', modestbranding:'1',
+      playsinline:'1', disablekb:'1', fs:'1', iv_load_policy:'3', enablejsapi:'1'
+    });
+    if (location.origin && location.origin !== 'null') params.set('origin', location.origin);
+    const path = ch.kind === 'youtube'
+      ? 'embed/live_stream?channel=' + encodeURIComponent(ch.src)
+      : 'embed/' + encodeURIComponent(ch.src);
+    const f = document.createElement('iframe');
+    f.src = 'https://www.youtube.com/' + path + (path.indexOf('?') >= 0 ? '&' : '?') + params.toString();
+    f.allow = 'autoplay; encrypted-media; picture-in-picture; fullscreen';
+    f.allowFullscreen = true;
+    f.referrerPolicy = 'origin';
+    f.title = ch.name + ' 미리보기';
+    st.appendChild(f);
+    pvIframe = f;
+    f.addEventListener('load', () => { setTimeout(pvListen, 300); setTimeout(() => pvCmd('playVideo'), 1200); });
+    setTimeout(pvListen, 1500);
+    pvSetBadge('sync');
+
+  } else if (ch.kind === 'hls') {
+    const v = document.createElement('video');
+    v.muted = true; v.autoplay = true; v.playsInline = true; v.controls = true;
+    v.setAttribute('playsinline', '');
+    v.title = ch.name + ' 미리보기';
+    st.appendChild(v);
+    pvVideo = v;
+    v.addEventListener('playing', () => pvSetBadge('live'));
+    v.addEventListener('error', () => pvSetBadge('error'));
+    pvSetBadge('sync');
+    ensureHls().then(() => { if (pvVideo === v) pvAttachHls(v, ch); });
+
+  } else if (ch.kind === 'iframe') {
+    const f = document.createElement('iframe');
+    f.src = ch.src;
+    f.allow = 'autoplay; encrypted-media; picture-in-picture; fullscreen';
+    f.allowFullscreen = true;
+    f.referrerPolicy = 'no-referrer-when-downgrade';
+    f.title = ch.name + ' 미리보기';
+    st.appendChild(f);
+    pvIframe = f;
+    pvSetBadge('sync');
+    setTimeout(() => { const b = $('#pv-badge'); if (b && b.classList.contains('is-sync')) pvSetBadge('live'); }, 4000);
+
+  } else {
+    st.innerHTML = '<div class="pv-webnote">'
+      + '<div class="pv-webnote-t">' + esc(ch.name) + ' — 외부 공식 플레이어</div>'
+      + '<div class="pv-webnote-d">' + esc(ch.note || '이 채널은 방송사 공식 사이트에서만 재생됩니다. 새 창에서 확인해 주세요.') + '</div>'
+      + '<a class="pv-btn pv-btn-gold" href="' + esc(ch.src) + '" target="_blank" rel="noopener">공식 페이지 열기</a>'
+      + '</div>';
+    pvSetBadge('error');
+  }
+
+  pvRenderSlots();
+  modalRoot.hidden = true;
+  pvRoot.hidden = false;
+}
+function closePreview(backToList) {
+  pvTeardown();
+  pvRoot.hidden = true;
+  pvCh = null;
+  if (backToList) {
+    modalRoot.hidden = false;
+    setTimeout(() => { try { srcSearch.focus(); } catch (e) {} }, 40);
+  }
+}
+function pvAddToAllFront() {
+  const ch = pvCh;
+  if (!ch) return;
+  const order = sortedIds().slice();
+  const at = order.indexOf(ch.id);
+  if (at >= 0) order.splice(at, 1);
+  order.unshift(ch.id);
+  state.allOrder = order;
+  state.sort = 'custom';
+  refreshSortUI();
+  save();
+  closePreview(false);
+  closeModal();
+  if (state.layout === 'all') { applyLayout('all'); stage.scrollTop = 0; }
+  toast('전체 스크롤 맨 앞에 추가 — ' + ch.name);
 }
 
 /* ── custom sources ────────────────────────────────────────── */
@@ -1111,6 +1329,13 @@ function bindEvents() {
     if (card && !e.target.closest('[data-del]')) { /* handled per-card */ }
   });
   srcSearch.addEventListener('input', () => renderSources(srcSearch.value));
+
+  // 채널 미리보기
+  pvRoot.addEventListener('click', e => {
+    if (e.target.closest('[data-pv-close]')) closePreview(true);
+  });
+  $('#pv-add-all').addEventListener('click', pvAddToAllFront);
+  $('#pv-audio').addEventListener('click', pvToggleAudio);
   $('#custom-form').addEventListener('submit', e => {
     e.preventDefault();
     const url = $('#custom-url').value.trim();
@@ -1121,7 +1346,7 @@ function bindEvents() {
       errBox.hidden = true;
       $('#custom-url').value = ''; $('#custom-name').value = '';
       if (modalSlot != null) { assignSource(modalSlot, ch.id); }
-      else { renderSources(''); toast('커스텀 소스가 추가되었습니다'); }
+      else { renderSources(''); openPreview(ch); }
     } catch (err) {
       errBox.hidden = false;
       errBox.textContent = err.message;
@@ -1129,9 +1354,17 @@ function bindEvents() {
   });
 
   document.addEventListener('keydown', e => {
-    if (e.target.matches('input, textarea')) return;
+    if (e.target.matches('input, textarea')) {
+      if (e.key === 'Escape' && !pvRoot.hidden) { e.preventDefault(); closePreview(true); }
+      return;
+    }
     const k = e.key.toLowerCase();
-    if (k === 'escape') { if (!modalRoot.hidden) closeModal(); else $('#start-menu').hidden = true; return; }
+    if (k === 'escape') {
+      if (!pvRoot.hidden) { closePreview(true); return; }
+      if (!modalRoot.hidden) closeModal(); else $('#start-menu').hidden = true;
+      return;
+    }
+    if (!pvRoot.hidden) return;   // 미리보기 중에는 레이아웃 단축키를 잠재
     if (k === '1') applyLayout('9');
     else if (k === '2') applyLayout('4');
     else if (k === '3') applyLayout('6');

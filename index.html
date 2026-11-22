@@ -7,7 +7,7 @@
 <title>WORLD LIVE // GLOBAL NEWSROOM MONITOR</title>
 <meta name="description" content="전 세계 뉴스 채널 24시간 라이브 멀티뷰 — NHK·BBC·CNN FAST·CGTN·France 24·DW·ABC News Live·Al Jazeera HLS(백업 자동 전환)와 KBS NEWS 24·YTN·연합뉴스TV. 9분할·4분할 채널 직접 선택, 전체 스크롤 모드." />
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23080B10'/%3E%3Crect x='6' y='9' width='20' height='14' rx='2' fill='none' stroke='%23C9A86A' stroke-width='1.4'/%3E%3Ccircle cx='16' cy='16' r='2.4' fill='%23FF3B4E'/%3E%3C/svg%3E" />
-<link rel="stylesheet" href="css/style.css?v=16" />
+<link rel="stylesheet" href="css/style.css?v=17" />
 </head>
 <body>
 <div id="app" class="app">
@@ -259,6 +259,7 @@
       <svg viewBox="0 0 20 20" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="8.6" cy="8.6" r="5.4"/><path d="M12.6 12.6L17 17" stroke-linecap="round"/></g></svg>
       <input id="src-search" type="search" placeholder="채널 검색 — CNN, NHK, Al Jazeera, DW…" autocomplete="off" spellcheck="false" />
     </div>
+    <div class="modal-hint" id="modal-hint" hidden>채널을 누르면 <b>먼저 크게 미리 보여 드리고</b>, 그 화면에서 칸을 골라 추가합니다.</div>
 
     <div class="modal-body">
       <div class="src-grid" id="src-grid"></div>
@@ -281,7 +282,46 @@
 
 <div class="toast-wrap" id="toast-wrap"></div>
 
-<script src="js/channels.js?v=16"></script>
-<script src="js/app.js?v=16"></script>
+<!-- ══════════════ CHANNEL PREVIEW — 크게 보고 추가 여부 결정 ══════════════ -->
+<div class="preview-root" id="preview-root" hidden>
+  <div class="pv-scrim" data-pv-close="1"></div>
+  <section class="pv-panel" role="dialog" aria-modal="true" aria-labelledby="pv-title">
+    <header class="pv-head">
+      <div class="pv-ident">
+        <span class="pv-badge is-preview" id="pv-badge"><span class="pv-dot"></span><span id="pv-badge-txt">PREVIEW</span></span>
+        <div class="pv-names">
+          <h2 class="pv-title" id="pv-title">채널</h2>
+          <span class="pv-meta" id="pv-meta"></span>
+        </div>
+      </div>
+      <div class="pv-head-actions">
+        <button class="pv-btn pv-btn-ghost pv-audio" id="pv-audio" title="미리보기 소리 켜기 / 끄기">
+          <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2.6 6h2.2L7.6 3.6v8.8L4.8 10H2.6z" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linejoin="round"/><path d="M9.6 6a2.9 2.9 0 0 1 0 4M11.6 4.2a5.4 5.4 0 0 1 0 7.6" class="pv-wave" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round"/></svg>
+          <span id="pv-audio-txt">소리 켜기</span>
+        </button>
+        <a class="pv-btn pv-btn-ghost" id="pv-pop" target="_blank" rel="noopener">새 창에서 열기</a>
+        <button class="icon-btn ghost" data-pv-close="1" title="닫기 (Esc)">
+          <svg viewBox="0 0 20 20" aria-hidden="true"><g stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M5 5l10 10M15 5L5 15"/></g></svg>
+        </button>
+      </div>
+    </header>
+
+    <div class="pv-stage" id="pv-stage"></div>
+
+    <footer class="pv-foot">
+      <div class="pv-slot-group" id="pv-slot-group">
+        <span class="pv-label" id="pv-slot-label">현재 화면 슬롯에 추가</span>
+        <div class="pv-slots" id="pv-slots"></div>
+      </div>
+      <div class="pv-actions">
+        <button class="pv-btn pv-btn-gold" id="pv-add-all">전체 스크롤 맨 앞에 추가</button>
+        <button class="pv-btn pv-btn-quiet" data-pv-close="1">닫기 · 목록으로</button>
+      </div>
+    </footer>
+  </section>
+</div>
+
+<script src="js/channels.js?v=17"></script>
+<script src="js/app.js?v=17"></script>
 </body>
 </html>
