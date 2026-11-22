@@ -9,7 +9,7 @@
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23080B10'/%3E%3Crect x='6' y='9' width='20' height='14' rx='2' fill='none' stroke='%23C9A86A' stroke-width='1.4'/%3E%3Ccircle cx='16' cy='16' r='2.4' fill='%23FF3B4E'/%3E%3C/svg%3E" />
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css" />
-<link rel="stylesheet" href="css/style.css?v=42" />
+<link rel="stylesheet" href="css/style.css?v=43" />
 </head>
 <body>
 <div id="app" class="app">
@@ -17,93 +17,95 @@
   <!-- ══════════════ TOP CONTROL BAR ══════════════ -->
   <header class="topbar" id="topbar">
     <div class="brand">
-      <svg class="brand-mark globe-mark" viewBox="0 0 48 48" aria-hidden="true">
+      <svg class="brand-mark globe-mark" viewBox="0 0 60 60" aria-hidden="true">
         <defs>
           <!-- 바다: 표층 하이라이트 → 심해 -->
-          <radialGradient id="gOcean" cx="28%" cy="21%" r="90%">
-            <stop offset="0%" stop-color="#62CCE8"/>
-            <stop offset="16%" stop-color="#319CC0"/>
-            <stop offset="40%" stop-color="#126682"/>
-            <stop offset="64%" stop-color="#083F56"/>
-            <stop offset="84%" stop-color="#042231"/>
-            <stop offset="100%" stop-color="#01101A"/>
+          <radialGradient id="gOcean" cx="30%" cy="22%" r="88%">
+            <stop offset="0%" stop-color="#67E8F9"/>
+            <stop offset="18%" stop-color="#38BDF8"/>
+            <stop offset="42%" stop-color="#0284C7"/>
+            <stop offset="68%" stop-color="#0369A1"/>
+            <stop offset="88%" stop-color="#0C4A6E"/>
+            <stop offset="100%" stop-color="#082F49"/>
           </radialGradient>
           <!-- 대륙: 금빛 지형 -->
-          <linearGradient id="gLand" x1="18%" y1="0%" x2="88%" y2="100%">
-            <stop offset="0%" stop-color="#F6E4B4"/>
-            <stop offset="34%" stop-color="#DDBB7E"/>
-            <stop offset="70%" stop-color="#A47F45"/>
-            <stop offset="100%" stop-color="#5F4A26"/>
+          <linearGradient id="gLand" x1="15%" y1="0%" x2="85%" y2="100%">
+            <stop offset="0%" stop-color="#FEF08A"/>
+            <stop offset="35%" stop-color="#FACC15"/>
+            <stop offset="70%" stop-color="#CA8A04"/>
+            <stop offset="100%" stop-color="#713F12"/>
           </linearGradient>
-          <!-- 구체 명암: 오른쪽·아래로 갈수록 어두워짐 -->
-          <radialGradient id="gShade" cx="27%" cy="21%" r="94%">
+          <!-- 구체 명암: 우하단 음영 -->
+          <radialGradient id="gShade" cx="28%" cy="22%" r="92%">
             <stop offset="0%" stop-color="rgba(255,255,255,0)"/>
-            <stop offset="46%" stop-color="rgba(3,10,18,.06)"/>
-            <stop offset="70%" stop-color="rgba(3,9,16,.38)"/>
-            <stop offset="86%" stop-color="rgba(2,7,13,.74)"/>
-            <stop offset="100%" stop-color="rgba(1,4,9,.92)"/>
+            <stop offset="48%" stop-color="rgba(2,6,12,0.06)"/>
+            <stop offset="72%" stop-color="rgba(2,6,12,0.42)"/>
+            <stop offset="88%" stop-color="rgba(2,6,12,0.78)"/>
+            <stop offset="100%" stop-color="rgba(1,4,9,0.94)"/>
           </radialGradient>
-          <!-- 대기권 링 -->
+          <!-- 대기권 글로우 -->
           <radialGradient id="gAtmo" cx="50%" cy="50%" r="50%">
-            <stop offset="74%" stop-color="rgba(90,215,245,0)"/>
-            <stop offset="90%" stop-color="rgba(120,228,252,.20)"/>
-            <stop offset="98%" stop-color="rgba(170,246,255,.10)"/>
-            <stop offset="100%" stop-color="rgba(170,246,255,0)"/>
+            <stop offset="70%" stop-color="rgba(56,189,248,0)"/>
+            <stop offset="88%" stop-color="rgba(56,189,248,0.22)"/>
+            <stop offset="98%" stop-color="rgba(186,230,253,0.14)"/>
+            <stop offset="100%" stop-color="rgba(186,230,253,0)"/>
           </radialGradient>
           <!-- 림 라이트 -->
-          <linearGradient id="gRim" x1="10%" y1="4%" x2="90%" y2="96%">
-            <stop offset="0%" stop-color="rgba(214,252,255,.95)"/>
-            <stop offset="36%" stop-color="rgba(126,226,248,.55)"/>
-            <stop offset="70%" stop-color="rgba(70,150,190,.18)"/>
-            <stop offset="100%" stop-color="rgba(170,238,255,.60)"/>
+          <linearGradient id="gRim" x1="10%" y1="5%" x2="90%" y2="95%">
+            <stop offset="0%" stop-color="rgba(224,242,254,0.95)"/>
+            <stop offset="35%" stop-color="rgba(56,189,248,0.6)"/>
+            <stop offset="70%" stop-color="rgba(14,116,144,0.2)"/>
+            <stop offset="100%" stop-color="rgba(186,230,253,0.65)"/>
           </linearGradient>
           <!-- 스페큘러 하이라이트 -->
           <radialGradient id="gSpec" cx="50%" cy="50%" r="50%">
-            <stop offset="0%" stop-color="rgba(255,255,255,.66)"/>
-            <stop offset="55%" stop-color="rgba(210,248,255,.20)"/>
+            <stop offset="0%" stop-color="rgba(255,255,255,0.7)"/>
+            <stop offset="55%" stop-color="rgba(224,242,254,0.2)"/>
             <stop offset="100%" stop-color="rgba(255,255,255,0)"/>
           </radialGradient>
-          <linearGradient id="beamGrad" x1="0" y1="0" x2="1" y2="0">
-            <stop offset="0%" stop-color="rgba(120,235,255,0)"/>
-            <stop offset="45%" stop-color="rgba(180,247,255,.95)"/>
-            <stop offset="100%" stop-color="rgba(120,235,255,.12)"/>
+          <!-- 위성 본체 골드 그라데이션 -->
+          <linearGradient id="satBody" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#FFFBEB"/>
+            <stop offset="40%" stop-color="#FDE68A"/>
+            <stop offset="75%" stop-color="#D97706"/>
+            <stop offset="100%" stop-color="#78350F"/>
           </linearGradient>
-          <radialGradient id="satHalo" cx="50%" cy="50%" r="50%">
-            <stop offset="0%" stop-color="rgba(205,250,255,.85)"/>
-            <stop offset="55%" stop-color="rgba(110,225,250,.34)"/>
-            <stop offset="100%" stop-color="rgba(110,225,250,0)"/>
-          </radialGradient>
-          <linearGradient id="satPanel" x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0%" stop-color="#3A5F9E"/>
-            <stop offset="48%" stop-color="#17304F"/>
-            <stop offset="100%" stop-color="#0A1830"/>
+          <!-- 태양광 패널 그라데이션 -->
+          <linearGradient id="satSolar" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#1E3A8A"/>
+            <stop offset="50%" stop-color="#172554"/>
+            <stop offset="100%" stop-color="#0F172A"/>
           </linearGradient>
-          <clipPath id="gClip"><circle cx="23" cy="24" r="15.5"/></clipPath>
+
+          <clipPath id="gClip"><circle cx="30" cy="30" r="14"/></clipPath>
           <filter id="gSoft" x="-70%" y="-70%" width="240%" height="240%">
-            <feGaussianBlur stdDeviation="1.5"/>
+            <feGaussianBlur stdDeviation="1.6"/>
           </filter>
-          <path id="orbitPath" d="M44 24a21 8.2 0 1 0-42 0a21 8.2 0 1 0 42 0z"/>
-          <!-- 대륙 세트 (회전용으로 두 번 배치) -->
-          <g id="landSet" fill="url(#gLand)" stroke="rgba(66,46,20,.34)" stroke-width=".16" stroke-linejoin="round">
-            <path d="M12.4 14.4c1-1.6 2.7-2.2 4.1-1.5 1 .5 2.1.5 3-.1 1.4-.9 3.2-.3 3.9 1.2.6 1.2 0 2.6-1.2 3.1-1 .4-1.6 1.4-1.4 2.4.2 1.1-.6 2.1-1.7 2.3-1.2.2-2.1-.6-3-1-1-.4-2.4 0-3.1-.9-.6-.8-.2-1.9-.8-2.7-.7-1-.8-2.3.2-2.8z"/>
-            <path d="M22.3 21.2c1.7-.5 3.2.6 3.3 2.1.2 1.6-.8 2.8-1.8 3.7-.9.8-1.2 2-2.5 2.2-1.4.2-2.5-1-2.4-2.3.1-1.5.6-2.7 1.6-3.7.6-.8 1.1-1.7 1.8-2z"/>
-            <path d="M13.9 26.6c1.2-.6 2.5-.2 3 .8.5 1.1 0 2.3-1 2.8-.8.5-1 1.5-2 1.7-1.2.2-2.2-.5-2.3-1.6-.1-1.1.5-2.1 1.4-2.8.3-.3.6-.6.9-.9z"/>
-            <path d="M27.4 28.8c1.2-.4 2.3.2 2.5 1.4.2 1.1-.6 2.1-1.7 2.3-1.1.2-2-.5-2.1-1.5-.1-1 .5-1.9 1.3-2.2z"/>
-            <path d="M29 17.6c1.1-.5 2.2-.2 2.5.8.3 1-.3 1.9-1.3 2.1-.9.2-1.8-.3-2-1.1-.2-.8.2-1.5.8-1.8z"/>
+
+          <!-- 시원하게 거리를 둔 와이드 우주 궤도 경로 (중심 30,30 / rx=26.5, ry=11.5) -->
+          <path id="orbitPath" d="M 56.5 30 a 26.5 11.5 0 1 0 -53 0 a 26.5 11.5 0 1 0 53 0 z"/>
+
+          <!-- 대륙 세트 -->
+          <g id="landSet" fill="url(#gLand)" stroke="rgba(66,46,20,0.34)" stroke-width="0.16" stroke-linejoin="round">
+            <path d="M19.4 20.4c1-1.6 2.7-2.2 4.1-1.5 1 .5 2.1.5 3-.1 1.4-.9 3.2-.3 3.9 1.2.6 1.2 0 2.6-1.2 3.1-1 .4-1.6 1.4-1.4 2.4.2 1.1-.6 2.1-1.7 2.3-1.2.2-2.1-.6-3-1-1-.4-2.4 0-3.1-.9-.6-.8-.2-1.9-.8-2.7-.7-1-.8-2.3.2-2.8z"/>
+            <path d="M29.3 27.2c1.7-.5 3.2.6 3.3 2.1.2 1.6-.8 2.8-1.8 3.7-.9.8-1.2 2-2.5 2.2-1.4.2-2.5-1-2.4-2.3.1-1.5.6-2.7 1.6-3.7.6-.8 1.1-1.7 1.8-2z"/>
+            <path d="M20.9 32.6c1.2-.6 2.5-.2 3 .8.5 1.1 0 2.3-1 2.8-.8.5-1 1.5-2 1.7-1.2.2-2.2-.5-2.3-1.6-.1-1.1.5-2.1 1.4-2.8.3-.3.6-.6.9-.9z"/>
+            <path d="M34.4 34.8c1.2-.4 2.3.2 2.5 1.4.2 1.1-.6 2.1-1.7 2.3-1.1.2-2-.5-2.1-1.5-.1-1 .5-1.9 1.3-2.2z"/>
+            <path d="M36 23.6c1.1-.5 2.2-.2 2.5.8.3 1-.3 1.9-1.3 2.1-.9.2-1.8-.3-2-1.1-.2-.8.2-1.5.8-1.8z"/>
           </g>
         </defs>
 
         <!-- 대기권 헤일로 -->
-        <circle cx="23" cy="24" r="17.1" fill="none" stroke="rgba(120,226,250,.12)" stroke-width="1.8" filter="url(#gSoft)"/>
-        <circle cx="23" cy="24" r="17.4" fill="url(#gAtmo)"/>
+        <circle cx="30" cy="30" r="15.8" fill="none" stroke="rgba(56,189,248,0.18)" stroke-width="1.8" filter="url(#gSoft)"/>
+        <circle cx="30" cy="30" r="15.8" fill="url(#gAtmo)"/>
 
-        <!-- 구체 본체 -->
-        <circle cx="23" cy="24" r="15.5" fill="url(#gOcean)"/>
+        <!-- 지구 본체 -->
+        <circle cx="30" cy="30" r="14" fill="url(#gOcean)"/>
 
         <!-- 극지 빙하 · 대륙 (자전) -->
         <g clip-path="url(#gClip)">
-          <ellipse cx="23" cy="10.1" rx="6.6" ry="2.3" fill="rgba(240,252,255,.26)"/>
-          <ellipse cx="23" cy="37.8" rx="5.6" ry="2" fill="rgba(240,252,255,.20)"/>
+          <ellipse cx="30" cy="17.4" rx="6" ry="2.2" fill="rgba(240,252,255,0.3)"/>
+          <ellipse cx="30" cy="42.5" rx="5" ry="1.8" fill="rgba(240,252,255,0.22)"/>
           <g class="globe-land">
             <use href="#landSet"/>
             <use href="#landSet" transform="translate(-31 0)"/>
@@ -111,53 +113,81 @@
         </g>
 
         <!-- 경선·위선 그리드 -->
-        <g class="globe-grid" clip-path="url(#gClip)" fill="none" stroke="rgba(158,236,252,.30)" stroke-width=".4">
-          <ellipse cx="23" cy="24" rx="4" ry="15.5"/>
-          <ellipse cx="23" cy="24" rx="8.6" ry="15.5"/>
-          <ellipse cx="23" cy="24" rx="12.6" ry="15.5"/>
-          <path d="M7.5 24h31" opacity=".75"/>
-          <ellipse cx="23" cy="17.2" rx="13.9" ry="1.9" opacity=".85"/>
-          <ellipse cx="23" cy="24" rx="15.5" ry="2.6"/>
-          <ellipse cx="23" cy="30.8" rx="13.9" ry="1.9" opacity=".85"/>
+        <g class="globe-grid" clip-path="url(#gClip)" fill="none" stroke="rgba(186,230,253,0.32)" stroke-width="0.35">
+          <ellipse cx="30" cy="30" rx="3.6" ry="14"/>
+          <ellipse cx="30" cy="30" rx="7.8" ry="14"/>
+          <ellipse cx="30" cy="30" rx="11.4" ry="14"/>
+          <path d="M16 30h28" opacity="0.75"/>
+          <ellipse cx="30" cy="23.8" rx="12.5" ry="1.8" opacity="0.85"/>
+          <ellipse cx="30" cy="30" rx="14" ry="2.4"/>
+          <ellipse cx="30" cy="36.2" rx="12.5" ry="1.8" opacity="0.85"/>
         </g>
 
         <!-- 입체 명암 · 하이라이트 · 림 -->
-        <circle cx="23" cy="24" r="15.5" fill="url(#gShade)"/>
-        <ellipse cx="17.6" cy="17.8" rx="5.2" ry="3.4" fill="url(#gSpec)" transform="rotate(-26 17.6 17.8)" opacity=".62"/>
-        <circle class="globe-rim-pulse" cx="23" cy="24" r="15.35" fill="none" stroke="url(#gRim)" stroke-width="1"/>
+        <circle cx="30" cy="30" r="14" fill="url(#gShade)"/>
+        <ellipse cx="25.2" cy="24.4" rx="4.8" ry="3" fill="url(#gSpec)" transform="rotate(-26 25.2 24.4)" opacity="0.65"/>
+        <circle class="globe-rim-pulse" cx="30" cy="30" r="13.8" fill="none" stroke="url(#gRim)" stroke-width="0.9"/>
 
-        <!-- 기울어진 3D 궤도 · 위성 · 신호 빔 -->
-        <g transform="rotate(-18 23 24)">
-          <use href="#orbitPath" class="orbit-line" fill="none" stroke="rgba(228,203,150,.45)" stroke-width=".55" stroke-dasharray="5 4.5"/>
+        <!-- 거리를 두고 지구를 공전하는 정밀 인공위성 (3D 회전 궤도) -->
+        <g transform="rotate(-20 30 30)">
+          <!-- 우주 궤도 점선 -->
+          <use href="#orbitPath" class="orbit-line" fill="none" stroke="rgba(245,229,192,0.4)" stroke-width="0.6" stroke-dasharray="4.5 4"/>
+
+          <!-- 궤도를 도는 인공위성 -->
           <g class="sat">
-            <animateMotion dur="11s" repeatCount="indefinite" rotate="auto">
+            <animateMotion dur="12s" repeatCount="indefinite" rotate="auto">
               <mpath href="#orbitPath"/>
             </animateMotion>
-            <!-- 전파(와이파이) 3결 — 위성에서 지구 방향(로컬 -y)으로 순차적으로 퍼진다 -->
-            <path class="wv wv1" d="M-3.06 -2.57A4 4 0 0 1 3.06 -2.57" opacity="0">
-              <animate attributeName="opacity" values="0;.95;.75;0" keyTimes="0;.3;.65;1" dur="2.4s" begin="0s" repeatCount="indefinite"/>
-              <animateTransform attributeName="transform" type="scale" values=".8;1.18" dur="2.4s" begin="0s" repeatCount="indefinite"/>
+
+            <!-- 지구를 향한 통신 펄스 전파 (WiFi Waves) -->
+            <path class="wv wv1" d="M-3.6 -3.2 A 5 5 0 0 1 3.6 -3.2" opacity="0">
+              <animate attributeName="opacity" values="0;0.95;0.6;0" keyTimes="0;0.3;0.65;1" dur="2.2s" begin="0s" repeatCount="indefinite"/>
+              <animateTransform attributeName="transform" type="scale" values="0.8;1.25" dur="2.2s" begin="0s" repeatCount="indefinite"/>
             </path>
-            <path class="wv wv2" d="M-4.52 -3.79A5.9 5.9 0 0 1 4.52 -3.79" opacity="0">
-              <animate attributeName="opacity" values="0;.9;.7;0" keyTimes="0;.3;.65;1" dur="2.4s" begin="0.8s" repeatCount="indefinite"/>
-              <animateTransform attributeName="transform" type="scale" values=".8;1.18" dur="2.4s" begin="0.8s" repeatCount="indefinite"/>
+            <path class="wv wv2" d="M-5.4 -4.6 A 7.2 7.2 0 0 1 5.4 -4.6" opacity="0">
+              <animate attributeName="opacity" values="0;0.9;0.5;0" keyTimes="0;0.3;0.65;1" dur="2.2s" begin="0.7s" repeatCount="indefinite"/>
+              <animateTransform attributeName="transform" type="scale" values="0.8;1.25" dur="2.2s" begin="0.7s" repeatCount="indefinite"/>
             </path>
-            <path class="wv wv3" d="M-5.98 -5.01A7.8 7.8 0 0 1 5.98 -5.01" opacity="0">
-              <animate attributeName="opacity" values="0;.82;.6;0" keyTimes="0;.3;.65;1" dur="2.4s" begin="1.6s" repeatCount="indefinite"/>
-              <animateTransform attributeName="transform" type="scale" values=".8;1.18" dur="2.4s" begin="1.6s" repeatCount="indefinite"/>
+            <path class="wv wv3" d="M-7.2 -6 A 9.5 9.5 0 0 1 7.2 -6" opacity="0">
+              <animate attributeName="opacity" values="0;0.8;0.4;0" keyTimes="0;0.3;0.65;1" dur="2.2s" begin="1.4s" repeatCount="indefinite"/>
+              <animateTransform attributeName="transform" type="scale" values="0.8;1.25" dur="2.2s" begin="1.4s" repeatCount="indefinite"/>
             </path>
-            <!-- 위성 본체 — 양쪽 태양판과 지구를 향한 안테나 -->
-            <circle class="sat-halo" r="4.4" fill="url(#satHalo)"/>
-            <path d="M-2.4 0h-.35M2.4 0h.35" stroke="rgba(201,168,106,.9)" stroke-width=".45" stroke-linecap="round" fill="none"/>
-            <rect x="-5.1" y="-1.55" width="2.35" height="3.1" rx=".28" fill="url(#satPanel)" stroke="rgba(228,203,150,.85)" stroke-width=".35"/>
-            <rect x="2.75" y="-1.55" width="2.35" height="3.1" rx=".28" fill="url(#satPanel)" stroke="rgba(228,203,150,.85)" stroke-width=".35"/>
-            <g stroke="rgba(120,90,35,.5)" stroke-width=".3" fill="none">
-              <path d="M-3.5 -1.55v3.1M-3.5 0h2.35M3.1 -1.55v3.1M3.1 0h2"/>
-            </g>
-            <rect x="-2.4" y="-1.35" width="4.8" height="2.7" rx=".55" fill="#FFF0CB" stroke="rgba(160,120,55,.85)" stroke-width=".35"/>
-            <rect x="-1.55" y="-.62" width="3.1" height="1.24" rx=".25" fill="rgba(201,168,106,.55)"/>
-            <path d="M0 -1.35V-2.25" stroke="rgba(228,203,150,.95)" stroke-width=".5" stroke-linecap="round" fill="none"/>
-            <circle cx="0" cy="-2.5" r=".55" fill="#BFF6FF"/>
+
+            <!-- 지구 방향 파라볼릭 접시 안테나 (Parabolic Dish) -->
+            <path d="M-2.8 -2.4 Q 0 -0.8 2.8 -2.4" fill="none" stroke="#67E8F9" stroke-width="0.75" stroke-linecap="round"/>
+            <path d="M0 -1.6 V -3.2" stroke="#FDE68A" stroke-width="0.6"/>
+            <!-- 안테나 피드 비콘 (깜빡이는 레드 펄스 LED) -->
+            <circle cx="0" cy="-3.5" r="0.65" fill="#FF2E44">
+              <animate attributeName="opacity" values="0.4;1;0.4" dur="1s" repeatCount="indefinite"/>
+            </circle>
+
+            <!-- 좌측 대형 태양광 패널 날개 (Solar Wing Left) -->
+            <path d="M-2.2 0 H-3.6" stroke="#FDE68A" stroke-width="0.8" stroke-linecap="round"/>
+            <rect x="-9.4" y="-2.8" width="5.8" height="5.6" rx="0.6" fill="url(#satSolar)" stroke="#60A5FA" stroke-width="0.55"/>
+            <!-- 솔라 패널 격자 라인 -->
+            <path d="M-6.5 -2.8 V 2.8 M-9.4 0 H-3.6" stroke="rgba(147,197,253,0.55)" stroke-width="0.35"/>
+            <!-- 태양광 패널 빛 반사 스페큘러 글린트 (빛을 받아 번쩍이는 반사광) -->
+            <polygon class="sat-glint" points="-9.4,-2.8 -6.5,-2.8 -4.5,2.8 -7.4,2.8" fill="rgba(255,255,255,0.75)">
+              <animate attributeName="opacity" values="0.1;0.95;0.1" dur="2.4s" repeatCount="indefinite"/>
+            </polygon>
+
+            <!-- 우측 대형 태양광 패널 날개 (Solar Wing Right) -->
+            <path d="M2.2 0 H3.6" stroke="#FDE68A" stroke-width="0.8" stroke-linecap="round"/>
+            <rect x="3.6" y="-2.8" width="5.8" height="5.6" rx="0.6" fill="url(#satSolar)" stroke="#60A5FA" stroke-width="0.55"/>
+            <!-- 솔라 패널 격자 라인 -->
+            <path d="M6.5 -2.8 V 2.8 M3.6 0 H9.4" stroke="rgba(147,197,253,0.55)" stroke-width="0.35"/>
+            <!-- 태양광 패널 빛 반사 스페큘러 글린트 -->
+            <polygon class="sat-glint" points="3.6,-2.8 6.5,-2.8 8.5,2.8 5.6,2.8" fill="rgba(255,255,255,0.75)">
+              <animate attributeName="opacity" values="0.1;0.95;0.1" dur="2.4s" begin="0.6s" repeatCount="indefinite"/>
+            </polygon>
+
+            <!-- 중앙 메인 바디 (골드 티타늄 큐브 코어) -->
+            <rect x="-2.2" y="-2.5" width="4.4" height="5" rx="0.7" fill="url(#satBody)" stroke="#FDE68A" stroke-width="0.6"/>
+            <!-- 코어 정밀 센서 창 & 빛 반사 -->
+            <rect x="-1.3" y="-1.4" width="2.6" height="2.8" rx="0.4" fill="#0F172A" stroke="#38BDF8" stroke-width="0.35"/>
+            <circle cx="0" cy="0" r="0.75" fill="#67E8F9">
+              <animate attributeName="fill" values="#67E8F9;#FFFFFF;#67E8F9" dur="1.8s" repeatCount="indefinite"/>
+            </circle>
           </g>
         </g>
       </svg>

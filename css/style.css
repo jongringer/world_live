@@ -117,11 +117,17 @@ svg { display: block; }
 /* BRAND LOGO */
 .brand { display: flex; align-items: center; gap: 14px; flex: 0 0 auto; cursor: default; }
 .brand-mark {
-  width: 52px; height: 52px; flex: 0 0 auto;
-  filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.7)) drop-shadow(0 0 20px rgba(56, 189, 248, 0.35));
+  width: 58px; height: 58px; flex: 0 0 auto;
+  filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.75)) drop-shadow(0 0 20px rgba(56, 189, 248, 0.4));
   transition: transform 0.25s cubic-bezier(0.2, 0.8, 0.3, 1);
 }
-.brand:hover .brand-mark { transform: scale(1.03); }
+.brand:hover .brand-mark { transform: scale(1.04); }
+
+/* 위성 디테일 & 반사광 효과 */
+.sat-glint {
+  mix-blend-mode: overlay;
+  pointer-events: none;
+}
 
 /* 지구본·위성 3D 애니메이션 */
 .globe-mark .globe-land { animation: globeSpin 22s linear infinite; }
