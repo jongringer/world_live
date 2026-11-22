@@ -1,29 +1,17 @@
 <!DOCTYPE html>
 <html lang="ko"><head><meta charset="utf-8"><title>globe preview</title>
 <style>
-body{margin:0;background:#0a0e15;color:#cbd5e1;font-family:sans-serif;display:flex;gap:0;flex-direction:column}
-.row{display:flex;align-items:center;gap:26px;padding:22px 26px}
-.row.light{background:linear-gradient(180deg,#2B3B59,#182235)}
+body{margin:0;background:#0a0e15;color:#cbd5e1;font-family:sans-serif}
+.row{display:flex;align-items:center;gap:26px;padding:22px 26px;background:linear-gradient(180deg,#2B3B59,#182235)}
+.row.dark{background:#05070a}
 .box{display:flex;flex-direction:column;align-items:center;gap:6px;font-size:11px}
-.box svg{display:block}
-.big svg{width:220px;height:220px}
-.mid svg{width:96px;height:96px}
-.small svg{width:42px;height:42px}
+.big svg{width:220px;height:220px;display:block}
+.mid svg{width:96px;height:96px;display:block}
+.small svg{width:42px;height:42px;display:block}
 </style></head><body>
-<div class="row light">
-  <div class="box big">220px SIZE</div>
-  <div class="box mid">96px</div>
-</div>
-<div class="row light" style="align-items:flex-end">
-  <div class="box small">42</div><div class="box small">42</div><div class="box small">42</div>
-</div>
-<div class="row" style="background:#05070a">
-  <div class="box small">42 on dark</div>
-</div>
-<script>
-const svg = document.getElementById('src').innerHTML;
-document.querySelectorAll('.box').forEach(b=>{ if(!b.querySelector('svg')) b.insertAdjacentHTML('afterbegin', svg); });
-</script>
+<div class="row"><div class="box big">220</div><div class="box mid">96</div></div>
+<div class="row"><div class="box small">42</div><div class="box small">42</div><div class="box small">42</div><div class="box small">42</div></div>
+<div class="row dark"><div class="box small">42</div><div class="box small">42</div><div class="box small">42</div></div>
 <div id="src" hidden>
       <svg class="brand-mark globe-mark" viewBox="0 0 48 48" aria-hidden="true">
         <defs>
@@ -146,4 +134,8 @@ document.querySelectorAll('.box').forEach(b=>{ if(!b.querySelector('svg')) b.ins
         </g>
       </svg>
 </div>
+<script>
+const src = document.getElementById('src').innerHTML;
+document.querySelectorAll('.box').forEach(b => b.insertAdjacentHTML('beforeend', src));
+</script>
 </body></html>
