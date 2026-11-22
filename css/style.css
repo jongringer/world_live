@@ -1085,3 +1085,96 @@ body.is-full.is-hud .order-ctl { opacity: 1 !important; pointer-events: auto !im
   .modal { width: calc(100vw - 20px); }
   .src-grid { grid-template-columns: 1fr; }
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   v8.2 — MOBILE 9:16 VERTICAL 4-SPLIT SCROLL & FULLSCREEN ROTATE
+   스마트폰 세로(9:16) 모드: 고정 분할에 얽매이지 않고 4개씩(2×2)
+   한 화면에 맞춰 시원하게 아래로 스크롤하는 모바일 4분할 뷰.
+   더블 탭 또는 핀치 아웃 시 16:9 가로 풀화면 회전 확대.
+   ═══════════════════════════════════════════════════════════════ */
+@media (orientation: portrait), (max-aspect-ratio: 1/1) {
+  :root {
+    --topbar-h: 52px;
+    --pad: 6px;
+    --gap: 6px;
+    --strip-h: 22px;
+  }
+  .topbar {
+    padding: 0 10px;
+    gap: 8px;
+  }
+  .brand { gap: 8px; }
+  .brand-name { font-size: 15px; }
+  .brand-sub { display: none; }
+  .brand-mark { width: 40px; height: 40px; }
+  .layouts, .clocks { display: none !important; }
+  .find-btn { height: 32px; padding: 0 10px; font-size: 11.5px; }
+  .icon-btn { width: 32px; height: 32px; }
+
+  /* 4분할 단위 스크롤 스테이지 */
+  .stage {
+    display: block !important;
+    align-items: flex-start !important;
+    justify-content: flex-start !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    padding: 6px !important;
+    -webkit-overflow-scrolling: touch;
+    scroll-snap-type: y proximity;
+  }
+  .stage::-webkit-scrollbar { width: 4px; }
+  .stage::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 4px; }
+
+  /* 2열(2x2 = 4분할) 모바일 세로 그리드 */
+  .grid,
+  .grid[data-layout="9"],
+  .grid[data-layout="6"],
+  .grid[data-layout="4"],
+  .grid[data-layout="all"] {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 6px !important;
+    width: 100% !important;
+    height: auto !important;
+    margin: 0 !important;
+  }
+
+  .grid .tile {
+    aspect-ratio: 16/9 !important;
+    width: 100% !important;
+    height: auto !important;
+    scroll-snap-align: start;
+  }
+
+  .chan-tag { max-width: calc(100% - 32px); padding: 2.5px 6px; }
+  .chan-name { font-size: 9px; }
+  .chan-switch span { display: none; }
+  .chan-switch { padding: 0 4px; height: 22px; font-size: 8.5px; }
+
+  /* 더블 탭 / 핀치 아웃 시 풀화면 회전 확대 (1x1 모드) */
+  body.is-mobile-full .stage {
+    padding: 0 !important;
+    overflow: hidden !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+  body.is-mobile-full .grid[data-layout="1"] {
+    display: flex !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+  body.is-mobile-full .grid[data-layout="1"] .tile {
+    width: 100vh !important;
+    height: 100vw !important;
+    transform: rotate(90deg);
+    transform-origin: center center;
+    border-radius: 0 !important;
+  }
+  body.is-mobile-full .topbar,
+  body.is-mobile-full .signal-strip {
+    display: none !important;
+  }
+}

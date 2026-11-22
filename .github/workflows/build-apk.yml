@@ -30,21 +30,20 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
-
-      - name: Install Dependencies
+      - name: Prepare Web Assets
         run: |
           npm ci || npm install
           mkdir -p www
           cp -r index.html css js www/
           npx cap sync android
 
-      - name: Build Android Debug APK
+      - name: Build Android APK
         working-directory: android
+        env:
+          ANDROID_HOME: /usr/local/lib/android/sdk
         run: |
           chmod +x gradlew
-          ./gradlew assembleDebug --stacktrace
+          ./gradlew assembleDebug --no-daemon --stacktrace
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
@@ -59,11 +58,11 @@ jobs:
           files: android/app/build/outputs/apk/debug/app-debug.apk
           name: WORLD LIVE ${{ github.ref_name }}
           body: |
-            ### 🚀 WORLD LIVE // GLOBAL NEWSROOM MONITOR (${{ github.ref_name }})
+            ### 📱 WORLD LIVE Android APK (${{ github.ref_name }})
             
-            - 🌍 **3D 지구본 & 우주 궤도 인공위성 리뉴얼**: 와이드 궤도, 대형 솔라 패널 날개, 스페큘러 빛 반사(Glint) 및 통신 전파 펄스
-            - 🎛️ **딥 옵시디언 주조정실(MCR) 테마**: 초정밀 1px 림 라이트, 블룸버그/스튜디오 스타일 택타일 키
-            - 🔊 **Active Audio Tally**: 소스 선택 시 선명한 3px 화이트 림 테두리 및 앰비언트 글로우
-            - 📱 **Android APK**: 방송 모니터링 전용 Android 앱 (가로모드 고정, 화면 꺼짐 방지)
+            - 📲 **모바일 9:16 화면비 최적화**: 4분할 단위 매끄러운 세로 스크롤 & 핀치 아웃/더블 탭 시 16:9 가로 풀화면 회전 확대
+            - 🌍 **와이드 궤도 3D 지구본 & 반사광 인공위성**
+            - 🎛️ **딥 옵시디언 주조정실 테마 & 화이트 탤리 윤곽선**
+            - ⚡ **자동 회전 및 화면 꺼짐 방지**
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

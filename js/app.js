@@ -1346,6 +1346,12 @@ function showBigChannel(ch, fromDbl, clean) {
   state.sets['1'] = [ch.id];
   save();
   applyLayout('1');
+  document.body.classList.add('is-mobile-full');
+  try {
+    if (screen.orientation && screen.orientation.lock) {
+      screen.orientation.lock('landscape').catch(() => {});
+    }
+  } catch (e) {}
   toast((clean ? '전체화면' : '1×1') + ' — ' + ch.name);
   if (!enterFull) return;
   cleanFullEntry = !!clean;   // 전체화면 버튼이면 상하단 바·배지 없이 순수 영상으로 시작
@@ -1365,6 +1371,15 @@ function showBigChannel(ch, fromDbl, clean) {
 }
 /* ESC(전체화면 종료) → 분할 화면에서 들어왔을 때만 이전 레이아웃으로 복귀 */
 function restoreAfterDblFull() {
+  document.body.classList.remove('is-mobile-full');
+  try {
+    if (screen.orientation && screen.orientation.unlock) {
+      screen.orientation.unlock();
+    }
+  } catch (e) {}
+  if (document.fullscreenElement) {
+    document.exitFullscreen().catch(() => {});
+  }
   if (!enteredFullByDbl) return;
   enteredFullByDbl = false;
   const back = prevLayout;
@@ -1577,6 +1592,71 @@ function bindEvents() {
     showBig(parseInt(t.dataset.slot, 10), true);       // 1×1 + FULL, ESC → 이전 화면
   });
 
+  /* ── Mobile Touch Gestures: Double Tap & Pinch-Out/In ────────────────
+     9:16 모바일/세로 화면에서 더블 탭 또는 핀치 아웃 시 풀화면 회전 확대,
+     풀화면에서 더블 탭 또는 핀치 인 시 이전 4분할 스크롤 복귀 */
+  let lastTouchTime = 0;
+  let lastTouchSlot = -1;
+  let pinchStartDist = 0;
+  let pinchTile = null;
+
+  function touchDist(t1, t2) {
+    const dx = t1.clientX - t2.clientX;
+    const dy = t1.clientY - t2.clientY;
+    return Math.sqrt(dx * dx + dy * dy);
+  }
+
+  grid.addEventListener('touchstart', e => {
+    if (e.touches.length === 2) {
+      pinchStartDist = touchDist(e.touches[0], e.touches[1]);
+      pinchTile = e.target.closest('.tile');
+      return;
+    }
+    if (e.touches.length === 1) {
+      const now = Date.now();
+      const t = e.target.closest('.tile');
+      if (t) {
+        const slot = parseInt(t.dataset.slot, 10);
+        if (now - lastTouchTime < 320 && lastTouchSlot === slot) {
+          e.preventDefault();
+          lastTouchTime = 0;
+          if (state.layout === '1') {
+            restoreAfterDblFull();
+          } else {
+            showBig(slot, true);
+          }
+          return;
+        }
+        lastTouchTime = now;
+        lastTouchSlot = slot;
+      }
+    }
+  }, { passive: false });
+
+  grid.addEventListener('touchmove', e => {
+    if (e.touches.length === 2 && pinchStartDist > 0) {
+      const curDist = touchDist(e.touches[0], e.touches[1]);
+      const ratio = curDist / pinchStartDist;
+      if (ratio > 1.32 && state.layout !== '1') {
+        const t = pinchTile || e.target.closest('.tile');
+        pinchStartDist = 0;
+        pinchTile = null;
+        if (t) showBig(parseInt(t.dataset.slot, 10), true);
+      } else if (ratio < 0.72 && state.layout === '1') {
+        pinchStartDist = 0;
+        pinchTile = null;
+        restoreAfterDblFull();
+      }
+    }
+  }, { passive: true });
+
+  grid.addEventListener('touchend', e => {
+    if (e.touches.length < 2) {
+      pinchStartDist = 0;
+      pinchTile = null;
+    }
+  }, { passive: true });
+
   // FULL 모드 HUD — 클릭 토글 + 상·하단 핫존 + 자동 숨김
   grid.addEventListener('mousemove', e => {
     if (!isFull()) return;
@@ -1619,6 +1699,18 @@ function bindEvents() {
   pvRoot.addEventListener('click', e => {
     if (e.target.closest('[data-pv-close]')) closePreview(true);
   });
+
+  // APK QR 다운로드 모달
+  const btnApk = $('#btn-apk');
+  const apkModalRoot = $('#apk-modal-root');
+  if (btnApk && apkModalRoot) {
+    btnApk.addEventListener('click', () => {
+      apkModalRoot.hidden = false;
+    });
+    apkModalRoot.addEventListener('click', e => {
+      if (e.target.closest('[data-apk-close]')) apkModalRoot.hidden = true;
+    });
+  }
   $('#pv-add-all').addEventListener('click', pvAddToAllFront);
   $('#pv-audio').addEventListener('click', pvToggleAudio);
   $('#custom-form').addEventListener('submit', e => {
