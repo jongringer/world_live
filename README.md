@@ -1,4 +1,4 @@
-# WORLD LIVE // GLOBAL NEWSROOM MONITOR (v7)
+# WORLD LIVE // GLOBAL NEWSROOM MONITOR (v8)
 
 전 세계 **검증된 라이브 뉴스 채널 50여 개**를 16:9 데스크톱 모니터에서 동시에 보는 방송국 주조정실 스타일 멀티뷰.
 
