@@ -82,19 +82,19 @@ const CHANNELS = [
     note:'Sky News 라이브는 YouTube 임베드가 차단되어 있어(오류 150) 자사 페이지에서 재생해야 합니다.' },
 
   /* ── MIDDLE EAST ────────────────────────────────── */
-  { id:'aj', name:'AL JAZEERA ENGLISH', short:'AJ', country:'QATAR', cc:'QA', zone:'MIDEAST',
+  { id:'aj', name:'AL JAZEERA ENGLISH', short:'AJ', country:'QATAR', cc:'QA', zone:'MIDEast',
     kind:'youtube', src:'UCNye-wNBqNL5ZzHSJj3l8Bg', status:'live' },
 
-  { id:'ajhls', name:'AL JAZEERA ENGLISH · HLS', short:'AJ', country:'QATAR', cc:'QA', zone:'MIDEAST',
+  { id:'ajhls', name:'AL JAZEERA ENGLISH · HLS', short:'AJ', country:'QATAR', cc:'QA', zone:'MIDEast',
     kind:'hls', src:'https://live-hls-apps-aje-fa.getaj.net/AJE/index.m3u8', status:'live' },
 
-  { id:'ajarab', name:'AL JAZEERA ARABIC', short:'AJأ', country:'QATAR', cc:'QA', zone:'MIDEAST',
+  { id:'ajarab', name:'AL JAZEERA ARABIC', short:'AJأ', country:'QATAR', cc:'QA', zone:'MIDEast',
     kind:'hls', src:'https://live-hls-apps-aja-fa.getaj.net/AJA/01.m3u8', status:'live' },
 
-  { id:'skyarabia', name:'SKY NEWS ARABIA', short:'SKY', country:'UAE', cc:'AE', zone:'MIDEAST',
+  { id:'skyarabia', name:'SKY NEWS ARABIA', short:'SKY', country:'UAE', cc:'AE', zone:'MIDEast',
     kind:'youtube', src:'UCIJXOvggjKtCagMfxvcCzAA', status:'live' },
 
-  { id:'skyarabia_hls', name:'SKY NEWS ARABIA · HLS', short:'SKY', country:'UAE', cc:'AE', zone:'MIDEAST',
+  { id:'skyarabia_hls', name:'SKY NEWS ARABIA · HLS', short:'SKY', country:'UAE', cc:'AE', zone:'MIDEast',
     kind:'hls', src:'https://live-stream.skynewsarabia.com/c-horizontal-channel/horizontal-stream/index.m3u8', status:'live' }
 ];
 

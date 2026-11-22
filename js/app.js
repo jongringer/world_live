@@ -14,7 +14,7 @@ const LAYOUTS = {
   '1': { cols: 1, rows: 1, count: 1 }
 };
 const GAP = 6;
-const ZONES = { ASIA:'ASIA · PACIFIC', AMERICAS:'AMERICAS', EUROPE:'EUROPE', MIDEast:'MIDDLE EAST' };
+const ZONES = { ASIA:'ASIA · PACIFIC', AMERICAS:'AMERICAS', EUROPE:'EUROPE', MIDEast:'MIDDLE EAST', CUSTOM:'CUSTOM SOURCES' };
 
 /* ── state ─────────────────────────────────────────────────── */
 const state = {
@@ -534,7 +534,7 @@ function renderSources(q) {
 
   const groups = {};
   list.forEach(c => { const z = c.zone || 'ASIA'; (groups[z] = groups[z] || []).push(c); });
-  const order = ['ASIA', 'AMERICAS', 'EUROPE', 'MIDEast'];
+  const order = ['ASIA', 'AMERICAS', 'EUROPE', 'MIDEast', 'CUSTOM'];
   order.forEach(z => {
     const arr = groups[z];
     if (!arr) return;
