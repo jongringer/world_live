@@ -650,7 +650,7 @@ function renderSources(q) {
 
   const groups = {};
   list.forEach(c => { const z = c.zone || 'ASIA'; (groups[z] = groups[z] || []).push(c); });
-  const order = ['ASIA', 'OCEANIA', 'AMERICAS', 'EUROPE', 'MIDEAST', 'AFRICA', 'EXTERNAL', 'CUSTOM'];
+  const order = ['KOREA', 'ASIA', 'OCEANIA', 'AMERICAS', 'EUROPE', 'MIDEAST', 'AFRICA', 'EXTERNAL', 'CUSTOM'];
   const frag = document.createDocumentFragment();
   order.forEach(z => {
     const arr = groups[z];
@@ -761,6 +761,25 @@ function addCustom(raw, name) {
   return ch;
 }
 
+/* ── fullscreen HUD (FULL 모드) ────────────────────────────── */
+let hudTimer = null;
+function isFull() { return !!document.fullscreenElement; }
+function showHud(autoHide) {
+  if (!isFull()) return;
+  document.body.classList.add('is-hud');
+  clearTimeout(hudTimer);
+  if (autoHide !== false) hudTimer = setTimeout(hideHud, 3600);
+}
+function hideHud() {
+  document.body.classList.remove('is-hud');
+  clearTimeout(hudTimer);
+  hudTimer = null;
+}
+function toggleHud() {
+  if (document.body.classList.contains('is-hud')) hideHud();
+  else showHud();
+}
+
 /* ── fullscreen / external ─────────────────────────────────── */
 function toggleFullscreen() {
   if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
@@ -797,6 +816,7 @@ function bindEvents() {
   });
   $('#btn-reload').addEventListener('click', () => { rebuildGrid(); toast('모든 피드를 다시 연결합니다'); });
   $('#btn-sources').addEventListener('click', () => openModal(null));
+  $('#btn-find').addEventListener('click', () => { openModal(null); });
 
   // start layout menu
   $('#btn-start').addEventListener('click', e => {
@@ -849,6 +869,28 @@ function bindEvents() {
     showBig(parseInt(t.dataset.slot, 10));
   });
 
+  // FULL 모드 HUD — 클릭 토글 + 상·하단 핫존 + 자동 숨김
+  grid.addEventListener('mousemove', e => {
+    if (!isFull()) return;
+    if (e.target.closest('.tlay-ctrl, .chan-switch')) { clearTimeout(hudTimer); return; }
+    const nearEdge = e.clientY <= 48 || e.clientY >= window.innerHeight - 44;
+    if (nearEdge) showHud();
+    else if (document.body.classList.contains('is-hud')) {
+      clearTimeout(hudTimer);
+      hudTimer = setTimeout(hideHud, 3600);
+    }
+  });
+  grid.addEventListener('click', e => {
+    if (!isFull()) return;
+    if (e.target.closest('[data-act]')) return;                 // 타일 버튼은 기존 동작 유지
+    if (e.target.closest('.tile') && !e.target.closest('.tile-hit')) return;
+    toggleHud();                                                 // 화면·빈 영역 클릭 = HUD 토글
+  });
+  document.querySelectorAll('.topbar, .signal-strip').forEach(el => {
+    el.addEventListener('mouseenter', () => clearTimeout(hudTimer));
+    el.addEventListener('mouseleave', () => { if (isFull()) showHud(); });
+  });
+
   // modal
   modalRoot.addEventListener('click', e => {
     if (e.target.closest('[data-close]')) closeModal();
@@ -883,6 +925,7 @@ function bindEvents() {
     else if (k === '4') applyLayout('1');
     else if (k === '5' || k === 'a') applyLayout('all');
     else if (k === 'f') toggleFullscreen();
+    else if (k === 'h' && isFull()) toggleHud();
     else if (k === 'm') $('#btn-mute').click();
     else if (k === 'r') rebuildGrid();
     else if (k === 's') openModal(null);
@@ -891,6 +934,8 @@ function bindEvents() {
   window.addEventListener('resize', () => sizeGrid());
   document.addEventListener('fullscreenchange', () => {
     $('#btn-fullscreen').classList.toggle('is-active', !!document.fullscreenElement);
+    if (document.fullscreenElement) { document.body.classList.add('is-full'); showHud(); }
+    else { document.body.classList.remove('is-full'); hideHud(); }
     setTimeout(sizeGrid, 60);
   });
 }
@@ -908,7 +953,9 @@ window.WORLD_LIVE = {
   setLayout: l => applyLayout(l),
   setAudio: id => setAudio(id),
   mount: i => mountSlot(i),
-  unmount: i => unmountSlot(i)
+  unmount: i => unmountSlot(i),
+  hud: () => toggleHud(),
+  full: () => toggleFullscreen()
 };
 
 /* ── boot ──────────────────────────────────────────────────── */

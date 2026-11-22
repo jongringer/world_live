@@ -13,6 +13,54 @@
    ═══════════════════════════════════════════════════════════════ */
 
 const CHANNELS = [
+  /* ── KOREA (국내 뉴스 · 최상단) ────────────────────────── */
+  { id:'kbs24', name:'KBS NEWS 24', short:'KBS', country:'한국', cc:'KR', zone:'KOREA',
+    kind:'youtube-video', src:'zGFBJL_fhUU', status:'live' },
+
+  { id:'ytn24', name:'YTN 24시간 라이브', short:'YTN', country:'한국', cc:'KR', zone:'KOREA',
+    kind:'youtube-video', src:'aZyD6EPl6KU', status:'live' },
+
+  { id:'yonhap24', name:'연합뉴스TV 라이브', short:'YTV', country:'한국', cc:'KR', zone:'KOREA',
+    kind:'youtube-video', src:'6QZ_qc75ihU', status:'live' },
+
+  { id:'ytn', name:'YTN · 채널', short:'YTN', country:'한국', cc:'KR', zone:'KOREA',
+    kind:'youtube', src:'UChlgI3UHCOnwUGzWzbJ3H5w', status:'event', alt:true,
+    note:'YTN 채널 라이브 자동 추적 — 속보·편성 시간대 송출(평소 OFFLINE).' },
+
+  { id:'yonhap', name:'연합뉴스TV · 채널', short:'YTV', country:'한국', cc:'KR', zone:'KOREA',
+    kind:'youtube', src:'UCTHCOPwqNfZ0uiKOvFyhGwg', status:'event', alt:true,
+    note:'연합뉴스TV 채널 라이브 자동 추적 — 편성 시간대 송출(평소 OFFLINE).' },
+
+  { id:'mbc', name:'MBC NEWS', short:'MBC', country:'한국', cc:'KR', zone:'KOREA',
+    kind:'youtube', src:'UCF4Wxdo3inmxP-Y59wXDsFw', status:'event',
+    note:'MBC 뉴스 — 뉴스 편성 시간대에 라이브 송출(현재 오프라인).' },
+
+  { id:'sbs', name:'SBS 뉴스', short:'SBS', country:'한국', cc:'KR', zone:'KOREA',
+    kind:'youtube', src:'UCkinYTS9IHqOEwR1Sze2JTw', status:'event',
+    note:'SBS 뉴스 — 뉴스 편성 시간대에 라이브 송출(현재 오프라인).' },
+
+  { id:'jtbc', name:'JTBC NEWS', short:'JTBC', country:'한국', cc:'KR', zone:'KOREA',
+    kind:'youtube', src:'UCsU-I-vHLiaMfV_ceaYz5rQ', status:'event',
+    note:'JTBC 뉴스룸 등 편성 시간대에 라이브 송출(현재 오프라인).' },
+
+  { id:'mbn', name:'MBN News', short:'MBN', country:'한국', cc:'KR', zone:'KOREA',
+    kind:'youtube', src:'UCG9aFJTZ-lMCHAiO1KJsirg', status:'event',
+    note:'MBN — 편성 시간대에 라이브 송출(현재 오프라인).' },
+
+  { id:'channela', name:'채널A', short:'CHA', country:'한국', cc:'KR', zone:'KOREA',
+    kind:'youtube', src:'UCfq4V1DAuaojnr2ryvWNysw', status:'event',
+    note:'채널A — 편성 시간대에 라이브 송출(현재 오프라인).' },
+
+  { id:'tvchosun', name:'TV CHOSUN', short:'TVC', country:'한국', cc:'KR', zone:'KOREA',
+    kind:'youtube', src:'UCuw1hxBo5mDVUhgMzRDk3aw', status:'event',
+    note:'TV조선 — 편성 시간대에 라이브 송출(현재 오프라인).' },
+
+  { id:'arirang', name:'아리랑 TV (ARIRANG)', short:'ARI', country:'한국', cc:'KR', zone:'KOREA',
+    kind:'hls', src:'https://amdlive-ch01-ctnd-com.akamaized.net/arirang_1ch/smil:arirang_1ch.smil/playlist.m3u8', status:'live' },
+
+  { id:'tbs', name:'TBS 서울', short:'TBS', country:'한국', cc:'KR', zone:'KOREA',
+    kind:'hls', src:'https://cdntv.tbs.seoul.kr/tbs/tbs_tv_web.smil/playlist.m3u8', status:'live' },
+
   /* ── ASIA / PACIFIC ─────────────────────────────────────────── */
   { id:'nhk', name:'NHK WORLD-JAPAN', short:'NHK', country:'일본', cc:'JP', zone:'ASIA',
     kind:'youtube', src:'UCSPEjw8F2nQDtmUKPFNF7_A', status:'live' },
@@ -28,18 +76,6 @@ const CHANNELS = [
 
   { id:'cgtn', name:'CGTN', short:'CGTN', country:'중국', cc:'CN', zone:'ASIA',
     kind:'hls', src:'https://amg00405-rakutentv-cgtn-rakuten-i9tar.amagi.tv/master.m3u8', status:'live' },
-
-  { id:'kbs', name:'KBS NEWS', short:'KBS', country:'한국', cc:'KR', zone:'ASIA',
-    kind:'youtube', src:'UCCQTRi69dsVYHN3exePtZ1A', status:'event',
-    note:'KBS 뉴스는 편성 시간대에만 YouTube 라이브를 송출합니다(현재 오프라인).' },
-
-  { id:'ytn', name:'YTN', short:'YTN', country:'한국', cc:'KR', zone:'ASIA',
-    kind:'youtube', src:'UChlgI3UHCOnwUGzWzbJ3H5w', status:'event',
-    note:'YTN은 속보·편성 시간대에 라이브를 송출합니다(현재 오프라인).' },
-
-  { id:'yonhap', name:'연합뉴스TV', short:'YTV', country:'한국', cc:'KR', zone:'ASIA',
-    kind:'youtube', src:'UCTHCOPwqNfZ0uiKOvFyhGwg', status:'event',
-    note:'연합뉴스TV는 편성 시간대에 라이브를 송출합니다(현재 오프라인).' },
 
   { id:'ndtv', name:'NDTV 24x7', short:'NDTV', country:'인도', cc:'IN', zone:'ASIA',
     kind:'hls', src:'https://web-ndtv24x7-uk.akamaized.net/hls/live/2109290/ndtv24x7uk/master.m3u8', status:'live' },
@@ -197,14 +233,15 @@ const CHANNELS = [
 
 /* 레이아웃별 기본 배치 — 4분할과 9분할은 서로 독립적으로 저장됩니다 */
 const DEFAULT_SETS = {
-  '9': ['cnn', 'nhk', 'abc', 'aj', 'nbc', 'dw', 'f24', 'skyarabia', 'cna'],
-  '4': ['cnn', 'aj', 'nhk', 'dw'],
-  '6': ['cnn', 'abc', 'nhk', 'aj', 'f24', 'cna'],
-  '1': ['cnn']
+  '9': ['cnn', 'kbs24', 'ytn24', 'nhk', 'aj', 'abc', 'dw', 'yonhap24', 'cna'],
+  '4': ['kbs24', 'ytn24', 'yonhap24', 'cnn'],
+  '6': ['cnn', 'kbs24', 'ytn24', 'yonhap24', 'nhk', 'aj'],
+  '1': ['kbs24']
 };
 
 const KIND_LABEL = { youtube:'YT·LIVE', 'youtube-video':'YT·LIVE', hls:'HLS', web:'WEB' };
 const ZONE_LABEL = {
+  KOREA:'KOREA · 국내 뉴스',
   ASIA:'ASIA · PACIFIC', OCEANIA:'OCEANIA', AMERICAS:'AMERICAS', EUROPE:'EUROPE',
   MIDEAST:'MIDDLE EAST', AFRICA:'AFRICA', EXTERNAL:'외부 공식 링크 (새 창)', CUSTOM:'CUSTOM SOURCES'
 };

@@ -620,3 +620,39 @@ svg{display:block;}
 @media (max-width:1240px){
   .start-btn .lb-txt{display:none;}
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   v2.1 — 채널 찾기 버튼 · FULL 모드 HUD
+   ═══════════════════════════════════════════════════════════════ */
+
+/* 채널 찾기 (텍스트 버튼) */
+.find-btn{
+  display:inline-flex;align-items:center;gap:7px;
+  height:34px;padding:0 12px;margin-right:6px;border-radius:3px;
+  border:1px solid var(--gold-dim);
+  background:linear-gradient(180deg,rgba(201,168,106,.15),rgba(201,168,106,.05));
+  color:var(--gold-hi);font-size:11px;font-weight:600;letter-spacing:.05em;
+  transition:background .15s,border-color .15s;
+}
+.find-btn svg{width:14px;height:14px;}
+.find-btn:hover{background:linear-gradient(180deg,rgba(201,168,106,.3),rgba(201,168,106,.12));border-color:rgba(201,168,106,.6);}
+
+/* FULL 모드 — 상하단 바를 화면 밖으로 밀어 숨김 */
+.topbar,.signal-strip{transition:transform .26s cubic-bezier(.4,0,.2,1);}
+body.is-full .topbar{
+  position:fixed;left:0;right:0;top:0;z-index:30;
+  transform:translateY(-102%);
+}
+body.is-full .signal-strip{
+  position:fixed;left:0;right:0;bottom:0;z-index:30;
+  transform:translateY(102%);
+}
+body.is-full.is-hud .topbar,
+body.is-full.is-hud .signal-strip{transform:none;}
+body.is-full .topbar{background:linear-gradient(180deg,rgba(20,25,35,.96),rgba(8,11,16,.92));}
+body.is-full .signal-strip{background:linear-gradient(0deg,rgba(8,11,16,.95),rgba(5,7,10,.92));}
+
+/* FULL 모드 핫존 힌트 */
+body.is-full .stage{cursor:default;}
+body.is-full.is-hud .topbar::after,
+body.is-full.is-hud .signal-strip::after{content:none;}
