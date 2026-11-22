@@ -31,7 +31,7 @@
   --amber:#E9A93C;
   --red:#FF3B4E;
 
-  --sans:"Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,"Apple SD Gothic Neo","Malgun Gothic","Noto Sans KR",sans-serif;
+  --sans:"Pretendard Variable",Pretendard,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,"Apple SD Gothic Neo","Malgun Gothic","Noto Sans KR",sans-serif;
   --mono:ui-monospace,"SFMono-Regular","JetBrains Mono","Roboto Mono","IBM Plex Mono",Menlo,Consolas,monospace;
 
   --topbar-h:66px;
@@ -201,26 +201,27 @@ svg{display:block;}
 #btn-mute.is-muted .ic-waves{display:none;}
 #btn-mute.is-muted .ic-x{display:block;}
 
-/* clocks — v4: 한글 도시명 · 큼직한 시각 */
-.clocks{display:flex;align-items:center;gap:0;flex:0 1 auto;overflow:hidden;}
+/* clocks — v4.1: 한글 도시명 · 큼직한 시각 · 어떤 폭에서도 초(seconds)가 잘리지 않음 */
+.clocks{display:flex;align-items:center;gap:0;flex:0 0 auto;overflow:visible;}
 .clock{
   display:flex;flex-direction:column;gap:6px;justify-content:center;
-  padding:0 16px;border-left:1px solid rgba(255,255,255,.17);
-  min-width:108px;
+  padding:0 13px;border-left:1px solid rgba(255,255,255,.17);
+  flex:0 0 auto;white-space:nowrap;
 }
 .clock:first-child{border-left:0;padding-left:6px;}
 .clock-c{
-  font-size:11.5px;letter-spacing:.14em;color:#CBD5E1;font-weight:700;
+  font-size:10.5px;letter-spacing:.1em;color:#CBD5E1;font-weight:700;
   display:flex;align-items:center;gap:5px;white-space:nowrap;
 }
-.clock-name{line-height:1;}
+.clock-name{line-height:1;white-space:nowrap;}
 .clock-tz{
   font-family:var(--mono);font-size:8px;letter-spacing:.1em;font-weight:600;
-  color:#94A4BB;line-height:1;
+  color:#94A4BB;line-height:1;white-space:nowrap;
 }
 .clock-t{
-  font-family:var(--mono);font-size:21px;font-weight:600;letter-spacing:-.01em;
+  font-family:var(--mono);font-size:18px;font-weight:600;letter-spacing:0;
   font-variant-numeric:tabular-nums;color:#F8FAFC;line-height:1;
+  white-space:nowrap;
   text-shadow:0 1px 0 rgba(0,0,0,.40), 0 0 16px rgba(255,255,255,.16);
 }
 .clock.is-local .clock-name{color:#8FE9FB;}
@@ -536,30 +537,40 @@ svg{display:block;}
 .toast.is-out{opacity:0;transition:opacity .25s;}
 
 /* ─────────── RESPONSIVE ─────────── */
-@media (max-width:1500px){
-  .clock{padding:0 11px;min-width:96px;}
-  .clock-t{font-size:17.5px;}
-  .clock-c{font-size:10.5px;}
+@media (max-width:1600px){
+  .topbar{gap:16px;}
+  .clock{padding:0 10px;}
+  .clock-t{font-size:16.5px;}
+  .clock-c{font-size:10px;}
   .layout-btn .lb-dim{display:none;}
-}
-@media (max-width:1300px){
+  .sort-btn .sort-label,.sort-btn .cs-caret{display:none;}
   .brand-sub{display:none;}
-  .topbar{gap:12px;padding:0 10px;}
-  .clock{padding:0 9px;min-width:84px;}
-  .clock-t{font-size:16px;}
-  .clock-c{font-size:10px;letter-spacing:.08em;}
 }
-@media (max-width:1120px){
+@media (max-width:1460px){
+  .topbar{gap:13px;padding:0 12px;}
+  .layout-btn .lb-txt{display:none;}
+  .clock{padding:0 9px;}
+  .clock-t{font-size:16px;}
+}
+@media (max-width:1150px){
   .clock:nth-child(3){display:none;}
 }
+@media (max-width:1040px){
+  .start-btn .lb-txt{display:none;}
+  .find-btn span{display:none;}
+}
 @media (max-width:980px){
-  .layout-btn .lb-txt{display:none;}
   .src-grid{grid-template-columns:repeat(2,minmax(0,1fr));}
   .cp-form{grid-template-columns:1fr;gap:5px;}
 }
-@media (max-width:700px){
+@media (max-width:900px){
+  .clock:nth-child(2){display:none;}
+}
+@media (max-width:780px){
   .clocks{display:none;}
-  .brand-name{font-size:12px;letter-spacing:.2em;}
+  .brand-name{font-size:13px;letter-spacing:.22em;}
+}
+@media (max-width:700px){
   .modal{width:calc(100vw - 20px);}
   .src-grid{grid-template-columns:1fr;}
 }
