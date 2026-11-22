@@ -1,16 +1,25 @@
 <!DOCTYPE html>
 <html lang="ko"><head><meta charset="utf-8"><title>globe preview</title>
 <style>
-body{margin:0;background:linear-gradient(180deg,#2B3B59,#182235);color:#cbd5e1;font-family:sans-serif;display:flex;align-items:center;gap:30px;padding:20px}
+body{margin:0;background:linear-gradient(180deg,#2B3B59,#182235);color:#cbd5e1;font-family:sans-serif;display:flex;align-items:flex-start;gap:26px;padding:18px;flex-wrap:wrap}
 .box{display:flex;flex-direction:column;align-items:center;gap:6px;font-size:11px}
-.huge svg{width:620px;height:620px;display:block}
+.huge svg{width:520px;height:520px;display:block}
 .big svg{width:220px;height:220px;display:block}
 .mid svg{width:96px;height:96px;display:block}
 .small svg{width:42px;height:42px;display:block}
-.col{display:flex;flex-direction:column;gap:16px;align-items:center}
+.col{display:flex;flex-direction:column;gap:14px;align-items:center}
+canvas{display:block;image-rendering:pixelated;background:transparent}
 </style></head><body>
-<div class="box huge">620</div>
-<div class="col"><div class="box big">220</div><div class="box mid">96</div><div class="box small">42</div><div class="box small">42</div></div>
+<div class="box huge">520 (vector)</div>
+<div class="col">
+  <div class="box big">220</div>
+  <div class="box mid">96</div>
+  <div class="box small">42</div>
+</div>
+<div class="col">
+  <div class="box">42px 실제 픽셀 ×8<canvas id="c42"></canvas></div>
+  <div class="box">96px 실제 픽셀 ×4<canvas id="c96"></canvas></div>
+</div>
 <div id="src" hidden>
       <svg class="brand-mark globe-mark" viewBox="0 0 48 48" aria-hidden="true">
         <defs>
@@ -134,7 +143,25 @@ body{margin:0;background:linear-gradient(180deg,#2B3B59,#182235);color:#cbd5e1;f
       </svg>
 </div>
 <script>
-const src = document.getElementById('src').innerHTML;
-document.querySelectorAll('.box').forEach(b => b.insertAdjacentHTML('beforeend', src));
+const srcDefs = document.getElementById('src').innerHTML;
+document.querySelectorAll('.box.huge,.box.big,.box.mid,.box.small').forEach(b => b.insertAdjacentHTML('beforeend', srcDefs));
+
+function raster(size, canvas, scale){
+  const svgEl = document.querySelector('#src svg');
+  const clone = svgEl.cloneNode(true);
+  clone.setAttribute('width', size); clone.setAttribute('height', size);
+  const str = new XMLSerializer().serializeToString(clone);
+  const img = new Image();
+  img.onload = () => {
+    canvas.width = size; canvas.height = size;
+    canvas.style.width = (size*scale)+'px'; canvas.style.height = (size*scale)+'px';
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0,0,size,size);
+    ctx.drawImage(img, 0, 0, size, size);
+  };
+  img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(str);
+}
+raster(42, document.getElementById('c42'), 8);
+raster(96, document.getElementById('c96'), 4);
 </script>
 </body></html>
