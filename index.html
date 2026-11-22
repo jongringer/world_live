@@ -5,11 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <meta name="color-scheme" content="dark" />
 <title>WORLD LIVE // GLOBAL NEWSROOM MONITOR</title>
-<meta name="description" content="전 세계 뉴스 채널 24시간 라이브 멀티뷰 — NHK·BBC·CNN FAST·CGTN·France 24·DW·ABC News Live·Al Jazeera HLS(백업 자동 전환)와 KBS NEWS 24·YTN·연합뉴스TV. 9분할·4분할 채널 직접 선택, 전체 스크롤 모드." />
+<meta name="description" content="전 세계 뉴스 채널 24시간 라이브 멀티뷰 — NHK·BBC·CNN FAST·CGTN·France 24·DW·ABC News Live·Al Jazeera HLS(백업 자동 전환)와 KBS NEWS 24·YTN·연합뉴스TV. 9분할·6분할·4분할 채널 직접 선택, 클린 전체화면, 전체 스크롤 모드." />
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23080B10'/%3E%3Crect x='6' y='9' width='20' height='14' rx='2' fill='none' stroke='%23C9A86A' stroke-width='1.4'/%3E%3Ccircle cx='16' cy='16' r='2.4' fill='%23FF3B4E'/%3E%3C/svg%3E" />
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css" />
-<link rel="stylesheet" href="css/style.css?v=30" />
+<link rel="stylesheet" href="css/style.css?v=31" />
 </head>
 <body>
 <div id="app" class="app">
@@ -150,17 +150,17 @@
         <svg viewBox="0 0 20 20" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="1.2"><rect x="1.5" y="1.5" width="17" height="17" rx="1.6"/><path d="M7.2 2v16M12.8 2v16M2 7.2h16M2 12.8h16"/></g></svg>
         <span class="lb-txt">9분할</span><span class="lb-dim">3×3</span>
       </button>
-      <button class="layout-btn" data-layout="4" title="4분할 (2×2)  ·  키 2">
-        <svg viewBox="0 0 20 20" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="1.2"><rect x="1.5" y="1.5" width="17" height="17" rx="1.6"/><path d="M10 2v16M2 10h16"/></g></svg>
-        <span class="lb-txt">4분할</span><span class="lb-dim">2×2</span>
-      </button>
-      <button class="layout-btn" data-layout="6" title="6분할 (3×2)  ·  키 3">
+      <button class="layout-btn" data-layout="6" title="6분할 (3×2)  ·  키 2">
         <svg viewBox="0 0 20 20" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="1.2"><rect x="1.5" y="1.5" width="17" height="17" rx="1.6"/><path d="M7.2 2v16M12.8 2v16M2 10h16"/></g></svg>
         <span class="lb-txt">6분할</span><span class="lb-dim">3×2</span>
       </button>
-      <button class="layout-btn" data-layout="1" title="전체화면 1×1  ·  키 4">
-        <svg viewBox="0 0 20 20" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="1.2"><rect x="1.5" y="1.5" width="17" height="17" rx="1.6"/></g></svg>
-        <span class="lb-txt">전체</span><span class="lb-dim">1×1</span>
+      <button class="layout-btn" data-layout="4" title="4분할 (2×2)  ·  키 3">
+        <svg viewBox="0 0 20 20" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="1.2"><rect x="1.5" y="1.5" width="17" height="17" rx="1.6"/><path d="M10 2v16M2 10h16"/></g></svg>
+        <span class="lb-txt">4분할</span><span class="lb-dim">2×2</span>
+      </button>
+      <button class="layout-btn layout-btn-clean" data-layout="1" title="전체화면 — 선택 채널 클린 FULL (ESC → 이전 화면)  ·  키 4">
+        <svg viewBox="0 0 20 20" aria-hidden="true"><rect x="1.8" y="2.6" width="16.4" height="14.8" rx="1.8" fill="currentColor" opacity=".9"/></svg>
+        <span class="lb-txt">전체화면</span><span class="lb-dim">1×1</span>
       </button>
       <button class="layout-btn layout-btn-all" data-layout="all" title="전 세계 LIVE 전체 스크롤  ·  키 5">
         <svg viewBox="0 0 20 20" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="1.2"><rect x="1.5" y="1.5" width="17" height="17" rx="1.6"/><path d="M1.5 6.6h17M1.5 11.5h17M1.5 16.4h17"/></g></svg>
@@ -205,10 +205,10 @@
           <div class="sm-head">시작 화면 고정</div>
           <button data-start="auto"><span>마지막 화면</span><small>마지막으로 보던 화면</small></button>
           <button data-start="9"><span>9분할</span><small>3×3 · 9채널</small></button>
-          <button data-start="4"><span>4분할</span><small>2×2 · 4채널</small></button>
           <button data-start="6"><span>6분할</span><small>3×2 · 6채널</small></button>
-          <button data-start="all"><span>전체 스크롤</span><small>전 세계 LIVE</small></button>
-          <button data-start="1"><span>전체 1×1</span><small>한 채널</small></button>
+          <button data-start="4"><span>4분할</span><small>2×2 · 4채널</small></button>
+          <button data-start="1"><span>전체화면</span><small>1×1 · 한 채널</small></button>
+          <button data-start="all"><span>스크롤</span><small>전체 스크롤 · 전 세계 LIVE</small></button>
           <div class="sm-note">‘마지막 화면’은 마지막으로 보던 배치 그대로 시작합니다.</div>
         </div>
       </div>
@@ -322,6 +322,6 @@
 </div>
 
 <script src="js/channels.js?v=30"></script>
-<script src="js/app.js?v=30"></script>
+<script src="js/app.js?v=31"></script>
 </body>
 </html>

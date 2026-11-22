@@ -13,7 +13,7 @@ const LAYOUTS = {
   '9':  { cols: 3, rows: 3, count: 9, label: '9분할' },
   '4':  { cols: 2, rows: 2, count: 4, label: '4분할' },
   '6':  { cols: 3, rows: 2, count: 6, label: '6분할' },
-  '1':  { cols: 1, rows: 1, count: 1, label: '전체 1×1' },
+  '1':  { cols: 1, rows: 1, count: 1, label: '전체화면' },
   'all':{ scroll: true, count: 0, label: '전체 스크롤' }
 };
 const GAP = 6;
@@ -831,7 +831,7 @@ function updateStrip() {
 }
 
 /* ── start layout menu ─────────────────────────────────────── */
-const START_NAMES = { '9':'9분할', '4':'4분할', '6':'6분할', '1':'1×1', 'all':'전체 스크롤' };
+const START_NAMES = { '9':'9분할', '6':'6분할', '4':'4분할', '1':'전체화면', 'all':'스크롤' };
 function refreshStartUI() {
   $('#start-label').textContent = state.startPinned ? (START_NAMES[state.start] || '9분할') : '마지막 화면';
   document.querySelectorAll('#start-menu [data-start]').forEach(b => {
@@ -1250,8 +1250,9 @@ function addCustom(raw, name) {
 
 /* ── fullscreen HUD (FULL 모드) ────────────────────────────── */
 let hudTimer = null;
-let prevLayout = null;        // 더블클릭 FULL 진입 직전에 보던 레이아웃
-let enteredFullByDbl = false; // 이번 전체화면이 ‘타일 더블클릭’으로 시작됐는지
+let prevLayout = null;        // FULL(전체화면) 진입 직전에 보던 레이아웃
+let enteredFullByDbl = false; // 이번 전체화면이 분할 화면에서 들어왔는지(ESC → 그 화면)
+let cleanFullEntry = false;   // 전체화면 버튼으로 들어와 HUD 없이 순수 영상으로 시작
 function isFull() { return !!document.fullscreenElement; }function showHud(autoHide) {
   if (!isFull()) return;
   document.body.classList.add('is-hud');
@@ -1282,17 +1283,36 @@ function openExternal(i) {
   window.open(url, '_blank', 'noopener');
 }
 function showBig(i, fromDbl) {
-  const ch = slotChannel(i);
+  showBigChannel(slotChannel(i), !!fromDbl, false);
+}
+/* 오디오로 듣고 있는 채널(없으면 현재 1번 칸) */
+function selectedChannel() {
+  if (!state.muted && state.audioId) {
+    const ch = byId(state.audioId);
+    if (ch) return ch;
+  }
+  return slotChannel(0);
+}
+/* 상단 ‘전체화면’ 버튼·키 4 — 선택 채널을 1×1 + 브라우저 FULL ‘클린 화면’으로 */
+function showCleanFull() {
+  const ch = selectedChannel();
+  if (!ch) return;
+  showBigChannel(ch, true, true);
+}
+function showBigChannel(ch, fromDbl, clean) {
+  if (!ch) return;
   const enterFull = !!fromDbl && !document.fullscreenElement;
-  // 더블클릭 FULL 진입은 ‘들어가기 전 화면’을 기억해 ESC로 돌아온다
-  if (enterFull && state.layout !== '1') { prevLayout = state.layout; enteredFullByDbl = true; }
+  // 분할 화면에서 들어왔으면 ‘들어가기 전 화면’을 기억해 ESC로 돌아온다
+  if (fromDbl && state.layout !== '1') { prevLayout = state.layout; enteredFullByDbl = true; }
   state.sets['1'] = [ch.id];
   save();
   applyLayout('1');
-  toast('1×1 — ' + ch.name);
+  toast((clean ? '전체화면' : '1×1') + ' — ' + ch.name);
   if (!enterFull) return;
+  cleanFullEntry = !!clean;   // 전체화면 버튼이면 상하단 바·배지 없이 순수 영상으로 시작
   document.documentElement.requestFullscreen().catch(() => {
     // 전체화면이 막힌 환경: 1×1에 머물지 않고 원래 화면으로 되돌린다
+    cleanFullEntry = false;
     if (enteredFullByDbl) {
       enteredFullByDbl = false;
       const back = prevLayout;
@@ -1302,7 +1322,7 @@ function showBig(i, fromDbl) {
     toast('이 브라우저에서는 전체화면을 쓸 수 없습니다');
   });
 }
-/* ESC(전체화면 종료) → 더블클릭으로 들어왔을 때만 이전 레이아웃으로 복귀 */
+/* ESC(전체화면 종료) → 분할 화면에서 들어왔을 때만 이전 레이아웃으로 복귀 */
 function restoreAfterDblFull() {
   if (!enteredFullByDbl) return;
   enteredFullByDbl = false;
@@ -1425,7 +1445,8 @@ function swapSlots(a, b) {
 /* ── events ────────────────────────────────────────────────── */
 function bindEvents() {
   document.querySelectorAll('.layout-btn').forEach(b => {
-    b.addEventListener('click', () => applyLayout(b.dataset.layout));
+    // 전체화면 버튼 = 선택 채널 1×1 + 클린 FULL (ESC → 이전 화면)
+    b.addEventListener('click', () => b.dataset.layout === '1' ? showCleanFull() : applyLayout(b.dataset.layout));
   });
   $('#btn-fullscreen').addEventListener('click', toggleFullscreen);
   $('#btn-mute').addEventListener('click', () => {
@@ -1591,9 +1612,9 @@ function bindEvents() {
     }
     if (!pvRoot.hidden) return;   // 미리보기 중에는 레이아웃 단축키를 잠재
     if (k === '1') applyLayout('9');
-    else if (k === '2') applyLayout('4');
-    else if (k === '3') applyLayout('6');
-    else if (k === '4') applyLayout('1');
+    else if (k === '2') applyLayout('6');
+    else if (k === '3') applyLayout('4');
+    else if (k === '4') showCleanFull();
     else if (k === '5' || k === 'a') applyLayout('all');
     else if (k === 'f') toggleFullscreen();
     else if (k === 'h' && isFull()) toggleHud();
@@ -1604,7 +1625,11 @@ function bindEvents() {
   window.addEventListener('resize', () => sizeGrid());
   document.addEventListener('fullscreenchange', () => {
     $('#btn-fullscreen').classList.toggle('is-active', !!document.fullscreenElement);
-    if (document.fullscreenElement) { document.body.classList.add('is-full'); showHud(); }
+    if (document.fullscreenElement) {
+      document.body.classList.add('is-full');
+      if (cleanFullEntry) { cleanFullEntry = false; hideHud(); }   // 전체화면 버튼 = 순수 영상
+      else showHud();
+    }
     else { document.body.classList.remove('is-full'); hideHud(); restoreAfterDblFull(); }
     setTimeout(sizeGrid, 60);
   });
@@ -1637,7 +1662,9 @@ window.WORLD_LIVE = {
   mount: i => mountSlot(i),
   unmount: i => unmountSlot(i),
   hud: () => toggleHud(),
-  full: () => toggleFullscreen()
+  full: () => toggleFullscreen(),
+  showCleanFull: () => showCleanFull(),
+  showBig: i => showBig(i, true)
 };
 
 /* ── boot ──────────────────────────────────────────────────── */
