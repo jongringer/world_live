@@ -165,8 +165,8 @@ svg{display:block;}
   position:relative;
 }
 .layout-btn svg{width:15px;height:15px;opacity:.92;}
-.layout-btn .lb-txt{font-size:11px;letter-spacing:.05em;font-weight:600;}
-.lb-short{display:none;}
+/* v7 — 한글 라벨 확대·자간 축소 (13.5px · -.012em) */
+.layout-btn .lb-txt{font-size:13.5px;letter-spacing:-.012em;font-weight:600;}
 .layout-btn .lb-dim{font-size:8.5px;font-family:var(--mono);color:#93A2B8;letter-spacing:.02em;}
 .layout-btn:hover{color:#FFFFFF;background:rgba(255,255,255,.10);border-color:rgba(255,255,255,.20);}
 .layout-btn.is-active{
@@ -188,7 +188,7 @@ svg{display:block;}
 .icon-btn svg{width:17px;height:17px;}
 .icon-btn:hover{color:#FFFFFF;background:rgba(255,255,255,.11);border-color:rgba(255,255,255,.20);}
 .icon-btn.wide{width:auto;gap:6px;padding:0 9px;}
-.icon-btn.wide .lb-txt{font-size:9px;letter-spacing:.16em;font-weight:600;}
+.icon-btn.wide .lb-txt{font-size:13px;letter-spacing:-.005em;font-weight:700;}
 .icon-btn.is-active{color:#FFF0CB;border-color:transparent;}
 .icon-btn.ghost{width:30px;height:30px;}
 #btn-mute .ic-x{display:none;}
@@ -205,7 +205,7 @@ svg{display:block;}
 }
 .clock:first-child{border-left:0;padding-left:6px;}
 .clock-c{
-  font-size:10.5px;letter-spacing:.1em;color:#CBD5E1;font-weight:700;
+  font-size:13px;letter-spacing:.005em;color:#CBD5E1;font-weight:700;
   display:flex;align-items:center;gap:5px;white-space:nowrap;
 }
 .clock-name{line-height:1;white-space:nowrap;}
@@ -535,27 +535,35 @@ svg{display:block;}
 .toast.is-out{opacity:0;transition:opacity .25s;}
 
 /* ─────────── RESPONSIVE ─────────── */
-@media (max-width:1600px){
+@media (max-width:1700px){
   .topbar{gap:16px;}
   .clock{padding:0 10px;}
   .clock-t{font-size:16.5px;}
-  .clock-c{font-size:10px;}
   .layout-btn .lb-dim{display:none;}
   .sort-btn .sort-label,.sort-btn .cs-caret{display:none;}
   .brand-sub{display:none;}
 }
 @media (max-width:1460px){
-  .topbar{gap:12px;padding:0 12px;}
-  .clock{padding:0 9px;}
+  /* v7 — 좁은 화면에서도 라벨은 ‘전체 스크롤’ 그대로, 여백으로 폭 확보 */
+  .topbar{gap:10px;padding:0 12px;}
+  .layout-btn{padding:0 8px;}
+  .clock{padding:0 8px;}
   .clock-t{font-size:16px;}
-  .lb-long{display:none;}
-  .lb-short{display:inline;}
   .start-btn .lb-txt{display:none;}
   .find-btn span{display:none;}
+}
+@media (max-width:1300px){
+  /* v7 — 한글 라벨을 키운 만큼 여백·영문 서브라벨로 폭 확보 (초 단위는 그대로) */
+  .topbar{gap:8px;}
+  .layout-btn{padding:0 7px;}
+  .clock{padding:0 7px;}
+  .clock-tz{display:none;}
 }
 @media (max-width:1150px){
   .clock:nth-child(3){display:none;}
   .clock-t{font-size:15px;}
+  .topbar{gap:7px;padding:0 10px;}
+  .layout-btn{padding:0 6px;}
 }
 @media (max-width:1040px){
   .start-btn .lb-txt{display:none;}
@@ -611,7 +619,7 @@ svg{display:block;}
 /* 첫 화면(시작 레이아웃) 설정 */
 .start-wrap{position:relative;display:flex;align-items:center;}
 .start-btn .start-label{
-  font-family:var(--mono);font-size:9px;letter-spacing:.04em;
+  font-family:var(--mono);font-size:12px;letter-spacing:-.005em;
   color:#FFEFCD;padding-left:1px;
 }
 .start-btn .cs-caret{color:#9BABC0;display:flex;}
@@ -643,7 +651,7 @@ svg{display:block;}
   content:"";position:absolute;right:4px;top:3px;width:4px;height:4px;border-radius:50%;
   background:var(--gold);box-shadow:0 0 6px var(--gold-glow);
 }
-.layout-btn-all .lb-txt{letter-spacing:.02em;}
+.layout-btn-all .lb-txt{letter-spacing:-.012em;}
 
 /* ── ALL LIVE 전체 스크롤 ── */
 .stage.is-scroll{
@@ -713,7 +721,7 @@ svg{display:block;}
   height:36px;padding:0 13px;margin-right:6px;border-radius:4px;
   border:1px solid rgba(228,203,150,.58);
   background:linear-gradient(180deg,rgba(228,203,150,.30),rgba(201,168,106,.13));
-  color:#FFEFCD;font-size:11.5px;font-weight:700;letter-spacing:.05em;
+  color:#FFEFCD;font-size:13px;font-weight:700;letter-spacing:-.005em;
   box-shadow:0 0 0 1px rgba(255,255,255,.07) inset, 0 0 18px -8px rgba(228,203,150,.7);
   transition:background .15s,border-color .15s;
 }
@@ -745,7 +753,7 @@ body.is-full.is-hud .signal-strip::after{content:none;}
 /* 채널 정렬 버튼·메뉴 */
 .sort-wrap{position:relative;display:flex;align-items:center;}
 .sort-btn .sort-label{
-  font-family:var(--mono);font-size:9px;letter-spacing:.04em;
+  font-family:var(--mono);font-size:11.5px;letter-spacing:-.005em;
   color:#FFEFCD;padding-left:1px;
 }
 .sort-btn .cs-caret{color:#9BABC0;display:flex;}

@@ -834,7 +834,7 @@ function updateStrip() {
 }
 
 /* ── start layout menu ─────────────────────────────────────── */
-const START_NAMES = { '9':'9분할', '6':'6분할', '4':'4분할', '1':'전체화면', 'all':'스크롤' };
+const START_NAMES = { '9':'9분할', '6':'6분할', '4':'4분할', '1':'전체화면', 'all':'전체 스크롤' };
 function refreshStartUI() {
   $('#start-label').textContent = state.startPinned ? (START_NAMES[state.start] || '9분할') : '마지막 화면';
   document.querySelectorAll('#start-menu [data-start]').forEach(b => {
