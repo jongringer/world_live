@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="ko" data-theme="newsroom">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="color-scheme" content="dark" />
+<title>WORLD LIVE // GLOBAL NEWSROOM MONITOR</title>
+<meta name="description" content="해외 주요 외신 24시간 라이브 멀티뷰 — NHK, CNN, BBC, ABC, Al Jazeera, Sky News, France 24, DW, CNA 등 20여 개 채널을 16:9 모니터 한 화면에서 동시 모니터링." />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23080B10'/%3E%3Crect x='6' y='9' width='20' height='14' rx='2' fill='none' stroke='%23C9A86A' stroke-width='1.4'/%3E%3Ccircle cx='16' cy='16' r='2.4' fill='%23FF3B4E'/%3E%3C/svg%3E" />
+<link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+<div id="app" class="app">
+
+  <!-- ══════════════ TOP CONTROL BAR ══════════════ -->
+  <header class="topbar" id="topbar">
+    <div class="brand">
+      <svg class="brand-mark" viewBox="0 0 34 26" aria-hidden="true">
+        <rect x="0.5" y="6.5" width="7" height="13" rx="1" stroke="currentColor" fill="none"/>
+        <rect x="13.5" y="3.5" width="7" height="19" rx="1" stroke="currentColor" fill="none"/>
+        <rect x="26.5" y="0.5" width="7" height="25" rx="1" stroke="currentColor" fill="none"/>
+        <rect class="bm-fill b1" x="2.5" y="9" width="3" height="8"/>
+        <rect class="bm-fill b2" x="15.5" y="6" width="3" height="14"/>
+        <rect class="bm-fill b3" x="28.5" y="3" width="3" height="20"/>
+      </svg>
+      <div class="brand-text">
+        <div class="brand-line">
+          <span class="brand-name">WORLD LIVE</span><span class="brand-slash">//</span>
+        </div>
+        <div class="brand-sub">GLOBAL NEWSROOM MONITOR</div>
+      </div>
+    </div>
+
+    <nav class="layouts" id="layouts" aria-label="레이아웃">
+      <button class="layout-btn" data-layout="9" title="9분할 (3×3)  ·  키 1">
+        <svg viewBox="0 0 20 20" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="1.2"><rect x="1.5" y="1.5" width="17" height="17" rx="1.6"/><path d="M7.2 2v16M12.8 2v16M2 7.2h16M2 12.8h16"/></g></svg>
+        <span class="lb-txt">9분할</span><span class="lb-dim">3×3</span>
+      </button>
+      <button class="layout-btn" data-layout="4" title="4분할 (2×2)  ·  키 2">
+        <svg viewBox="0 0 20 20" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="1.2"><rect x="1.5" y="1.5" width="17" height="17" rx="1.6"/><path d="M10 2v16M2 10h16"/></g></svg>
+        <span class="lb-txt">4분할</span><span class="lb-dim">2×2</span>
+      </button>
+      <button class="layout-btn" data-layout="6" title="6분할 (3×2)  ·  키 3">
+        <svg viewBox="0 0 20 20" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="1.2"><rect x="1.5" y="1.5" width="17" height="17" rx="1.6"/><path d="M7.2 2v16M12.8 2v16M2 10h16"/></g></svg>
+        <span class="lb-txt">6분할</span><span class="lb-dim">3×2</span>
+      </button>
+      <button class="layout-btn" data-layout="1" title="전체화면 1×1  ·  키 4">
+        <svg viewBox="0 0 20 20" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="1.2"><rect x="1.5" y="1.5" width="17" height="17" rx="1.6"/></g></svg>
+        <span class="lb-txt">전체</span><span class="lb-dim">1×1</span>
+      </button>
+      <span class="nav-sep"></span>
+      <button class="icon-btn wide" id="btn-fullscreen" title="브라우저 전체화면  ·  키 F">
+        <svg viewBox="0 0 20 20" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="1.35" stroke-linecap="square"><path d="M7 2.2H2.2V7M13 2.2h4.8V7M7 17.8H2.2V13M13 17.8h4.8V13"/></g></svg>
+        <span class="lb-txt">FULL</span>
+      </button>
+    </nav>
+
+    <div class="clocks" id="clocks" aria-label="세계 시각"></div>
+
+    <div class="actions">
+      <button class="icon-btn" id="btn-mute" title="전체 음소거  ·  키 M">
+        <svg viewBox="0 0 20 20" aria-hidden="true"><path class="ic-spk" d="M3 7.4h3L10 4v12L6 12.6H3z" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/><g class="ic-waves" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><path d="M12.6 7.4a3.6 3.6 0 0 1 0 5.2M15 5a7 7 0 0 1 0 10"/></g><g class="ic-x" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><path d="M13 7.8l4.4 4.4M17.4 7.8L13 12.2"/></g></svg>
+      </button>
+      <button class="icon-btn" id="btn-reload" title="모든 피드 새로고침  ·  키 R">
+        <svg viewBox="0 0 20 20" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="1.35" stroke-linecap="round"><path d="M16.4 8.4A6.6 6.6 0 1 0 17 11.6"/><path d="M17.4 3.6v4.8h-4.8"/></g></svg>
+      </button>
+      <button class="icon-btn" id="btn-sources" title="소스 관리 / 커스텀 추가">
+        <svg viewBox="0 0 20 20" aria-hidden="true"><g stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><path d="M3 5.4h14M3 10h14M3 14.6h14"/><circle cx="7.4" cy="5.4" r="1.7" fill="#080B10"/><circle cx="13" cy="10" r="1.7" fill="#080B10"/><circle cx="8.6" cy="14.6" r="1.7" fill="#080B10"/></g></svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- ══════════════ STAGE / MULTIVIEW GRID ══════════════ -->
+  <main class="stage" id="stage">
+    <div class="grid" id="grid" data-layout="9"></div>
+  </main>
+
+  <!-- ══════════════ SIGNAL STRIP ══════════════ -->
+  <footer class="signal-strip">
+    <div class="ss-left">
+      <span class="ss-led" id="ss-led"></span>
+      <span id="ss-status">MASTER CONTROL — STANDBY</span>
+    </div>
+    <div class="ss-mid" id="ss-audio">AUDIO — ALL MUTED</div>
+    <div class="ss-right">
+      <span id="ss-clock">--:--:--</span>
+      <span class="ss-div">/</span>
+      <span id="ss-uptime">00:00</span>
+    </div>
+  </footer>
+</div>
+
+<!-- ══════════════ SOURCE BAY MODAL ══════════════ -->
+<div class="modal-root" id="modal-root" hidden>
+  <div class="modal-scrim" data-close="1"></div>
+  <section class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+    <header class="modal-head">
+      <div>
+        <div class="modal-kicker" id="modal-kicker">SOURCE PATCH BAY</div>
+        <h2 id="modal-title">소스 선택</h2>
+      </div>
+      <button class="icon-btn ghost" data-close="1" title="닫기">
+        <svg viewBox="0 0 20 20" aria-hidden="true"><g stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M5 5l10 10M15 5L5 15"/></g></svg>
+      </button>
+    </header>
+
+    <div class="modal-search">
+      <svg viewBox="0 0 20 20" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="8.6" cy="8.6" r="5.4"/><path d="M12.6 12.6L17 17" stroke-linecap="round"/></g></svg>
+      <input id="src-search" type="search" placeholder="채널 검색 — NHK, CNN, BBC, Al Jazeera…" autocomplete="off" spellcheck="false" />
+    </div>
+
+    <div class="modal-body">
+      <div class="src-grid" id="src-grid"></div>
+    </div>
+
+    <div class="custom-panel">
+      <div class="cp-head">
+        <span class="cp-title">CUSTOM SOURCE</span>
+        <span class="cp-hint">YouTube 링크 · 채널 ID · HLS(.m3u8) · 웹 주소</span>
+      </div>
+      <form class="cp-form" id="custom-form" autocomplete="off">
+        <input id="custom-url" type="text" placeholder="https://www.youtube.com/watch?v=…  ·  https://…/index.m3u8" spellcheck="false" />
+        <input id="custom-name" type="text" placeholder="이름 (선택)" spellcheck="false" />
+        <button type="submit" class="btn-gold">추가</button>
+      </form>
+      <div class="cp-error" id="custom-error" hidden></div>
+    </div>
+  </section>
+</div>
+
+<div class="toast-wrap" id="toast-wrap"></div>
+
+<script src="js/channels.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
