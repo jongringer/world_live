@@ -206,9 +206,9 @@ const CHANNELS = [
     kind:'hls', src:'https://sabconetanw.cdn.mangomolo.com/news/smil:news.stream.smil/master.m3u8', status:'live' },
 
   /* ── 외부 공식 링크 (페이지 내 재생 불가) ────────────────────── */
-  { id:'bbc', name:'BBC NEWS', short:'BBC', country:'영국', cc:'GB', zone:'EXTERNAL',
-    kind:'web', src:'https://www.bbc.com/news', status:'external',
-    note:'BBC News 라이브는 방송사 지역 제한으로 외부 페이지 삽입이 막혀 있습니다. 공식 페이지에서 재생하세요.' },
+  { id:'bbc', name:'BBC NEWS · WATCH LIVE', short:'BBC', country:'영국', cc:'GB', zone:'EXTERNAL',
+    kind:'web', src:'https://www.bbc.com/watch-live-news', status:'external',
+    note:'BBC 뉴스 채널 라이브는 DASH 전용 송출+영국 지역 제한이라 페이지 내 삽입이 불가합니다. 새 창에서 공식 LIVE 페이지로 연결됩니다.' },
 
   { id:'sky', name:'SKY NEWS', short:'SKY', country:'영국', cc:'GB', zone:'EXTERNAL',
     kind:'web', src:'https://news.sky.com/watch-live', status:'external',
