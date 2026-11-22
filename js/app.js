@@ -167,6 +167,7 @@ window.addEventListener('message', function (e) {
   if (!L) return;
   if (d.event === 'infoDelivery' && d.info) {
     const info = d.info;
+    L.ytConfirmed = true;
     if (typeof info.playerState === 'number') {
       L.stateSrc = 'api';
       if (info.playerState === 1) setTileState(slot, 'live');
@@ -674,10 +675,13 @@ function bindEvents() {
     if (act === 'retry') { mountSlot(i); return; }
     const L = live[i];
     const kd = slotChannel(i).kind;
-    if (L && (kd === 'youtube' || kd === 'youtube-video') && (L.state !== 'live' || L.stateSrc !== 'api')) {
+    if (L && (kd === 'youtube' || kd === 'youtube-video') && L.ytConfirmed !== true) {
       t.classList.add('pass');
-      toast(slotChannel(i).name + ' — 영상 위 재생 버튼을 눌러 주세요');
-      setTimeout(() => t.classList.remove('pass'), 6000);
+      if (t.dataset.passTip !== '1') {
+        toast(slotChannel(i).name + ' — 영상의 재생 버튼을 눌러 주세요');
+        t.dataset.passTip = '1';
+      }
+      setTimeout(() => t.classList.remove('pass'), 5000);
     }
     setFocus(i);
   });
