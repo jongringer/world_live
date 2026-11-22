@@ -295,7 +295,7 @@ function mountSlot(i) {
     attachHls(i, v, ch.src);
 
   } else if (ch.kind === 'web') {
-    showVeil(i, '외부 웹 플레이어', ch.name + '은(는) 공식 사이트에서만 재생되며 외부 페이지 삽입(iframe)이 차단되어 있습니다. 아래 버튼으로 공식 라이브 화면을 새 창에서 열 수 있습니다.', '새 창에서 열기', ch.src);
+    showVeil(i, '외부 공식 플레이어', ch.note || (ch.name + '은(는) 공식 사이트에서만 재생되며 외부 페이지 삽입이 차단되어 있습니다.'), '새 창에서 열기', 'open');
     setTileState(i, 'external');
   }
 }
