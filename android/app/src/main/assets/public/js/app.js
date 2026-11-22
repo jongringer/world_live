@@ -634,7 +634,19 @@ function gridBox() {
   return { gap: full ? 0 : GAP, pad: full ? 0 : 18 };
 }
 
+function isPortrait() {
+  return window.matchMedia('(orientation: portrait), (max-aspect-ratio: 1/1)').matches;
+}
+
 function sizeGrid() {
+  if (isPortrait()) {
+    grid.style.width = '100%';
+    grid.style.height = 'auto';
+    grid.style.gridTemplateColumns = '1fr';
+    grid.style.gridTemplateRows = '';
+    grid.style.gap = '12px';
+    return;
+  }
   if (state.layout === 'all') return sizeAll();
   const L = LAYOUTS[state.layout];
   const g = gridBox();
@@ -1699,6 +1711,21 @@ function bindEvents() {
   pvRoot.addEventListener('click', e => {
     if (e.target.closest('[data-pv-close]')) closePreview(true);
   });
+
+  // 모바일 뷰 전환 (2열 4분할 <-> 1열 와이드)
+  const btnMobileView = $('#btn-mobile-view');
+  if (btnMobileView) {
+    btnMobileView.addEventListener('click', () => {
+      const isSingle = document.body.classList.toggle('is-mobile-single');
+      const ic2 = btnMobileView.querySelector('.ic-grid-2');
+      const ic1 = btnMobileView.querySelector('.ic-grid-1');
+      if (ic2 && ic1) {
+        ic2.style.display = isSingle ? 'none' : 'block';
+        ic1.style.display = isSingle ? 'block' : 'none';
+      }
+      sizeGrid();
+    });
+  }
 
   // APK QR 다운로드 모달
   const btnApk = $('#btn-apk');

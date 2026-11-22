@@ -1,6 +1,6 @@
 {
   "appId": "com.worldlive.monitor",
-  "appName": "WORLD LIVE",
+  "appName": "worldnews",
   "webDir": "www",
   "server": {
     "androidScheme": "https",

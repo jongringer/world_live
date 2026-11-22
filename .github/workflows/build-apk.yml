@@ -21,28 +21,29 @@ jobs:
 
       - name: Verify APK Binary
         run: |
-          test -f apk/world-live.apk || { echo "APK file missing"; exit 1; }
-          ls -la apk/world-live.apk
+          test -f apk/worldnews.apk || { echo "APK file missing"; exit 1; }
+          ls -la apk/worldnews.apk
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: world-live-app
-          path: apk/world-live.apk
+          name: worldnews-app
+          path: apk/worldnews.apk
 
       - name: Release APK
         if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v2
         with:
-          files: apk/world-live.apk
-          name: WORLD LIVE ${{ github.ref_name }}
+          files: apk/worldnews.apk
+          name: WORLD LIVE (${{ github.ref_name }}) - worldnews
           body: |
-            ### 📱 WORLD LIVE Android 모바일 앱 (${{ github.ref_name }})
+            ### 📱 worldnews Android 모바일 앱 (${{ github.ref_name }})
             
-            - 📲 **모바일 9:16 화면비 최적화**: 4분할(2×2) 단위 매끄러운 세로 스크롤 & 핀치 아웃/더블 탭 시 16:9 가로 풀화면 회전 확대
-            - 🌍 **와이드 궤도 3D 지구본 & 반사광 인공위성**
-            - 🎛️ **딥 옵시디언 주조정실 테마 & 화이트 탤리 윤곽선**
-            - ⚡ **자동 회전 및 화면 꺼짐 방지 내장**
+            - 🏷️ **앱 이름**: `worldnews`
+            - 🌍 **앱 아이콘**: 3D 지구본 & 우주 궤도 인공위성 고해상도 앱 아이콘
+            - 📲 **모바일 9:16 최적화**: 4분할 / 9분할 선택 시 화면 하나씩 아래로 길게 시원한 16:9 와이드 카드
+            - 🛡️ **상하단 시스템 바 완전 보호**: 시계, 배터리 잔량, 제스처 바 Safe Area 분리
+            - 🎛️ **PC/데스크톱 100% 동일 유지**: 방송 주조정실 멀티뷰 완벽 보존
             - 📥 **스마트폰 QR 코드 즉시 다운로드 지원**
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

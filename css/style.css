@@ -64,6 +64,8 @@ button { font-family: inherit; color: inherit; background: none; border: 0; padd
 input { font-family: inherit; }
 svg { display: block; }
 
+.mobile-only-btn { display: none !important; }
+
 /* ─────────── APP SHELL ─────────── */
 .app {
   position: fixed; inset: 0;
@@ -1087,77 +1089,239 @@ body.is-full.is-hud .order-ctl { opacity: 1 !important; pointer-events: auto !im
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   v8.2 — MOBILE 9:16 VERTICAL 4-SPLIT SCROLL & FULLSCREEN ROTATE
-   스마트폰 세로(9:16) 모드: 고정 분할에 얽매이지 않고 4개씩(2×2)
-   한 화면에 맞춰 시원하게 아래로 스크롤하는 모바일 4분할 뷰.
-   더블 탭 또는 핀치 아웃 시 16:9 가로 풀화면 회전 확대.
+   v8.4 — SMARTPHONE SAFE AREA INSET & MOBILE OPTIMIZED DUAL-VIEW
+   - Safe Area Inset(상단 시계/배터리/카메라 노치, 하단 제스처바) 완전 분리
+   - 모바일 4분할(2×2) HUD 미니멀화: 작은 타일 내 UI 뭉침 완전 해소
+   - 1열 와이드 피드 & 4분할 쿼드 뷰 지원
+   - 더블 탭 / 핀치 아웃 가로 16:9 풀스크린 회전 확대
    ═══════════════════════════════════════════════════════════════ */
 @media (orientation: portrait), (max-aspect-ratio: 1/1) {
   :root {
-    --topbar-h: 52px;
-    --pad: 6px;
-    --gap: 6px;
-    --strip-h: 22px;
+    --sat: env(safe-area-inset-top, 36px);
+    --sab: env(safe-area-inset-bottom, 18px);
+    --sal: env(safe-area-inset-left, 0px);
+    --sar: env(safe-area-inset-right, 0px);
+    --topbar-base-h: 50px;
+    --topbar-h: calc(var(--topbar-base-h) + var(--sat));
+    --strip-h: 24px;
+    --pad: 8px;
+    --gap: 8px;
   }
+
+  /* 1. 상단 바: 상태표시줄(시간, 배터리) 침범 방지 Safe Area 패딩 */
   .topbar {
-    padding: 0 10px;
-    gap: 8px;
+    height: var(--topbar-h) !important;
+    flex: 0 0 var(--topbar-h) !important;
+    padding-top: var(--sat) !important;
+    padding-left: max(var(--sal), 12px) !important;
+    padding-right: max(var(--sar), 12px) !important;
+    padding-bottom: 0 !important;
+    gap: 8px !important;
+    align-items: center !important;
   }
+
   .brand { gap: 8px; }
-  .brand-name { font-size: 15px; }
+  .brand-name { font-size: 14px; letter-spacing: 0.04em; }
   .brand-sub { display: none; }
-  .brand-mark { width: 40px; height: 40px; }
-  .layouts, .clocks { display: none !important; }
-  .find-btn { height: 32px; padding: 0 10px; font-size: 11.5px; }
+  .brand-mark { width: 36px; height: 36px; }
+
+  /* 모바일 상단 바 컨트롤: 4분할 / 9분할 / 전체 원클릭 스위처 */
+  .clocks, .sort-wrap, .nav-sep { display: none !important; }
+  .layouts {
+    display: inline-flex !important;
+    gap: 3px !important;
+    padding: 2px !important;
+    background: rgba(255, 255, 255, 0.05) !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    border-radius: 6px !important;
+  }
+  .layout-btn {
+    height: 28px !important;
+    padding: 0 8px !important;
+    font-size: 11px !important;
+    font-weight: 600 !important;
+    border-radius: 4px !important;
+  }
+  .layout-btn svg,
+  .layout-btn .lb-dim,
+  .layout-btn[data-layout="6"],
+  .layout-btn[data-layout="1"] {
+    display: none !important;
+  }
+  .layout-btn .lb-txt {
+    display: inline !important;
+    font-size: 11px !important;
+  }
+
+  .find-btn { height: 30px; padding: 0 7px; font-size: 10.5px; }
+  .find-btn span { display: none; }
+  .start-wrap { display: none !important; }
+  .icon-btn { width: 30px; height: 30px; }
   .icon-btn { width: 32px; height: 32px; }
 
-  /* 4분할 단위 스크롤 스테이지 */
+  /* 2. 하단 시그널 스트립: 제스처 내비게이션 바 Safe Area 확보 */
+  .signal-strip {
+    height: calc(var(--strip-h) + var(--sab)) !important;
+    padding-bottom: var(--sab) !important;
+    font-size: 9.5px !important;
+    padding-left: 10px !important;
+    padding-right: 10px !important;
+  }
+
+  /* 3. 모바일 스테이지: 스크롤 영역 & 4분할 스냅 페이징 */
   .stage {
+    box-sizing: border-box !important;
     display: block !important;
-    align-items: flex-start !important;
-    justify-content: flex-start !important;
     overflow-y: auto !important;
     overflow-x: hidden !important;
+    width: 100vw !important;
+    max-width: 100vw !important;
     padding: 6px !important;
+    margin: 0 !important;
     -webkit-overflow-scrolling: touch;
+    height: calc(100dvh - var(--topbar-h) - var(--strip-h) - var(--sab)) !important;
     scroll-snap-type: y proximity;
+    scroll-padding-top: 6px;
   }
-  .stage::-webkit-scrollbar { width: 4px; }
-  .stage::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 4px; }
+  .stage::-webkit-scrollbar { width: 3px; }
+  .stage::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.25); border-radius: 3px; }
 
-  /* 2열(2x2 = 4분할) 모바일 세로 그리드 */
+  /* 4. 스마트폰 9:16 최적화: 화면 하나씩(1열) 아래로 길게 시원하게 나오는 와이드 피드 */
   .grid,
   .grid[data-layout="9"],
   .grid[data-layout="6"],
   .grid[data-layout="4"],
   .grid[data-layout="all"] {
+    box-sizing: border-box !important;
     display: grid !important;
-    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-    gap: 6px !important;
+    grid-template-columns: 1fr !important; /* 기본 1열 단일 피드: 스마트폰 가로 100% 16:9 꽉 채움 */
+    gap: 12px !important;
     width: 100% !important;
+    max-width: 100% !important;
     height: auto !important;
     margin: 0 !important;
+    padding: 0 4px 20px 4px !important;
   }
 
+  /* 2열 쿼드 모드 (body.is-mobile-quad로 전환 시) */
+  body.is-mobile-quad .grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 6px !important;
+  }
+
+  /* 5. 타일 16:9 비율 완벽 유지 & 스마트폰 풀와이드 카드 */
   .grid .tile {
-    aspect-ratio: 16/9 !important;
+    position: relative !important;
+    aspect-ratio: 16 / 9 !important;
     width: 100% !important;
     height: auto !important;
+    border-radius: 8px !important;
+    overflow: hidden !important;
+    background: #000 !important;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.7) !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
     scroll-snap-align: start;
   }
 
-  .chan-tag { max-width: calc(100% - 32px); padding: 2.5px 6px; }
-  .chan-name { font-size: 9px; }
-  .chan-switch span { display: none; }
-  .chan-switch { padding: 0 4px; height: 22px; font-size: 8.5px; }
+  .grid .tile .tile-media {
+    position: absolute !important;
+    inset: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+  }
+  .grid .tile .tile-media iframe,
+  .grid .tile .tile-media video {
+    position: absolute !important;
+    inset: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    border: 0 !important;
+  }
 
-  /* 더블 탭 / 핀치 아웃 시 풀화면 회전 확대 (1x1 모드) */
+  /* 6. 모바일 미니멀 HUD: 복잡한 버튼 숨기고 영상 중심 정돈 */
+  .grid .tile .tlay-ctrl {
+    display: none !important; /* 하단 5개 버튼 숨겨서 영상 공간 100% 확보 */
+  }
+
+  .grid .tile .tlay-top {
+    position: absolute !important;
+    top: 4px !important;
+    left: 4px !important;
+    right: 4px !important;
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    pointer-events: none !important;
+    z-index: 2 !important;
+  }
+
+  .grid .tile .chan-tag {
+    max-width: 88% !important;
+    padding: 2px 5px !important;
+    background: rgba(8, 12, 18, 0.82) !important;
+    backdrop-filter: blur(6px) !important;
+    border: 1px solid rgba(255, 255, 255, 0.14) !important;
+    border-radius: 4px !important;
+    pointer-events: auto !important;
+  }
+  .grid .tile .chan-name {
+    font-size: 9.5px !important;
+    font-weight: 600 !important;
+    line-height: 1.2 !important;
+  }
+  .grid .tile .chan-cc {
+    font-size: 8px !important;
+    opacity: 0.7 !important;
+  }
+  .grid .tile .live-badge {
+    padding: 1px 3px !important;
+  }
+  .grid .tile .live-txt {
+    font-size: 7px !important;
+  }
+
+  .grid .tile .chan-switch {
+    display: none !important; /* 모바일 타일 내부 채널변경 버튼 숨김 */
+  }
+
+  /* 미니멀 베일 (신호 없음 오버레이) */
+  .grid .tile .tile-veil {
+    padding: 6px 4px !important;
+    gap: 3px !important;
+  }
+  .grid .tile .veil-icon {
+    width: 16px !important;
+    height: 16px !important;
+  }
+  .grid .tile .veil-title {
+    font-size: 9px !important;
+  }
+  .grid .tile .veil-desc {
+    display: none !important;
+  }
+  .grid .tile .veil-btn {
+    height: 20px !important;
+    padding: 0 6px !important;
+    font-size: 8.5px !important;
+    margin-top: 1px !important;
+  }
+
+  /* 7. 화이트 탤리 링(오디오 활성) 모바일 가시성 */
+  .grid .tile.is-tally .tally-ring {
+    opacity: 1 !important;
+    border-width: 2.5px !important;
+    border-color: #FFFFFF !important;
+    box-shadow: inset 0 0 10px rgba(255,255,255,0.7), 0 0 14px rgba(255,255,255,0.85) !important;
+  }
+
+  /* 8. 더블 탭 / 핀치 아웃 시 풀화면 회전 확대 (1x1 모드) */
   body.is-mobile-full .stage {
     padding: 0 !important;
     overflow: hidden !important;
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
+    height: 100vh !important;
   }
   body.is-mobile-full .grid[data-layout="1"] {
     display: flex !important;
