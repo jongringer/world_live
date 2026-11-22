@@ -1,9 +1,23 @@
-# WORLD LIVE // GLOBAL NEWSROOM MONITOR (v8)
+# WORLD LIVE // GLOBAL NEWSROOM MONITOR (v8.4)
 
 전 세계 **검증된 라이브 뉴스 채널 50여 개**를 16:9 데스크톱 모니터에서 동시에 보는 방송국 주조정실 스타일 멀티뷰.
 
-- 운영 페이지: **https://jongringer.github.io/world_live/**
-- 정적 단일 페이지 (HTML/CSS/JS) · GitHub Pages 배포 · 설치·로그인·서버 없음
+- 🌐 **웹 라이브 주소**: **https://jongringer.github.io/world_live/**
+- 📱 **worldnews Android 모바일 앱**: [worldnews.apk 직접 다운로드](https://jongringer.github.io/world_live/apk/worldnews.apk) | [GitHub 공식 릴리스 v8.4.0](https://github.com/jongringer/world_live/releases/tag/v8.4.0)
+
+---
+
+### 📱 worldnews 안드로이드 APK 다운로드 (QR 코드)
+
+스마트폰 카메라로 아래 QR 코드를 비추면 **`worldnews` 전용 앱(APK)**을 즉시 다운로드하여 설치하실 수 있습니다.
+
+<div align="center">
+  <img src="https://api.qrserver.com/v1/create-qr-code/?size=240x240&data=https%3A%2F%2Fjongringer.github.io%2Fworld_live%2Fapk%2Fworldnews.apk" alt="worldnews APK 다운로드 QR 코드" width="220" height="220" />
+  <br>
+  <sub><b>스마트폰으로 스캔하여 worldnews APK 즉시 설치</b></sub>
+</div>
+
+---
 
 ## 레이아웃
 
