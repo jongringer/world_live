@@ -97,6 +97,15 @@
 - **KBS NEWS 24** (`nfnWxzTVJA4`, 2026-11-23 교체 · 이전 `zGFBJL_fhUU`는 재생 불가) · **YTN 24시간 라이브** (`aZyD6EPl6KU`) · **연합뉴스TV 라이브** (`6QZ_qc75ihU`) — 24시간 고정 라이브, 클릭 없이 즉시 자동재생.
 - MBC·SBS·JTBC·MBN·채널A·TV조선·아리랑 TV·TBS는 카탈로그에서 제거했습니다. 저장된 옛 배치에 그 ID가 남아 있으면 불러올 때 걸러지고 기본 채널로 대체됩니다(`localStorage` `worldlive.v3` 마이그레이션).
 
+## KBS NEWS 24 소스 교체 (2026-11-23 KST)
+
+- **교체 내용**: `js/channels.js`의 `kbs24` 항목 `src` — `zGFBJL_fhUU` → **`nfnWxzTVJA4`** (`https://www.youtube.com/live/nfnWxzTVJA4`). 카탈로그·기본 배치(9·6·4·1분할)·소스 목록에서 쓰는 ID는 이 한 곳이라, 다른 파일에는 옛 ID가 남아 있지 않습니다.
+- **교체 이유**: 옛 ID는 YouTube oEmbed가 `Forbidden`(영상 삭제·비공개)을 돌려주어 재생이 불가능한 상태였습니다.
+- **캐시**: `index.html`의 `js/channels.js?v=30 → ?v=31`. 저장 배치(`localStorage` `worldlive.v3`)에는 **채널 ID(`kbs24`)만** 저장되고 영상 ID는 저장되지 않으므로, 기존 사용자도 새 `channels.js`를 받는 즉시 새 소스로 재생됩니다(별도 마이그레이션 불필요).
+- **APK 자산 동기화**: `android/app/src/main/assets/public/`의 `index.html`·`js/channels.js`도 같은 내용으로 갱신했습니다(저장된 APK 바이너리 `apk/worldnews.apk`는 재빌드 전까지 이전 소스).
+- **검증 (운영 페이지 `https://jongringer.github.io/world_live/`, 2026-11-23 06:56 KST)**: 1번 칸 iframe `src` = `https://www.youtube.com/embed/nfnWxzTVJA4?…&origin=https%3A%2F%2Fjongringer.github.io`, 타일 상태 `LIVE`, 화면에 KBS NEWS24 방송 영상이 실제로 재생됨(오류 150·153 없음). 같은 화면의 9개 타일 모두 LIVE.
+- **주의**: `nfnWxzTVJA4`는 KBS News(`@newskbs`) 채널의 **프로그램 단위 라이브**(제목 ‘[🔴LIVE] 뉴스광장 … 11월 23일(월) / KBS’)라, 그 방송이 끝나면 다시 새 영상 ID로 바뀝니다. 상시 자동 추적이 필요하면 앱이 이미 지원하는 채널 방식(`kind:'youtube', src:'UCcQTRi69dsVYHN3exePtZ1A'` = `@newskbs` 채널 ID, `embed/live_stream?channel=…`)으로 바꾸면 그때그때의 라이브를 자동으로 잡습니다.
+
 ## HLS 소스 + 백업 자동 전환 (v3)
 
 | 채널 | 1차 HLS | 백업 HLS |
