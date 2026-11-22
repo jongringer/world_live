@@ -1378,10 +1378,35 @@ body.is-full.is-hud .order-ctl { opacity: 1 !important; pointer-events: auto !im
   }
 }
 
-/* APK 네이티브 가로(16:9 LANDSCAPE) 풀스크린 전역 스타일 */
+/* APK 네이티브 가로(16:9 LANDSCAPE) & 모바일 풀스크린 — 100% 클린 순수 영상 (오버레이·흰 윤곽선 완전 제거) */
+body.is-mobile-full .topbar,
+body.is-mobile-full .signal-strip,
+body.is-mobile-full .tlay-top,
+body.is-mobile-full .tlay-ctrl,
+body.is-mobile-full .chan-switch,
+body.is-mobile-full .tally-ring,
+body.is-mobile-full .tile::before,
+body.is-mobile-full .toast-wrap,
 body.is-native-full .topbar,
-body.is-native-full .signal-strip {
+body.is-native-full .signal-strip,
+body.is-native-full .tlay-top,
+body.is-native-full .tlay-ctrl,
+body.is-native-full .chan-switch,
+body.is-native-full .tally-ring,
+body.is-native-full .tile::before,
+body.is-native-full .toast-wrap {
   display: none !important;
+  opacity: 0 !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+body.is-mobile-full .tile,
+body.is-mobile-full .tile.is-tally,
+body.is-native-full .tile,
+body.is-native-full .tile.is-tally {
+  border: 0 !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
 }
 body.is-native-full .stage {
   padding: 0 !important;
@@ -1407,7 +1432,5 @@ body.is-native-full .grid[data-layout="1"] .tile {
   width: min(100vw, calc(100vh * 16 / 9)) !important;
   height: min(100vh, calc(100vw * 9 / 16)) !important;
   aspect-ratio: 16 / 9 !important;
-  border-radius: 0 !important;
-  border: 0 !important;
   transform: none !important;
 }

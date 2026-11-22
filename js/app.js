@@ -1364,7 +1364,6 @@ function showBigChannel(ch, fromDbl, clean) {
   if (nativeApp) {
     document.body.classList.add('is-mobile-full', 'is-native-full');
     try { window.AndroidNative.enterFullscreen(); } catch (e) {}
-    toast('16:9 전체화면 — ' + ch.name + ' (뒤로가기 → 복귀)');
     return;
   }
 
@@ -1376,7 +1375,6 @@ function showBigChannel(ch, fromDbl, clean) {
         screen.orientation.lock('landscape').catch(() => {});
       }
     } catch (e) {}
-    toast('16:9 전체화면 — ' + ch.name + ' (뒤로가기 → 복귀)');
     if (enterFull) {
       document.documentElement.requestFullscreen().catch(() => {});
     }
