@@ -324,7 +324,7 @@ function mountSlot(i) {
       ? 'embed/live_stream?channel=' + encodeURIComponent(ch.src)
       : 'embed/' + encodeURIComponent(ch.src);
     const iframe = document.createElement('iframe');
-    iframe.src = 'https://www.youtube.com/' + path + '&' + params.toString();
+    iframe.src = 'https://www.youtube.com/' + path + (path.indexOf('?') >= 0 ? '&' : '?') + params.toString();
     iframe.allow = 'autoplay; encrypted-media; picture-in-picture; fullscreen';
     iframe.allowFullscreen = true;
     iframe.referrerPolicy = 'origin';
