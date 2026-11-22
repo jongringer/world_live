@@ -750,7 +750,10 @@ window.WORLD_LIVE = {
 
 /* ── boot ──────────────────────────────────────────────────── */
 function boot() {
-  load();
+  const qs = new URLSearchParams(location.search);
+  if (qs.has('reset')) { try { localStorage.removeItem(LS_KEY); } catch (e) {} }
+  else load();
+  if (qs.get('layout') && LAYOUTS[qs.get('layout')]) state.layout = qs.get('layout');
   buildClocks();
   bindEvents();
   applyLayout(state.layout, false);
