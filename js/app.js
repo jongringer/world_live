@@ -1355,7 +1355,10 @@ function bindEvents() {
 
   document.addEventListener('keydown', e => {
     if (e.target.matches('input, textarea')) {
-      if (e.key === 'Escape' && !pvRoot.hidden) { e.preventDefault(); closePreview(true); }
+      if (e.key === 'Escape') {
+        if (!pvRoot.hidden) { e.preventDefault(); closePreview(true); }
+        else if (!modalRoot.hidden) { e.preventDefault(); closeModal(); }
+      }
       return;
     }
     const k = e.key.toLowerCase();
