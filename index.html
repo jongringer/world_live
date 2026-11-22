@@ -7,7 +7,7 @@
 <title>WORLD LIVE // GLOBAL NEWSROOM MONITOR</title>
 <meta name="description" content="전 세계 뉴스 채널 24시간 라이브 멀티뷰 — NHK·BBC·CNN FAST·CGTN·France 24·DW·ABC News Live·Al Jazeera HLS(백업 자동 전환)와 KBS NEWS 24·YTN·연합뉴스TV. 9분할·4분할 채널 직접 선택, 전체 스크롤 모드." />
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23080B10'/%3E%3Crect x='6' y='9' width='20' height='14' rx='2' fill='none' stroke='%23C9A86A' stroke-width='1.4'/%3E%3Ccircle cx='16' cy='16' r='2.4' fill='%23FF3B4E'/%3E%3C/svg%3E" />
-<link rel="stylesheet" href="css/style.css?v=15" />
+<link rel="stylesheet" href="css/style.css?v=16" />
 </head>
 <body>
 <div id="app" class="app">
@@ -15,58 +15,124 @@
   <!-- ══════════════ TOP CONTROL BAR ══════════════ -->
   <header class="topbar" id="topbar">
     <div class="brand">
-      <svg class="brand-mark globe-mark" viewBox="0 0 44 34" aria-hidden="true">
+      <svg class="brand-mark globe-mark" viewBox="0 0 48 48" aria-hidden="true">
         <defs>
-          <radialGradient id="globeGlow" cx="38%" cy="35%" r="75%">
-            <stop offset="0%" stop-color="rgba(84,207,227,.28)"/>
-            <stop offset="55%" stop-color="rgba(40,90,120,.10)"/>
-            <stop offset="100%" stop-color="rgba(0,0,0,0)"/>
+          <!-- 바다: 표층 하이라이트 → 심해 -->
+          <radialGradient id="gOcean" cx="30%" cy="23%" r="88%">
+            <stop offset="0%" stop-color="#9BE7F7"/>
+            <stop offset="16%" stop-color="#57BCD8"/>
+            <stop offset="40%" stop-color="#2181A3"/>
+            <stop offset="66%" stop-color="#0C4560"/>
+            <stop offset="86%" stop-color="#062A3D"/>
+            <stop offset="100%" stop-color="#03131E"/>
+          </radialGradient>
+          <!-- 대륙: 금빛 지형 -->
+          <linearGradient id="gLand" x1="18%" y1="0%" x2="88%" y2="100%">
+            <stop offset="0%" stop-color="#F8EBC8"/>
+            <stop offset="34%" stop-color="#E2C58C"/>
+            <stop offset="70%" stop-color="#B08C51"/>
+            <stop offset="100%" stop-color="#6E5430"/>
+          </linearGradient>
+          <!-- 구체 명암: 오른쪽·아래로 갈수록 어두워짐 -->
+          <radialGradient id="gShade" cx="27%" cy="21%" r="94%">
+            <stop offset="0%" stop-color="rgba(255,255,255,0)"/>
+            <stop offset="48%" stop-color="rgba(3,10,18,.04)"/>
+            <stop offset="76%" stop-color="rgba(3,9,16,.44)"/>
+            <stop offset="92%" stop-color="rgba(2,7,13,.80)"/>
+            <stop offset="100%" stop-color="rgba(1,4,9,.94)"/>
+          </radialGradient>
+          <!-- 대기권 링 -->
+          <radialGradient id="gAtmo" cx="50%" cy="50%" r="50%">
+            <stop offset="70%" stop-color="rgba(90,215,245,0)"/>
+            <stop offset="88%" stop-color="rgba(120,228,252,.32)"/>
+            <stop offset="97%" stop-color="rgba(160,244,255,.14)"/>
+            <stop offset="100%" stop-color="rgba(160,244,255,0)"/>
+          </radialGradient>
+          <!-- 림 라이트 -->
+          <linearGradient id="gRim" x1="10%" y1="4%" x2="90%" y2="96%">
+            <stop offset="0%" stop-color="rgba(214,252,255,.95)"/>
+            <stop offset="36%" stop-color="rgba(126,226,248,.55)"/>
+            <stop offset="70%" stop-color="rgba(70,150,190,.18)"/>
+            <stop offset="100%" stop-color="rgba(170,238,255,.60)"/>
+          </linearGradient>
+          <!-- 스페큘러 하이라이트 -->
+          <radialGradient id="gSpec" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stop-color="rgba(255,255,255,.66)"/>
+            <stop offset="55%" stop-color="rgba(210,248,255,.20)"/>
+            <stop offset="100%" stop-color="rgba(255,255,255,0)"/>
           </radialGradient>
           <linearGradient id="beamGrad" x1="0" y1="0" x2="1" y2="0">
-            <stop offset="0%" stop-color="rgba(84,207,227,0)"/>
-            <stop offset="50%" stop-color="rgba(84,207,227,.95)"/>
-            <stop offset="100%" stop-color="rgba(84,207,227,0)"/>
+            <stop offset="0%" stop-color="rgba(120,235,255,0)"/>
+            <stop offset="45%" stop-color="rgba(180,247,255,.95)"/>
+            <stop offset="100%" stop-color="rgba(120,235,255,.12)"/>
           </linearGradient>
-          <clipPath id="globeClip"><circle cx="14.5" cy="17" r="10.5"/></clipPath>
+          <radialGradient id="satHalo" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stop-color="rgba(205,250,255,.85)"/>
+            <stop offset="55%" stop-color="rgba(110,225,250,.34)"/>
+            <stop offset="100%" stop-color="rgba(110,225,250,0)"/>
+          </radialGradient>
+          <clipPath id="gClip"><circle cx="23" cy="24" r="15.5"/></clipPath>
+          <filter id="gSoft" x="-70%" y="-70%" width="240%" height="240%">
+            <feGaussianBlur stdDeviation="1.5"/>
+          </filter>
+          <path id="orbitPath" d="M44 24a21 8.2 0 1 0-42 0a21 8.2 0 1 0 42 0z"/>
+          <!-- 대륙 세트 (회전용으로 두 번 배치) -->
+          <g id="landSet" fill="url(#gLand)">
+            <path d="M14.6 16.2c1.7-1.9 4.4-2.3 6.4-1.2 1.6.9 3.2.4 4.6 1.3 1.2.8 1 2.4-.3 3-1.2.6-2.3.1-3.4.7-1.1.6-1.4 1.8-2.6 2-1.5.3-2.6-.7-3.6-1.6-1.2-1.1-2.4-2.6-1.1-4.2z"/>
+            <path d="M21.6 21.6c1.6-.4 2.9.6 3.1 2 .2 1.5-.6 2.6-1.6 3.4-1 .8-1.3 2-2.5 2.2-1.3.2-2.3-.9-2.3-2.2 0-1.4.5-2.6 1.4-3.6.6-.7 1.2-1.6 1.9-1.8z"/>
+            <path d="M27.8 28.6c1.2-.3 2.2.4 2.4 1.5.2 1.2-.5 2.3-1.5 2.9-1 .6-1.3 1.6-2.3 1.7-1.2.1-2.1-.9-2-2.1.1-1.3.9-2.2 1.7-3 .6-.6 1.1-.9 1.7-1z"/>
+            <path d="M15.9 27.2c1.1-.3 2 .4 2.1 1.4.1 1-.7 1.8-1.7 1.9-1 .1-1.8-.5-1.9-1.4-.1-.9.6-1.7 1.5-1.9z"/>
+            <path d="M29.4 16.6c1-.3 1.9.2 2 1.1.1.9-.6 1.6-1.5 1.7-.9.1-1.6-.4-1.7-1.2-.1-.8.5-1.4 1.2-1.6z" opacity=".9"/>
+          </g>
         </defs>
-        <!-- 지구 글로우 -->
-        <circle cx="14.5" cy="17" r="13" fill="url(#globeGlow)"/>
-        <!-- 위선 (고정) -->
-        <g stroke="rgba(84,207,227,.42)" fill="none" stroke-width=".7">
-          <ellipse cx="14.5" cy="17" rx="10.5" ry="10.5"/>
-          <path d="M5.6 12.6h17.8M4.3 17h20.4M5.6 21.4h17.8" opacity=".55"/>
-        </g>
-        <!-- 경선 (자전 애니메이션) -->
-        <g clip-path="url(#globeClip)">
-          <g class="globe-meridians" stroke="rgba(84,207,227,.5)" fill="none" stroke-width=".75">
-            <ellipse cx="14.5" cy="17" rx="3.4" ry="10.5"/>
-            <ellipse cx="14.5" cy="17" rx="7.6" ry="10.5"/>
-            <ellipse cx="14.5" cy="17" rx="10.5" ry="10.5"/>
-            <line x1="14.5" y1="6.5" x2="14.5" y2="27.5"/>
-            <ellipse cx="14.5" cy="17" rx="3.4" ry="10.5" transform="translate(-9.2 0)"/>
-            <ellipse cx="14.5" cy="17" rx="7.6" ry="10.5" transform="translate(-9.2 0)"/>
-          </g>
-          <!-- 대륙 느낌의 하이라이트 (자전) -->
-          <g class="globe-land" fill="rgba(201,168,106,.5)">
-            <path d="M9 12.5c1.6-1.2 3.9-1 5.2.2 1.2 1.1 2.8 1.4 3.4 3 .5 1.5-.9 2.6-2.3 2.4-1.5-.2-2.6.8-4 .4-1.5-.4-3.4-1.6-3.3-3.3.1-1.1.4-2 1-2.7z" opacity=".8"/>
-            <path d="M13 21.5c1.4-.4 3 .1 3.6 1.3.5 1-.3 2.1-1.5 2.2-1.3.1-2.7-.6-3-1.8-.2-.9.2-1.5.9-1.7z" opacity=".6"/>
+
+        <!-- 대기권 헤일로 -->
+        <circle cx="23" cy="24" r="18.6" fill="none" stroke="rgba(120,226,250,.24)" stroke-width="3.4" filter="url(#gSoft)"/>
+        <circle cx="23" cy="24" r="17.4" fill="url(#gAtmo)"/>
+
+        <!-- 구체 본체 -->
+        <circle cx="23" cy="24" r="15.5" fill="url(#gOcean)"/>
+
+        <!-- 극지 빙하 · 대륙 (자전) -->
+        <g clip-path="url(#gClip)">
+          <ellipse cx="23" cy="10.1" rx="6.6" ry="2.3" fill="rgba(240,252,255,.26)"/>
+          <ellipse cx="23" cy="37.8" rx="5.6" ry="2" fill="rgba(240,252,255,.20)"/>
+          <g class="globe-land">
+            <use href="#landSet"/>
+            <use href="#landSet" transform="translate(-31 0)"/>
           </g>
         </g>
-        <!-- 궤도 + 위성 -->
-        <ellipse class="orbit" cx="26" cy="17" rx="15" ry="9" fill="none" stroke="rgba(201,168,106,.30)" stroke-width=".6" stroke-dasharray="2.5 3"/>
-        <g class="sat-orbit">
-          <g transform="translate(41 17)">
-            <rect x="-2.1" y="-1.1" width="4.2" height="2.2" rx=".5" fill="#E4CB96"/>
-            <rect x="-3.7" y="-0.5" width="1.5" height="1" fill="rgba(201,168,106,.75)"/>
-            <rect x="2.2" y="-0.5" width="1.5" height="1" fill="rgba(201,168,106,.75)"/>
-            <g class="sat-panel" transform="translate(0 -3.1)"><rect x="-1.7" y="0" width="3.4" height="1.6" fill="rgba(84,207,227,.75)"/></g>
-            <g class="sat-panel2" transform="translate(0 1.5)"><rect x="-1.7" y="0" width="3.4" height="1.6" fill="rgba(84,207,227,.55)"/></g>
-          </g>
+
+        <!-- 경선·위선 그리드 -->
+        <g class="globe-grid" clip-path="url(#gClip)" fill="none" stroke="rgba(158,236,252,.40)" stroke-width=".55">
+          <ellipse cx="23" cy="24" rx="3.6" ry="15.5"/>
+          <ellipse cx="23" cy="24" rx="8" ry="15.5"/>
+          <ellipse cx="23" cy="24" rx="12" ry="15.5"/>
+          <path d="M7.5 24h31"/>
+          <ellipse cx="23" cy="17.2" rx="13.9" ry="1.9"/>
+          <ellipse cx="23" cy="24" rx="15.5" ry="2.6"/>
+          <ellipse cx="23" cy="30.8" rx="13.9" ry="1.9"/>
         </g>
-        <!-- 신호 빔 (지구 → 위성) -->
-        <g class="beams">
-          <path class="beam b-up" d="M24.2 14.6L31 9.6" stroke="url(#beamGrad)" stroke-width="1.1" stroke-linecap="round"/>
-          <path class="beam b-down" d="M31 24.4L24.2 19.4" stroke="url(#beamGrad)" stroke-width="1.1" stroke-linecap="round"/>
+
+        <!-- 입체 명암 · 하이라이트 · 림 -->
+        <circle cx="23" cy="24" r="15.5" fill="url(#gShade)"/>
+        <ellipse cx="17.3" cy="17.4" rx="6.6" ry="4.4" fill="url(#gSpec)" transform="rotate(-26 17.3 17.4)" opacity=".75"/>
+        <circle class="globe-rim-pulse" cx="23" cy="24" r="15.35" fill="none" stroke="url(#gRim)" stroke-width="1"/>
+
+        <!-- 기울어진 3D 궤도 · 위성 · 신호 빔 -->
+        <g transform="rotate(-18 23 24)">
+          <use href="#orbitPath" class="orbit-line" fill="none" stroke="rgba(228,203,150,.58)" stroke-width=".7" stroke-dasharray="2.4 2.6"/>
+          <path class="beam b-up" d="M37.8 19.4L41.3 20" stroke="url(#beamGrad)" stroke-width=".9" stroke-linecap="round" fill="none"/>
+          <path class="beam b-down" d="M38 27.9L41.6 27.7" stroke="url(#beamGrad)" stroke-width=".9" stroke-linecap="round" fill="none"/>
+          <g class="sat">
+            <circle class="sat-halo" r="3.2" fill="url(#satHalo)"/>
+            <rect x="-1.5" y="-.85" width="3" height="1.7" rx=".35" fill="#FFF0CB"/>
+            <rect x="-2.95" y="-.5" width="1.25" height="1" fill="rgba(201,168,106,.95)"/>
+            <rect x="1.7" y="-.5" width="1.25" height="1" fill="rgba(201,168,106,.95)"/>
+            <animateMotion dur="11s" repeatCount="indefinite" rotate="auto">
+              <mpath href="#orbitPath"/>
+            </animateMotion>
+          </g>
         </g>
       </svg>
       <div class="brand-text">
@@ -215,7 +281,7 @@
 
 <div class="toast-wrap" id="toast-wrap"></div>
 
-<script src="js/channels.js?v=15"></script>
-<script src="js/app.js?v=15"></script>
+<script src="js/channels.js?v=16"></script>
+<script src="js/app.js?v=16"></script>
 </body>
 </html>

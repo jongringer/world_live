@@ -206,9 +206,9 @@ function chCount() { return slotIds().length; }
 
 /* ── clocks ────────────────────────────────────────────────── */
 const CLOCKS = [
-  { tz:'Asia/Seoul',       label:'SEOUL',    suf:'KST', local:true },
-  { tz:'America/New_York', label:'NEW YORK', suf:'EST' },
-  { tz:'Europe/Paris',     label:'PARIS',    suf:'CET' }
+  { tz:'Asia/Seoul',       label:'서울', tag:'KST', local:true },
+  { tz:'America/New_York', label:'뉴욕', tag:'EST' },
+  { tz:'Europe/Paris',     label:'파리', tag:'CET' }
 ];
 function buildClocks() {
   const wrap = $('#clocks');
@@ -216,7 +216,7 @@ function buildClocks() {
   CLOCKS.forEach(c => {
     const el = document.createElement('div');
     el.className = 'clock' + (c.local ? ' is-local' : '');
-    el.innerHTML = `<span class="clock-c">${c.local ? '<span class="clock-dot"></span>' : ''}${c.label} ${c.suf}</span><span class="clock-t" data-tz="${c.tz}">--:--:--</span>`;
+    el.innerHTML = `<span class="clock-c">${c.local ? '<span class="clock-dot"></span>' : ''}<span class="clock-name">${c.label}</span><span class="clock-tz">${c.tag}</span></span><span class="clock-t" data-tz="${c.tz}">--:--:--</span>`;
     wrap.appendChild(el);
   });
 }
