@@ -1,4 +1,4 @@
-# WORLD LIVE // GLOBAL NEWSROOM MONITOR (v3)
+# WORLD LIVE // GLOBAL NEWSROOM MONITOR (v3.1)
 
 전 세계 **검증된 라이브 뉴스 채널 50여 개**를 16:9 데스크톱 모니터에서 동시에 보는 방송국 주조정실 스타일 멀티뷰.
 
@@ -25,6 +25,10 @@
 - **원본 화면비 유지**: 타일은 `aspect-ratio 16/9`, 영상은 `object-fit: contain` — 늘어남·잘림 없이 레터박스로 맞춥니다. 화면비가 16:9가 아닌 창에서는 남는 쪽에만 검은 여백이 생깁니다(비율 보존).
 - 화면 클릭 또는 상·하단 가장자리로 마우스를 보내면 HUD(상하단 바 + 타일 컨트롤)가 나타나고 **3.6초 뒤 자동으로 사라집니다**(`H` 키 토글).
 
+## 상단 시각 표시
+
+- **SEOUL KST · NEW YORK EST · PARIS CET** 3개만 표시합니다.
+
 ## 채널 정렬 (v3)
 
 | 모드 | 순서 |
@@ -35,7 +39,13 @@
 | 한국 우선 | KBS NEWS 24 · YTN · 연합뉴스TV를 맨 앞으로 |
 
 - 지역·국가순의 순서는 소스 라이브러리 모달의 그룹과 전체 스크롤 화면에 동일하게 적용됩니다.
-- **내 순서**: 전체 스크롤(ALL LIVE)에서 각 타일 우상단의 `⤒`(맨 앞으로) `◀`(앞으로) `▶`(뒤로)를 누르면 즉시 순서가 바뀌고 `localStorage`에 저장됩니다. FULL 모드에서는 다른 오버레이처럼 숨고 HUD가 켜졌을 때만 나타납니다.
+- **내 순서**: 전체 스크롤(ALL LIVE)에서 각 타일 우상단의 `⤒`(맨 앞으로) `◀`(앞으로) `▶`(뒤로)를 누르면 즉시 순서가 바뀌고 `localStorage`에 저장됩니다. 같은 자리의 작은 아이콘 버튼은 그 칸의 채널을 직접 바꾸는 ‘채널 변경’입니다(칸을 교체하면 자동으로 ‘내 순서’로 고정). FULL 모드에서는 다른 오버레이처럼 숨고 HUD가 켜졌을 때만 나타납니다.
+
+## 전체 스크롤 = 라이브가 들어오는 채널만
+
+- 전체 스크롤에는 페이지 안에서 **실제로 라이브 신호가 재생되는 채널만** 나옵니다(외부 공식 링크·미송출 채널 제외).
+- 2026-11-22 브라우저 실측: HLS 35개 + YouTube 11개 = **46채널 전부 재생 확인**.
+- 외부 공식 링크 6개(BBC 공식·CCTV-13·Sky News·CBS·LiveNOW·TVBS)는 소스 라이브러리의 ‘외부 공식 링크’ 영역에만 남습니다.
 
 ## 채널 직접 선택
 
@@ -69,6 +79,22 @@
 
 레이아웃별 채널 배치(9/4/6/1) · 시작 화면 · 정렬 모드 · **내 순서** · 커스텀 소스 · 음성 상태가 `localStorage`(`worldlive.v3`)에 저장됩니다. 이전 `worldlive.v2`·`v1` 설정은 자동으로 마이그레이션되고, 없어진 채널 ID는 기본 채널로 대체됩니다. `?reset=1`로 초기화, `?layout=4|9|6|1|all`로 시작 레이아웃 지정도 가능합니다.
 
+## CCTV-13 新闻 — 페이지 내 수신 조사 결과 (2026-11-22)
+
+공개 HLS·삽입 경로를 모두 실측한 결과, **CCTV-13은 페이지 안에서 재생되지 않습니다**(외부 공식 링크로만 제공).
+
+| 후보 | 결과 |
+|---|---|
+| iptv-org `cn.m3u` (2건) | `go.bkpcp.top` → Cloudflare 403 「Just a moment」, `74.91.26.218:82` → 접속 불가. 둘 다 HTTP라 HTTPS 페이지에선 혼합 콘텐츠 차단 |
+| CCTV 공식 CDN cdrm HLS (`ldncctvwbcd…cnchw.v.cdn20.com`) | 매니페스트·세그먼트 200, **CORS 헤더 없음** |
+| CCTV CDN 미러 (`ldncctvwbcdali.v.myalicdn.com`, `…ks.v.kcdnvip.com`, `…txy.liveplay.myqcloud.com`) | 매니페스트·변형·세그먼트 모두 200 + `Access-Control-Allow-Origin: *` (또는 origin 반사) → **CORS 통과** |
+| 위 CDN을 hls.js로 재생 | 1.5.17·1.6.13 모두 **`mediaError/bufferAddCodecError`** — PMT는 존재(H.264 0x1B / AAC 0x0F)하지만 hls.js가 코덱을 얻지 못해 SourceBuffer 생성 실패 |
+| 공식 페이지 iframe 삽입 (`tv.cctv.com/live/cctv13/`) | 페이지는 뜨지만 플레이어가 **「对不起，由于版权原因，视频无法播放」**(저작권 제한) |
+| 공식 페이지 새 창 | **재생 확인** — 1280×720 영상, `currentTime` 진행 (DRM 플레이어 전용 경로) |
+| VDN API (`vdnx.live.cntv.cn`) | 정상 세션 없이는 `status 20 · 抱歉，该视频暂时无法播放` |
+
+→ CCTV-13은 `kind:'web'` 외부 링크로만 남겨 두었습니다.
+
 ## 검증 결과 (2026-11-22 KST, 운영 페이지 기준)
 
 - **9분할 9/9 동시 재생**: KBS NEWS 24 · YTN · 연합뉴스TV(YouTube) + NHK WORLD-JAPAN · CGTN ENGLISH · CNN FAST · BBC NEWS · ABC NEWS LIVE · AL JAZEERA ENGLISH(HLS) 전부 LIVE, 클릭 없이 자동재생.
@@ -77,7 +103,10 @@
 - **소스 라이브러리**: 아시아 → 미주 → 유럽 → 중동 → … → 한국 순서, KOREA 그룹은 3개(KBS·YTN·연합뉴스TV)만 표시.
 - **내 순서**: 전체 스크롤에서 NHK 타일 `▶` 클릭 → CGTN·NHK 순으로 즉시 변경, 정렬 라벨이 ‘내 순서’로 전환되고 새로고침 후에도 유지.
 - **한국 우선**: KBS·YTN·연합뉴스TV가 맨 앞에 나열.
-- **FULL 모드**: 상하단 바·타일 오버레이 opacity 0, `stage` 패딩 0 / gap 0 / 테두리 0, HUD를 켜면 컨트롤이 다시 나타났다가 3.6초 뒤 사라짐.
+- **FULL 모드**: 상하단 바·타일 오버레이 opacity 0, `stage` 패딩 0 / gap 0 / 테두리 0, HUD를 켜면 컨트롤이 다시 나타났다가 3.6초 뒤 사라짐. 9분할·ALL 모두 오버레이 없이 영상만 표시, 영상비 16:9 유지(`object-fit:contain`).
+- **전체 스크롤 전수 검증**: HLS 35개·YouTube 11개 전부 재생(`video.currentTime` 진행/`playerState=1`) — 전체 스크롤에 뜨는 채널은 모두 살아 있는 라이브입니다.
+- **전체 스크롤 순서/소스 직접 지정**: NHK 타일 `▶` → CGTN·NHK 순으로 즉시 변경·저장(정렬 라벨 ‘내 순서’), 같은 화면에서 1번 칸을 BBC로 교체 → 1번이 BBC로 바뀌고 정렬이 ‘내 순서’로 고정.
+- **시각 표시**: SEOUL KST · NEW YORK EST · PARIS CET 3개 확인.
 
 ## 구조
 
