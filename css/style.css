@@ -916,3 +916,67 @@ body.is-full.is-hud .order-ctl{opacity:1 !important;pointer-events:auto !importa
   .pv-slot-group{width:100%;}
   .pv-actions{width:100%;}
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   v5 — ACTIVE AUDIO TALLY
+   선택한 타일(지금 듣고 있는 채널)에만 선명한 흰색 테두리(3px)와
+   은은한 화이트 글로우. 다른 채널은 자동 음소거되고 테두리가 사라진다.
+   FULL(순수 영상) 모드에서도 이 테두리는 유지된다.
+   ═══════════════════════════════════════════════════════════════ */
+.tally-ring{
+  position:absolute;inset:0;z-index:7;pointer-events:none;
+  border-radius:3px;
+  border:3px solid transparent;
+  box-shadow:none;opacity:0;
+  transition:opacity .15s ease, border-color .15s ease, box-shadow .15s ease;
+}
+.tile.is-tally .tally-ring{
+  opacity:1;
+  border-color:#FFFFFF;
+  box-shadow:
+    inset 0 0 20px rgba(255,255,255,.20),
+    inset 0 0 2px rgba(255,255,255,.85);
+}
+.tile.is-tally{
+  border-color:rgba(255,255,255,.90);
+  box-shadow:0 0 0 1px rgba(255,255,255,.30), 0 0 24px -6px rgba(255,255,255,.42);
+}
+.tile.is-tally::before{box-shadow:inset 0 0 26px -8px rgba(255,255,255,.35);}
+
+/* 영상 영역을 눌러 채널을 고른다는 것을 알리는 포인터 */
+.tile-hit{cursor:pointer;}
+body.is-full .tile-hit{cursor:default;}
+
+/* FULL(순수 영상) — 흰색 테두리만 남기고 다른 배지·버튼은 숨김 유지 */
+body.is-full .tile.is-tally{border:0;box-shadow:none;}
+body.is-full .tile.is-tally::before{content:none;}
+body.is-full .tile.is-tally .tally-ring{
+  opacity:1;border-color:#FFFFFF;border-radius:0;
+  box-shadow:inset 0 0 18px rgba(255,255,255,.16);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   v5 — DRAG TO SWAP
+   영상 위를 8px 넘게 끌면 드래그: 집어 든 타일은 골드 점선, 놓을
+   타일은 시안 점선으로 표시하고, 놓으면 두 칸의 채널이 맞바뀐다.
+   ═══════════════════════════════════════════════════════════════ */
+.tile.is-dragging{
+  opacity:.55;
+  border-color:rgba(228,203,150,.90);
+  box-shadow:0 0 0 2px rgba(228,203,150,.85), 0 0 26px -6px rgba(228,203,150,.75);
+}
+.tile.is-dragging .tally-ring{
+  opacity:1;border-color:rgba(228,203,150,.95);border-style:dashed;
+  box-shadow:inset 0 0 20px rgba(228,203,150,.18);
+}
+.tile.is-drop-target{
+  border-color:rgba(84,207,227,.95);
+  box-shadow:0 0 0 2px rgba(84,207,227,.90), 0 0 30px -4px rgba(84,207,227,.75);
+}
+.tile.is-drop-target .tally-ring{
+  opacity:1;border-color:#54CFE3;border-style:dashed;
+  box-shadow:inset 0 0 22px rgba(84,207,227,.26);
+}
+body.is-swapping{cursor:grabbing;}
+body.is-swapping .tile-hit{cursor:grabbing;}
+body.is-swapping .tile{transition:none;}

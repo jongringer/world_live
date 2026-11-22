@@ -37,6 +37,7 @@ const state = {
   custom: [],
   audioId: null,
   muted: true,
+  selSlot: null,           // 액티브 오디오 탤리 — 지금 듣고 있는 타일(흰색 테두리)
   startedAt: Date.now()
 };
 const live = {};            // slot index -> { node, media, ch, state, iframe, video, hls, ps }
@@ -348,6 +349,7 @@ function buildTile(i) {
   el.innerHTML = `
     <div class="tile-media"></div>
     <div class="tile-hit"></div>
+    <div class="tally-ring" aria-hidden="true"></div>
     <div class="tlay-top">
       <div class="chan-tag">
         <span class="live-badge"><span class="live-dot"></span><span class="live-txt">LIVE</span></span>
@@ -674,8 +676,10 @@ function rebuildGrid() {
   const n = chCount();
   for (let i = 0; i < n; i++) grid.appendChild(buildTile(i));
   sizeGrid();
+  selByChannel();
   updateStrip();
   syncAudioButtons();
+  syncTally();
 
   if (state.layout === 'all') {
     observeAll(myGen);
@@ -709,10 +713,63 @@ function observeAll(myGen) {
   tiles.forEach(t => { t.querySelector('.tile-media').innerHTML = idleFace(slotChannel(parseInt(t.dataset.slot, 10))); t.classList.add('is-idle'); io.observe(t); });
 }
 
-/* ── audio ─────────────────────────────────────────────────── */
+/* ── audio · ACTIVE AUDIO TALLY ────────────────────────────────
+   타일을 클릭하면 그 채널만 청취(다른 채널 자동 음소거)하고 외곽에
+   흰색 테두리를 표시한다. 선택 상태는 audioId(채널) + selSlot(칸)으로
+   함께 관리해 레이아웃이 바뀌어도 같은 채널을 따라간다. */
+function clearAudio() {
+  state.audioId = null;
+  state.muted = true;
+  state.selSlot = null;
+}
+/* 타일 클릭 = 그 채널 단독 청취 + 흰색 테두리 */
+function selectSlot(i) {
+  const ch = slotChannel(i);
+  if (!ch || ch.kind === 'web') return;      // 외부 공식 링크(재생 불가)는 선택 대상이 아님
+  state.audioId = ch.id;
+  state.selSlot = i;
+  state.muted = false;
+  applyAudio();
+  save();
+  const L = live[i];
+  if (!L) return;
+  if (ch.kind === 'youtube' || ch.kind === 'youtube-video') {
+    ytCmd(i, 'unMute');
+    ytCmd(i, 'setVolume', [100]);
+    ytCmd(i, 'playVideo');
+  } else if (ch.kind === 'hls' && L.video) {
+    try { L.video.volume = 1; } catch (e) {}
+    if (L.video.paused) L.video.play().catch(() => {});
+  }
+}
+/* 저장된 audioId로 현재 화면의 선택 칸을 되찾는다 (레이아웃 변경·재구성 후) */
+function selByChannel() {
+  const ids = slotIds();
+  if (state.muted || !state.audioId) { state.selSlot = null; return; }
+  if (state.selSlot != null && ids[state.selSlot] === state.audioId) return;
+  const at = ids.indexOf(state.audioId);
+  if (at >= 0) { state.selSlot = at; return; }
+  state.selSlot = null;
+  state.audioId = null;
+  state.muted = true;
+}
+/* 흰색 테두리(탤리) 표시 갱신 — 선택 칸 하나에만 */
+function syncTally() {
+  const on = !state.muted && state.audioId != null;
+  const ids = slotIds();
+  grid.querySelectorAll('.tile').forEach(el => {
+    const i = parseInt(el.dataset.slot, 10);
+    el.classList.toggle('is-tally', !!(on && i === state.selSlot && ids[i] === state.audioId));
+  });
+}
 function setAudio(chId) {
-  if (state.audioId === chId || chId == null) { state.audioId = null; state.muted = true; }
-  else { state.audioId = chId; state.muted = false; }
+  if (chId == null || (state.audioId === chId && !state.muted)) clearAudio();
+  else {
+    state.audioId = chId;
+    state.muted = false;
+    const at = slotIds().indexOf(chId);
+    state.selSlot = at >= 0 ? at : null;
+  }
   applyAudio();
   save();
 }
@@ -720,13 +777,20 @@ function applyAudio() {
   Object.keys(live).forEach(k => {
     const i = parseInt(k, 10), L = live[k];
     const muted = state.muted || state.audioId !== L.ch.id;
-    if (L.iframe) ytCmd(i, muted ? 'mute' : 'unMute');
+    if (L.iframe) {
+      ytCmd(i, muted ? 'mute' : 'unMute');
+      if (!muted) { ytCmd(i, 'setVolume', [100]); ytCmd(i, 'playVideo'); }
+    }
     if (L.video != null) {
       L.video.muted = muted;
-      if (!muted) L.video.play().catch(() => {});
+      if (!muted) {
+        try { L.video.volume = 1; } catch (e) {}
+        L.video.play().catch(() => {});
+      }
     }
   });
   syncAudioButtons();
+  syncTally();
   updateStrip();
 }
 function syncAudioButtons() {
@@ -896,6 +960,8 @@ function assignSource(slot, id) {
     return;
   }
   state.sets[state.layout][slot] = id;
+  // 듣고 있던 칸의 채널을 바꾸면 새 채널로 청취를 이어간다 (테두리 유지)
+  if (state.selSlot === slot) { state.audioId = id; state.muted = false; }
   save();
   closeModal();
   const ch = byId(id);
@@ -1211,6 +1277,115 @@ function showBig(i) {
   toast('1×1 — ' + ch.name);
 }
 
+/* ── drag & drop: 타일 채널 자리 바꾸기 ────────────────────────
+   HTML5 draggable은 iframe·video 위에서 먹통이 되므로, 투명 인터셉트
+   레이어(.tile-hit)에서 pointerdown → pointermove → pointerup 을 추적한다.
+   8px 이내면 클릭(오디오 선택·흰색 테두리), 넘으면 드래그로 보고 놓은
+   타일과 채널(소스)을 맞바꾼다. */
+const DRAG_PX = 8;
+let drag = null;
+let suppressClickUntil = 0;
+
+function tileUnder(x, y) {
+  const el = document.elementFromPoint(x, y);
+  const t = el && el.closest ? el.closest('.tile') : null;
+  return t ? parseInt(t.dataset.slot, 10) : -1;
+}
+function clearDragVisuals() {
+  grid.querySelectorAll('.tile.is-dragging, .tile.is-drop-target').forEach(el => {
+    el.classList.remove('is-dragging', 'is-drop-target');
+  });
+  document.body.classList.remove('is-swapping');
+}
+function endDragListeners() {
+  window.removeEventListener('pointermove', onTilePointerMove);
+  window.removeEventListener('pointerup', onTilePointerUp);
+  window.removeEventListener('pointercancel', onTilePointerCancel);
+}
+function onTilePointerDown(e) {
+  if (drag) return;
+  if (e.button != null && e.button !== 0) return;              // 좌클릭·터치만
+  const hit = e.target.closest ? e.target.closest('.tile-hit') : null;
+  if (!hit) return;
+  const tile = hit.closest('.tile');
+  if (!tile || chCount() < 2) return;
+  const i = parseInt(tile.dataset.slot, 10);
+  const ch = slotChannel(i);
+  if (!ch || ch.kind === 'web') return;
+  drag = { slot: i, x0: e.clientX, y0: e.clientY, active: false, target: -1, pid: e.pointerId };
+  window.addEventListener('pointermove', onTilePointerMove, { passive: false });
+  window.addEventListener('pointerup', onTilePointerUp);
+  window.addEventListener('pointercancel', onTilePointerCancel);
+}
+function onTilePointerMove(e) {
+  if (!drag || e.pointerId !== drag.pid) return;
+  const dx = e.clientX - drag.x0, dy = e.clientY - drag.y0;
+  if (!drag.active) {
+    if (Math.sqrt(dx * dx + dy * dy) <= DRAG_PX) return;       // 아직 클릭 범위
+    drag.active = true;
+    const src = grid.querySelector('.tile[data-slot="' + drag.slot + '"]');
+    if (src) src.classList.add('is-dragging');
+    document.body.classList.add('is-swapping');
+  }
+  if (e.cancelable) e.preventDefault();
+  const to = tileUnder(e.clientX, e.clientY);
+  if (to !== drag.target) {
+    drag.target = to;
+    grid.querySelectorAll('.tile').forEach(el => {
+      const i = parseInt(el.dataset.slot, 10);
+      el.classList.toggle('is-drop-target', i === to && i !== drag.slot);
+    });
+  }
+}
+function onTilePointerUp(e) {
+  if (!drag || e.pointerId !== drag.pid) return;
+  const d = drag;
+  drag = null;
+  endDragListeners();
+  clearDragVisuals();
+  if (!d.active) return;                                       // 단순 클릭 → click 핸들러가 선택 처리
+  suppressClickUntil = Date.now() + 400;                       // 드래그 뒤 따라오는 click 무시
+  const to = tileUnder(e.clientX, e.clientY);
+  if (to >= 0 && to !== d.slot) swapSlots(d.slot, to);
+}
+function onTilePointerCancel() {
+  drag = null;
+  endDragListeners();
+  clearDragVisuals();
+}
+/* 두 칸의 채널(소스)을 맞바꾼다 — 전체 스크롤에서는 ‘내 순서’로 고정 */
+function swapSlots(a, b) {
+  if (a === b) return;
+  const ids = slotIds();
+  if (!ids[a] || !ids[b]) return;
+  const na = (byId(ids[a]) || {}).name || ids[a];
+  const nb = (byId(ids[b]) || {}).name || ids[b];
+  if (state.layout === 'all') {
+    const order = sortedIds().slice();
+    const tmp = order[a]; order[a] = order[b]; order[b] = tmp;
+    state.allOrder = order;
+    state.sort = 'custom';
+    refreshSortUI();
+    save();
+    const top = stage.scrollTop;
+    applyLayout('all');
+    stage.scrollTop = top;
+  } else {
+    const set = state.sets[state.layout];
+    const tmp = set[a]; set[a] = set[b]; set[b] = tmp;
+    save();
+    [a, b].forEach(i => { try { unmountSlot(i); } catch (e) {} });
+    [a, b].forEach(i => {
+      const el = grid.querySelector('.tile[data-slot="' + i + '"]');
+      if (el) el.replaceWith(buildTile(i));
+    });
+    [a, b].forEach(i => mountSlot(i));
+    selByChannel();       // 듣고 있던 채널을 따라 테두리·음성 이동
+    applyAudio();
+  }
+  toast('자리 바꿈 — ' + na + ' ↔ ' + nb);
+}
+
 /* ── events ────────────────────────────────────────────────── */
 function bindEvents() {
   document.querySelectorAll('.layout-btn').forEach(b => {
@@ -1218,11 +1393,9 @@ function bindEvents() {
   });
   $('#btn-fullscreen').addEventListener('click', toggleFullscreen);
   $('#btn-mute').addEventListener('click', () => {
-    if (!state.muted && state.audioId) { state.audioId = null; state.muted = true; applyAudio(); save(); }
-    else {
-      const first = chCount() ? slotChannel(0) : null;
-      if (first) setAudio(first.id);
-    }
+    // 음소거 = 테두리도 함께 해제 / 켜기 = 첫 칸 채널을 선택해 청취
+    if (!state.muted && state.audioId) { clearAudio(); applyAudio(); save(); }
+    else if (chCount()) selectSlot(0);
   });
   $('#btn-reload').addEventListener('click', () => { rebuildGrid(); toast('모든 피드를 다시 연결합니다'); });
   $('#btn-sources').addEventListener('click', () => openModal(null));
@@ -1270,7 +1443,9 @@ function bindEvents() {
     const t = e.target.closest('.tile'); if (!t) return;
     if (!t.contains(e.relatedTarget)) t.classList.remove('is-hover');
   });
+  grid.addEventListener('pointerdown', onTilePointerDown);
   grid.addEventListener('click', e => {
+    if (Date.now() < suppressClickUntil) return;               // 드래그 직후의 click 무시
     const t = e.target.closest('.tile'); if (!t) return;
     const i = parseInt(t.dataset.slot, 10);
     const actBtn = e.target.closest('[data-act]');
@@ -1285,6 +1460,10 @@ function bindEvents() {
     if (act === 'reload') { try { unmountSlot(i); } catch (x) {} mountSlot(i); toast(slotChannel(i).name + ' — 재연결'); return; }
     if (act === 'open') { openExternal(i); return; }
     if (act === 'retry') { try { unmountSlot(i); } catch (x) {} mountSlot(i); return; }
+    // FULL(순수 영상)에서는 아래 HUD 핸들러가 타일 클릭을 맡는다
+    if (isFull()) return;
+    // 타일(영상 영역) 클릭 = 그 채널 단독 청취 + 흰색 테두리, 이전 채널은 자동 음소거
+    selectSlot(i);
     const L = live[i];
     const kd = slotChannel(i).kind;
     if (L && (kd === 'youtube' || kd === 'youtube-video') && L.ps !== 1) {
@@ -1313,9 +1492,17 @@ function bindEvents() {
   });
   grid.addEventListener('click', e => {
     if (!isFull()) return;
+    if (Date.now() < suppressClickUntil) return;               // 드래그 직후의 click 무시
     if (e.target.closest('[data-act]')) return;                 // 타일 버튼은 기존 동작 유지
-    if (e.target.closest('.tile') && !e.target.closest('.tile-hit')) return;
-    toggleHud();                                                 // 화면·빈 영역 클릭 = HUD 토글
+    const tile = e.target.closest('.tile');
+    if (tile && !e.target.closest('.tile-hit')) return;
+    if (tile && document.body.classList.contains('is-hud')) {
+      // HUD가 켜진 상태에서 타일 클릭 = 그 채널로 청취 전환 (HUD는 유지)
+      selectSlot(parseInt(tile.dataset.slot, 10));
+      showHud();
+      return;
+    }
+    toggleHud();                                                 // 빈 영역·첫 클릭 = HUD 토글
   });
   document.querySelectorAll('.topbar, .signal-strip').forEach(el => {
     el.addEventListener('mouseenter', () => clearTimeout(hudTimer));
@@ -1393,6 +1580,7 @@ function bindEvents() {
 window.WORLD_LIVE = {
   state: () => ({
     layout: state.layout, start: state.start, sort: state.sort, muted: state.muted, audio: state.audioId,
+    selSlot: state.selSlot,
     sets: JSON.parse(JSON.stringify(state.sets)),
     count: chCount(),
     channels: CHANNELS.length,
@@ -1401,6 +1589,14 @@ window.WORLD_LIVE = {
   }),
   setLayout: l => applyLayout(l),
   setAudio: id => setAudio(id),
+  selectSlot: i => selectSlot(i),
+  swap: (a, b) => swapSlots(a, b),
+  tally: () => Array.prototype.map.call(grid.querySelectorAll('.tile'), el => ({
+    slot: parseInt(el.dataset.slot, 10),
+    id: (slotChannel(parseInt(el.dataset.slot, 10)) || {}).id,
+    tally: el.classList.contains('is-tally'),
+    muted: live[parseInt(el.dataset.slot, 10)] && live[parseInt(el.dataset.slot, 10)].video ? live[parseInt(el.dataset.slot, 10)].video.muted : null
+  })),
   mount: i => mountSlot(i),
   unmount: i => unmountSlot(i),
   hud: () => toggleHud(),
