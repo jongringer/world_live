@@ -168,6 +168,8 @@ window.addEventListener('message', function (e) {
   if (d.event === 'infoDelivery' && d.info) {
     const info = d.info;
     L.ytConfirmed = true;
+    const tEl = live[slot] && live[slot].node;
+    if (tEl) tEl.classList.remove('pass');
     if (typeof info.playerState === 'number') {
       L.stateSrc = 'api';
       if (info.playerState === 1) setTileState(slot, 'live');
@@ -681,7 +683,6 @@ function bindEvents() {
         toast(slotChannel(i).name + ' — 영상의 재생 버튼을 눌러 주세요');
         t.dataset.passTip = '1';
       }
-      setTimeout(() => t.classList.remove('pass'), 5000);
     }
     setFocus(i);
   });
