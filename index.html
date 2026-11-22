@@ -9,7 +9,7 @@
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23080B10'/%3E%3Crect x='6' y='9' width='20' height='14' rx='2' fill='none' stroke='%23C9A86A' stroke-width='1.4'/%3E%3Ccircle cx='16' cy='16' r='2.4' fill='%23FF3B4E'/%3E%3C/svg%3E" />
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css" />
-<link rel="stylesheet" href="css/style.css?v=28" />
+<link rel="stylesheet" href="css/style.css?v=29" />
 </head>
 <body>
 <div id="app" class="app">
@@ -198,17 +198,18 @@
       <div class="start-wrap">
         <button class="icon-btn wide start-btn" id="btn-start" title="첫 화면(기본 시작 레이아웃) 설정">
           <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 2.6l2.2 4.6 5 .7-3.6 3.5.9 5-4.5-2.4-4.5 2.4.9-5L2.8 7.9l5-.7z" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linejoin="round"/></svg>
-          <span class="lb-txt">첫 화면</span><span class="start-label" id="start-label">9분할</span>
+          <span class="lb-txt">첫 화면</span><span class="start-label" id="start-label">마지막 화면</span>
           <span class="cs-caret">▾</span>
         </button>
         <div class="start-menu" id="start-menu" hidden>
           <div class="sm-head">시작 화면 고정</div>
+          <button data-start="auto"><span>마지막 화면</span><small>마지막으로 보던 화면</small></button>
           <button data-start="9"><span>9분할</span><small>3×3 · 9채널</small></button>
           <button data-start="4"><span>4분할</span><small>2×2 · 4채널</small></button>
           <button data-start="6"><span>6분할</span><small>3×2 · 6채널</small></button>
           <button data-start="all"><span>전체 스크롤</span><small>전 세계 LIVE</small></button>
           <button data-start="1"><span>전체 1×1</span><small>한 채널</small></button>
-          <div class="sm-note">다음에 열 때 이 화면으로 시작합니다.</div>
+          <div class="sm-note">‘마지막 화면’은 마지막으로 보던 배치 그대로 시작합니다.</div>
         </div>
       </div>
       <button class="icon-btn" id="btn-mute" title="전체 음소거  ·  키 M">
@@ -320,7 +321,7 @@
   </section>
 </div>
 
-<script src="js/channels.js?v=28"></script>
-<script src="js/app.js?v=28"></script>
+<script src="js/channels.js?v=29"></script>
+<script src="js/app.js?v=29"></script>
 </body>
 </html>

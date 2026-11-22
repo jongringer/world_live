@@ -31,6 +31,7 @@ function freshSets() {
 const state = {
   layout: '9',
   start: '9',
+  startPinned: false,      // ‘첫 화면’을 직접 골랐는지 — 고르지 않았으면 마지막 화면으로 시작
   sort: 'zone',
   sets: freshSets(),
   allOrder: [],            // ‘내 순서’ — 전체 스크롤(ALL LIVE) 채널 순서
@@ -57,7 +58,7 @@ let modalSlot = null;
 function save() {
   try {
     localStorage.setItem(LS_KEY, JSON.stringify({
-      layout: state.layout, start: state.start, sort: state.sort, sets: state.sets,
+      layout: state.layout, start: state.start, startPinned: state.startPinned, sort: state.sort, sets: state.sets,
       allOrder: state.allOrder,
       custom: state.custom, audioId: state.audioId, muted: state.muted
     }));
@@ -93,6 +94,7 @@ function applyStored(d) {
   }
   if (LAYOUTS[d.layout]) state.layout = d.layout;
   if (LAYOUTS[d.start]) state.start = d.start;
+  if (typeof d.startPinned === 'boolean') state.startPinned = d.startPinned;
   if (typeof d.sort === 'string' && SORT_MODES[d.sort]) state.sort = d.sort;
   if (Array.isArray(d.allOrder)) state.allOrder = d.allOrder.filter(id => typeof id === 'string' && byId(id));
   if (typeof d.audioId === 'string' && byId(d.audioId)) { state.audioId = d.audioId; state.muted = false; }
@@ -831,17 +833,26 @@ function updateStrip() {
 /* ── start layout menu ─────────────────────────────────────── */
 const START_NAMES = { '9':'9분할', '4':'4분할', '6':'6분할', '1':'1×1', 'all':'전체 스크롤' };
 function refreshStartUI() {
-  $('#start-label').textContent = START_NAMES[state.start] || '9분할';
+  $('#start-label').textContent = state.startPinned ? (START_NAMES[state.start] || '9분할') : '마지막 화면';
   document.querySelectorAll('#start-menu [data-start]').forEach(b => {
-    b.classList.toggle('is-current', b.dataset.start === state.start);
+    const cur = b.dataset.start === 'auto' ? !state.startPinned : (state.startPinned && b.dataset.start === state.start);
+    b.classList.toggle('is-current', cur);
   });
   document.querySelectorAll('.layout-btn').forEach(b => {
-    b.classList.toggle('is-start', b.dataset.layout === state.start);
+    b.classList.toggle('is-start', state.startPinned && b.dataset.layout === state.start);
   });
 }
 function setStart(layout) {
+  if (layout === 'auto') {
+    state.startPinned = false;
+    save();
+    refreshStartUI();
+    toast('첫 화면 — 마지막으로 보던 화면 그대로');
+    return;
+  }
   if (!LAYOUTS[layout]) return;
   state.start = layout;
+  state.startPinned = true;
   save();
   refreshStartUI();
   toast('첫 화면 — ' + (START_NAMES[layout] || layout) + ' 저장');
@@ -1635,8 +1646,10 @@ function boot() {
   if (qs.has('reset')) { try { localStorage.removeItem(LS_KEY); LEGACY_LS_KEYS.forEach(k => localStorage.removeItem(k)); } catch (e) {} }
   else load();
   const ql = qs.get('layout');
+  // ?layout= > 직접 고른 ‘첫 화면’ > 마지막으로 보던 화면 순으로 시작
   if (ql && LAYOUTS[ql]) state.layout = ql;
-  else state.layout = state.start;
+  else if (state.startPinned && LAYOUTS[state.start]) state.layout = state.start;
+  else if (!LAYOUTS[state.layout]) state.layout = state.start;
   buildClocks();
   bindEvents();
   refreshStartUI();
