@@ -1,33 +1,44 @@
 /* ═══════════════════════════════════════════════════════════════
-   WORLD LIVE // GLOBAL NEWSROOM MONITOR — app.js
-   16:9 broadcast multiview · YouTube live / HLS / web sources
+   WORLD LIVE // GLOBAL NEWSROOM MONITOR — app.js  (v2)
+   16:9 broadcast multiview · 42 verified live feeds
+   layouts 9 / 4 / 6 / 1 / ALL(스크롤·지연 마운트) · 독립 배치 저장
    ═══════════════════════════════════════════════════════════════ */
 (function () {
 'use strict';
 
 /* ── constants ─────────────────────────────────────────────── */
-const LS_KEY = 'worldlive.v1';
+const LS_KEY = 'worldlive.v2';
 const LAYOUTS = {
-  '9': { cols: 3, rows: 3, count: 9 },
-  '4': { cols: 2, rows: 2, count: 4 },
-  '6': { cols: 3, rows: 2, count: 6 },
-  '1': { cols: 1, rows: 1, count: 1 }
+  '9':  { cols: 3, rows: 3, count: 9, label: '9분할' },
+  '4':  { cols: 2, rows: 2, count: 4, label: '4분할' },
+  '6':  { cols: 3, rows: 2, count: 6, label: '6분할' },
+  '1':  { cols: 1, rows: 1, count: 1, label: '전체 1×1' },
+  'all':{ scroll: true, count: 0, label: '전체 스크롤' }
 };
 const GAP = 6;
-const ZONES = { ASIA:'ASIA · PACIFIC', AMERICAS:'AMERICAS', EUROPE:'EUROPE', MIDEast:'MIDDLE EAST', CUSTOM:'CUSTOM SOURCES' };
+const IO_MARGIN = '90% 0px 90% 0px';
 
 /* ── state ─────────────────────────────────────────────────── */
+function freshSets() {
+  return {
+    '9': DEFAULT_SETS['9'].slice(),
+    '4': DEFAULT_SETS['4'].slice(),
+    '6': DEFAULT_SETS['6'].slice(),
+    '1': DEFAULT_SETS['1'].slice()
+  };
+}
 const state = {
   layout: '9',
-  slots: DEFAULT_SLOTS.slice(),
+  start: '9',
+  sets: freshSets(),
   custom: [],
-  focused: 0,
-  audio: null,
+  audioId: null,
   muted: true,
   startedAt: Date.now()
 };
-const live = {};           // slot -> { node, media, iframe, player, video, hls, ch, state }
-let ytApi = null, ytApiLoading = false, ytApiQueue = [];
+const live = {};            // slot index -> { node, media, ch, state, iframe, video, hls, ps }
+let gen = 0;
+let io = null;
 
 /* ── dom ───────────────────────────────────────────────────── */
 const $ = (s, r) => (r || document).querySelector(s);
@@ -36,49 +47,77 @@ const stage = $('#stage');
 const modalRoot = $('#modal-root');
 const srcGrid = $('#src-grid');
 const srcSearch = $('#src-search');
-let modalSlot = null;      // null = manage-only
+let modalSlot = null;
 
 /* ── persistence ───────────────────────────────────────────── */
 function save() {
   try {
     localStorage.setItem(LS_KEY, JSON.stringify({
-      layout: state.layout, slots: state.slots, custom: state.custom,
-      focused: state.focused, muted: state.muted
+      layout: state.layout, start: state.start, sets: state.sets,
+      custom: state.custom, audioId: state.audioId, muted: state.muted
     }));
   } catch (e) {}
+}
+function normalizeSet(arr, n) {
+  if (!Array.isArray(arr)) return null;
+  const out = arr.slice(0, n).filter(id => typeof id === 'string' && byId(id));
+  while (out.length < n) out.push(DEFAULT_SETS['9'][out.length % 9]);
+  return out;
 }
 function load() {
   try {
     const raw = localStorage.getItem(LS_KEY);
-    if (!raw) return;
-    const d = JSON.parse(raw);
-    if (d && typeof d === 'object') {
-      if (LAYOUTS[d.layout]) state.layout = d.layout;
-      if (Array.isArray(d.slots) && d.slots.length === 9) state.slots = d.slots;
-      if (Array.isArray(d.custom)) state.custom = d.custom.filter(c => c && c.id && c.kind && c.src);
-      if (typeof d.focused === 'number' && d.focused >= 0 && d.focused < 9) state.focused = d.focused;
-      if (typeof d.muted === 'boolean') state.muted = d.muted;
+    if (raw) {
+      const d = JSON.parse(raw);
+      if (d && typeof d === 'object') {
+        if (Array.isArray(d.custom)) state.custom = d.custom.filter(c => c && c.id && c.kind && c.src);
+        if (d.sets && typeof d.sets === 'object') {
+          Object.keys(state.sets).forEach(k => {
+            const s = normalizeSet(d.sets[k], state.sets[k].length);
+            if (s) state.sets[k] = s;
+          });
+        }
+        if (LAYOUTS[d.layout]) state.layout = d.layout;
+        if (LAYOUTS[d.start]) state.start = d.start;
+        if (typeof d.audioId === 'string') state.audioId = d.audioId;
+        if (typeof d.muted === 'boolean') state.muted = d.muted;
+      }
+      return;
+    }
+    // v1 → v2 마이그레이션
+    const old = localStorage.getItem('worldlive.v1');
+    if (!old) return;
+    const o = JSON.parse(old);
+    if (o && typeof o === 'object') {
+      if (Array.isArray(o.slots)) {
+        const s = normalizeSet(o.slots, 9);
+        if (s) state.sets['9'] = s;
+        const s4 = normalizeSet(o.slots, 4);
+        if (s4) state.sets['4'] = s4;
+      }
+      if (Array.isArray(o.custom)) state.custom = o.custom.filter(c => c && c.id && c.kind && c.src);
+      if (LAYOUTS[o.layout]) { state.layout = o.layout; state.start = o.layout; }
+      if (typeof o.muted === 'boolean') state.muted = o.muted;
     }
   } catch (e) {}
 }
 
 /* ── channel helpers ───────────────────────────────────────── */
 function allChannels() { return CHANNELS.concat(state.custom); }
-function byId(id) {
-  return CHANNEL_BY_ID[id] || state.custom.find(c => c.id === id) || null;
+function byId(id) { return CHANNEL_BY_ID[id] || state.custom.find(c => c.id === id) || null; }
+function slotIds() {
+  if (state.layout === 'all') return ALL_LIVE_IDS;
+  return state.sets[state.layout];
 }
 function slotChannel(i) {
-  return byId(state.slots[i]) || CHANNELS[0];
+  const ids = slotIds();
+  return byId(ids[i]) || CHANNELS[0];
 }
-function visibleCount() { return LAYOUTS[state.layout].count; }
-function visibleSlots() {
-  if (state.layout === '1') return [state.focused];
-  return Array.from({ length: LAYOUTS[state.layout].count }, (_, i) => i);
-}
+function chCount() { return slotIds().length; }
 
 /* ── clocks ────────────────────────────────────────────────── */
 const CLOCKS = [
-  { tz:'Asia/Seoul',    label:'SEOUL',  suf:'KST', local:true  },
+  { tz:'Asia/Seoul',    label:'SEOUL',  suf:'KST', local:true },
   { tz:'Asia/Tokyo',    label:'TOKYO',  suf:'JST' },
   { tz:'Asia/Shanghai', label:'BEIJING',suf:'CST' },
   { tz:'Europe/London', label:'LONDON', suf:'GMT' },
@@ -124,25 +163,22 @@ function toast(msg) {
   setTimeout(() => { el.classList.add('is-out'); setTimeout(() => el.remove(), 300); }, 2600);
 }
 
-/* ── YouTube iframe API / postMessage bridge ───────────────── */
-function ensureYT() {
-  if (window.YT && window.YT.Player) return Promise.resolve(window.YT);
-  return new Promise(resolve => {
-    ytApiQueue.push(resolve);
-    if (ytApiLoading) return;
-    ytApiLoading = true;
-    const prev = window.onYouTubeIframeAPIReady;
-    window.onYouTubeIframeAPIReady = function () {
-      if (typeof prev === 'function') prev();
-      ytApiQueue.forEach(fn => fn(window.YT));
-      ytApiQueue = [];
-    };
+/* ── hls.js loader ─────────────────────────────────────────── */
+let hlsLoading = null;
+function ensureHls() {
+  if (window.Hls) return Promise.resolve();
+  if (hlsLoading) return hlsLoading;
+  hlsLoading = new Promise(resolve => {
     const s = document.createElement('script');
-    s.src = 'https://www.youtube.com/iframe_api';
-    s.async = true;
+    s.src = 'https://cdn.jsdelivr.net/npm/hls.js@1.5.17/dist/hls.min.js';
+    s.onload = () => resolve();
+    s.onerror = () => resolve();
     document.head.appendChild(s);
   });
+  return hlsLoading;
 }
+
+/* ── YouTube bridge ────────────────────────────────────────── */
 function ytCmd(slot, func, args) {
   const L = live[slot];
   if (!L || !L.iframe || !L.iframe.contentWindow) return;
@@ -169,49 +205,56 @@ window.addEventListener('message', function (e) {
     const info = d.info;
     if (typeof info.playerState === 'number') {
       L.ps = info.playerState;
-      L.stateSrc = 'api';
       if (info.playerState === 1) {
         setTileState(slot, 'live');
-        const tEl = live[slot] && live[slot].node;
-        if (tEl) tEl.classList.remove('pass');
-      }
-      else if (info.playerState === 3) setTileState(slot, 'sync');
-      else if (info.playerState === 0 || info.playerState === 2) setTileState(slot, 'offline');
+        if (L.node) L.node.classList.remove('pass');
+      } else if (info.playerState === 3) setTileState(slot, 'sync');
+      else if (info.playerState === 0 || info.playerState === 2) { /* paused — 광고/대기 */ }
     }
-    if (typeof info.muted === 'number' || typeof info.muted === 'boolean') L.ytMuted = !!info.muted;
   }
-  if (d.event === 'onReady') { ytCmd(slot, state.muted || state.audio !== slot ? 'mute' : 'unMute'); }
+  if (d.event === 'onReady') {
+    const muted = state.muted || state.audioId !== L.ch.id;
+    ytCmd(slot, muted ? 'mute' : 'unMute');
+    setTimeout(() => ytCmd(slot, 'playVideo'), 300);
+  }
   if (d.event === 'onError') {
     const code = (d.info && d.info.data) || '?';
     L.err = code;
-    setTileState(slot, 'error');
-    showVeil(slot, 'YouTube 임베드 거부 (오류 ' + code + ')',
-      '방송사가 이 라이브의 외부 페이지 삽입을 제한했습니다. 새 창에서 공식 라이브를 열 수 있습니다.',
-      '새 창에서 열기', 'open');
+    if (String(code) === '150' || String(code) === '101') {
+      showVeil(slot, '임베드 제한 채널', L.ch.name + '은(는) 방송사가 외부 페이지 삽입을 막았습니다(오류 ' + code + '). 소스를 바꾸거나 새 창에서 재생하세요.', '새 창에서 열기', 'open');
+      setTileState(slot, 'error');
+      L.node.classList.add('pass');
+    } else {
+      setTileState(slot, 'offline');
+    }
   }
-  if (d.event === 'initialDelivery') { L.stateSrc = 'api'; setTileState(slot, 'live'); }
 });
 
-/* ── tile build ────────────────────────────────────────────── */
+/* ── icons ─────────────────────────────────────────────────── */
 const ICONS = {
   src:'<svg viewBox="0 0 16 16"><g stroke="currentColor" stroke-width="1.35" stroke-linecap="round"><path d="M2.5 4.4h11M2.5 8h11M2.5 11.6h11"/><circle cx="5.6" cy="4.4" r="1.5" fill="#0B1017"/><circle cx="10.4" cy="8" r="1.5" fill="#0B1017"/><circle cx="6.8" cy="11.6" r="1.5" fill="#0B1017"/></g></svg>',
   spk:'<svg viewBox="0 0 16 16"><path d="M2.6 6h2.2L7.6 3.6v8.8L4.8 10H2.6z" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linejoin="round"/><path d="M9.6 6a2.9 2.9 0 0 1 0 4M11.6 4.2a5.4 5.4 0 0 1 0 7.6" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round"/></svg>',
   spkOff:'<svg viewBox="0 0 16 16"><path d="M2.6 6h2.2L7.6 3.6v8.8L4.8 10H2.6z" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linejoin="round"/><g stroke="currentColor" stroke-width="1.25" stroke-linecap="round"><path d="M10.2 6.2l3.4 3.6M13.6 6.2l-3.4 3.6"/></g></svg>',
   max:'<svg viewBox="0 0 16 16"><g fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="square"><path d="M6 2.4H2.4V6M10 2.4h3.6V6M6 13.6H2.4V10M10 13.6h3.6V10"/></g></svg>',
-  min:'<svg viewBox="0 0 16 16"><g fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="square"><path d="M2.6 6H6V2.6M13.4 6H10V2.6M2.6 10H6v3.4M13.4 10H10v3.4"/></g></svg>',
   pop:'<svg viewBox="0 0 16 16"><g fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><path d="M9.4 2.6h4v4M13.4 2.6L8.6 7.4"/><path d="M12 9.8v3.2a.8.8 0 0 1-.8.8H2.8a.8.8 0 0 1-.8-.8V5.4a.8.8 0 0 1 .8-.8h3.2"/></g></svg>',
   re:'<svg viewBox="0 0 16 16"><g fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><path d="M13.2 6.7A5.3 5.3 0 1 0 13.7 9"/><path d="M13.9 2.9v3.8H10"/></g></svg>',
   warn:'<svg viewBox="0 0 24 24"><path d="M12 3.4L21.2 19.6H2.8z" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/><path d="M12 9v5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><circle cx="12" cy="16.8" r=".9" fill="currentColor"/></svg>',
-  link:'<svg viewBox="0 0 16 16"><g fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><path d="M6.6 9.4l2.8-2.8"/><path d="M9.2 4.6l1.2-1.2a2.6 2.6 0 0 1 3.7 3.7l-1.2 1.2"/><path d="M6.8 11.4l-1.2 1.2a2.6 2.6 0 0 1-3.7-3.7l1.2-1.2"/></g></svg>'
+  link:'<svg viewBox="0 0 16 16"><g fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><path d="M6.6 9.4l2.8-2.8"/><path d="M9.2 4.6l1.2-1.2a2.6 2.6 0 0 1 3.7 3.7l-1.2 1.2"/><path d="M6.8 11.4l-1.2 1.2a2.6 2.6 0 0 1-3.7-3.7l1.2-1.2"/></g></svg>',
+  caret:'<svg viewBox="0 0 12 12" width="10" height="10"><path d="M2.6 4.6L6 8l3.4-3.4" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>'
 };
+function esc(s) {
+  return String(s == null ? '' : s).replace(/[&<>"']/g, m => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[m]));
+}
 
+/* ── tile ──────────────────────────────────────────────────── */
 function buildTile(i) {
   const ch = slotChannel(i);
+  const isAll = state.layout === 'all';
   const el = document.createElement('article');
   el.className = 'tile';
   el.dataset.slot = String(i);
   el.dataset.kind = ch.kind;
-  el.dataset.state = 'loading';
+  el.dataset.state = 'idle';
   el.innerHTML = `
     <div class="tile-media"></div>
     <div class="tile-hit"></div>
@@ -221,7 +264,9 @@ function buildTile(i) {
         <span class="chan-name">${esc(ch.name)}</span>
         <span class="chan-cc">${esc(ch.cc || '')}</span>
       </div>
-      <span class="tile-index">${String(i + 1).padStart(2, '0')}</span>
+      ${isAll
+        ? `<button class="chan-switch is-view" data-act="max" title="이 채널 1×1로 크게 보기">${ICONS.max}<span>크게 보기</span></button>`
+        : `<button class="chan-switch" data-act="src" title="이 칸의 채널 변경">${ICONS.src}<span>채널 변경</span>${ICONS.caret}</button>`}
     </div>
     <div class="tile-veil">
       <div class="veil-icon">${ICONS.warn}</div>
@@ -236,32 +281,37 @@ function buildTile(i) {
       </div>
       <div class="ctrl-btns">
         <button class="tbtn" data-act="audio" title="단독 음성">${ICONS.spkOff}</button>
-        <button class="tbtn" data-act="src" title="소스 변경">${ICONS.src}</button>
+        ${isAll ? '' : `<button class="tbtn" data-act="src" title="채널 변경">${ICONS.src}</button>`}
         <button class="tbtn" data-act="max" title="1×1 전체화면">${ICONS.max}</button>
         <button class="tbtn" data-act="pop" title="새 창에서 열기">${ICONS.pop}</button>
         <button class="tbtn" data-act="reload" title="이 피드 새로고침">${ICONS.re}</button>
       </div>
     </div>`;
-  if (i === state.focused) el.classList.add('is-focus');
   return el;
 }
-function esc(s) {
-  return String(s == null ? '' : s).replace(/[&<>"']/g, m => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[m]));
-}
 
-/* ── mounting sources ──────────────────────────────────────── */
+/* ── mounting ──────────────────────────────────────────────── */
+function idleFace(ch) {
+  return '<div class="idle-face"><span class="idle-dot"></span><span class="idle-name">' + esc(ch.name) + '</span>'
+       + '<small>SCROLL TO PLAY</small></div>';
+}
 function mountSlot(i) {
   const el = grid.querySelector('.tile[data-slot="' + i + '"]');
   if (!el) return;
   const ch = slotChannel(i);
   const media = el.querySelector('.tile-media');
+  if (live[i]) {
+    if (live[i].ch.id === ch.id && live[i].state !== 'error') return;
+    unmountSlot(i);
+  }
   media.innerHTML = '';
   live[i] = { node: el, media: media, ch: ch, state: 'loading', iframe: null, video: null, hls: null };
   el.dataset.kind = ch.kind;
   el.dataset.state = 'loading';
+  el.classList.remove('is-idle', 'pass');
   hideVeil(i);
 
-  const muted = state.muted || state.audio !== i;
+  const muted = state.muted || state.audioId !== ch.id;
 
   if (ch.kind === 'youtube' || ch.kind === 'youtube-video') {
     const params = new URLSearchParams({
@@ -281,15 +331,18 @@ function mountSlot(i) {
     iframe.title = ch.name + ' live';
     media.appendChild(iframe);
     live[i].iframe = iframe;
-    const handshake = () => { ytListen(i); ytCmd(i, muted ? 'mute' : 'unMute'); };
-    iframe.addEventListener('load', () => { setTimeout(handshake, 350); setTimeout(handshake, 1400); });
-    setTimeout(handshake, 1600);
+    const hs = () => { ytListen(i); ytCmd(i, muted ? 'mute' : 'unMute'); };
+    iframe.addEventListener('load', () => { setTimeout(hs, 350); setTimeout(hs, 1500); });
+    setTimeout(hs, 1800);
     setTimeout(() => {
       if (!live[i]) return;
       ytCmd(i, 'addEventListener', ['onStateChange']);
-      if (live[i].state !== 'live') ytCmd(i, 'playVideo');
-    }, 6500);
-    setTimeout(() => { if (live[i] && live[i].state === 'loading') setTileState(i, 'live'); }, 9000);
+      if (live[i].ps !== 1) ytCmd(i, 'playVideo');
+      ytCmd(i, muted ? 'mute' : 'unMute');
+    }, 5000);
+    setTimeout(() => {
+      if (live[i] && live[i].state === 'loading' && !live[i].err) setTileState(i, live[i].ch.status === 'event' ? 'offline' : 'live');
+    }, 11000);
 
   } else if (ch.kind === 'hls') {
     const v = document.createElement('video');
@@ -298,15 +351,30 @@ function mountSlot(i) {
     v.title = ch.name + ' live';
     media.appendChild(v);
     live[i].video = v;
-    v.addEventListener('playing', () => setTileState(i, 'live'));
-    v.addEventListener('waiting', () => setTileState(i, 'sync'));
+    v.addEventListener('playing', () => { setTileState(i, 'live'); v.dataset.ok = '1'; });
+    v.addEventListener('waiting', () => { if (!v.dataset.ok) setTileState(i, 'sync'); });
     v.addEventListener('error', () => failHls(i, '재생 오류'));
     attachHls(i, v, ch.src);
 
   } else if (ch.kind === 'web') {
-    showVeil(i, '외부 공식 플레이어', ch.note || (ch.name + '은(는) 공식 사이트에서만 재생되며 외부 페이지 삽입이 차단되어 있습니다.'), '새 창에서 열기', 'open');
+    showVeil(i, '외부 공식 플레이어', ch.note || (ch.name + '은(는) 공식 사이트에서만 재생됩니다.'), '새 창에서 열기', 'open');
     setTileState(i, 'external');
   }
+}
+
+function unmountSlot(i) {
+  const L = live[i];
+  if (!L) return;
+  try { if (L.hls) L.hls.destroy(); } catch (e) {}
+  try { if (L.video) { L.video.pause(); L.video.removeAttribute('src'); L.video.load(); } } catch (e) {}
+  try { if (L.iframe) L.iframe.src = 'about:blank'; } catch (e) {}
+  const el = L.node;
+  if (el) {
+    el.querySelector('.tile-media').innerHTML = idleFace(L.ch);
+    el.classList.add('is-idle');
+    el.dataset.state = 'idle';
+  }
+  delete live[i];
 }
 
 function attachHls(i, v, url) {
@@ -316,9 +384,9 @@ function attachHls(i, v, url) {
       lowLatencyMode: false,
       liveSyncDurationCount: 4,
       maxBufferLength: 24,
-      manifestLoadingMaxRetry: 4,
-      levelLoadingMaxRetry: 4,
-      fragLoadingMaxRetry: 4
+      manifestLoadingMaxRetry: 3,
+      levelLoadingMaxRetry: 3,
+      fragLoadingMaxRetry: 3
     });
     live[i].hls = hls;
     hls.loadSource(url);
@@ -327,16 +395,14 @@ function attachHls(i, v, url) {
       v.play().catch(() => { v.muted = true; v.play().catch(() => {}); });
     });
     hls.on(window.Hls.Events.ERROR, (evt, data) => {
-      if (!data) return;
-      if (data.fatal) {
-        if (data.type === window.Hls.ErrorTypes.NETWORK_ERROR) {
-          setTileState(i, 'sync');
-          setTimeout(() => { try { hls.startLoad(); } catch (e) {} }, 1800);
-        } else if (data.type === window.Hls.ErrorTypes.MEDIA_ERROR) {
-          try { hls.recoverMediaError(); } catch (e) {}
-        } else {
-          failHls(i, 'HLS 스트림 연결 실패');
-        }
+      if (!data || !data.fatal) return;
+      if (data.type === window.Hls.ErrorTypes.NETWORK_ERROR) {
+        setTileState(i, 'sync');
+        setTimeout(() => { try { hls.startLoad(); } catch (e) {} }, 1500);
+      } else if (data.type === window.Hls.ErrorTypes.MEDIA_ERROR) {
+        try { hls.recoverMediaError(); } catch (e) {}
+      } else {
+        failHls(i, 'HLS 스트림 연결 실패');
       }
     });
   } else if (nativeHls) {
@@ -374,7 +440,7 @@ function hideVeil(i) {
 }
 
 /* ── tile state ────────────────────────────────────────────── */
-function setTileState(i, st, detail) {
+function setTileState(i, st) {
   const el = grid.querySelector('.tile[data-slot="' + i + '"]');
   if (!el || !live[i]) return;
   live[i].state = st;
@@ -383,22 +449,25 @@ function setTileState(i, st, detail) {
   if (txt) txt.textContent = st === 'error' ? 'ERROR' : st === 'offline' ? 'OFFLINE' : st === 'sync' ? 'SYNC' : st === 'external' ? 'EXT' : 'LIVE';
   if (st === 'live') hideVeil(i);
   if (st === 'offline' && !el.querySelector('.tile-veil.is-shown')) {
-    showVeil(i, '라이브 신호 없음', (live[i].ch.name) + ' 채널이 지금 YouTube 라이브를 송출하지 않습니다. 다른 소스를 선택하거나 잠시 후 다시 시도하세요.', '소스 변경', 'src');
+    showVeil(i, '라이브 신호 없음', live[i].ch.name + ' — 지금은 라이브 송출이 없습니다. 소스를 바꾸거나 잠시 후 다시 시도하세요.', '소스 변경', 'src');
   }
   updateStrip();
 }
 
-/* ── grid layout ───────────────────────────────────────────── */
+/* ── layout / rendering ────────────────────────────────────── */
 function applyLayout(layout, rebuild) {
   if (!LAYOUTS[layout]) layout = '9';
+  const same = state.layout === layout;
   state.layout = layout;
   grid.dataset.layout = layout;
   document.querySelectorAll('.layout-btn').forEach(b => b.classList.toggle('is-active', b.dataset.layout === layout));
-  if (rebuild !== false) rebuildGrid();
-  else sizeGrid();
+  stage.classList.toggle('is-scroll', layout === 'all');
+  if (rebuild !== false || !same) rebuildGrid();
   save();
 }
+
 function sizeGrid() {
+  if (state.layout === 'all') return sizeAll();
   const L = LAYOUTS[state.layout];
   const availW = stage.clientWidth - 18;
   const availH = stage.clientHeight - 18;
@@ -412,57 +481,82 @@ function sizeGrid() {
   grid.style.gridTemplateRows = 'repeat(' + L.rows + ',' + h + 'px)';
   grid.style.gap = GAP + 'px';
 }
+function sizeAll() {
+  const w = stage.clientWidth - 18;
+  const cols = w >= 2100 ? 4 : w >= 1240 ? 3 : 2;
+  grid.style.setProperty('--all-cols', cols);
+  grid.style.width = '100%';
+  grid.style.height = 'auto';
+  grid.style.gridTemplateColumns = 'repeat(' + cols + ',minmax(0,1fr))';
+  grid.style.gridTemplateRows = '';
+  grid.style.gap = '8px';
+}
+
+function destroyAll() {
+  if (io) { io.disconnect(); io = null; }
+  Object.keys(live).forEach(k => {
+    const L = live[k];
+    try { if (L.hls) L.hls.destroy(); } catch (e) {}
+    try { if (L.video) { L.video.pause(); L.video.removeAttribute('src'); L.video.load(); } } catch (e) {}
+    try { if (L.iframe) L.iframe.src = 'about:blank'; } catch (e) {}
+    delete live[k];
+  });
+}
+
 function rebuildGrid() {
   destroyAll();
   gen++;
   const myGen = gen;
   grid.innerHTML = '';
-  const slots = visibleSlots();
-  slots.forEach(s => grid.appendChild(buildTile(s)));
+  const n = chCount();
+  for (let i = 0; i < n; i++) grid.appendChild(buildTile(i));
   sizeGrid();
-  ensureHls().then(() => {
-    if (myGen !== gen) return;
-    slots.forEach((s, idx) => setTimeout(() => { if (myGen === gen) mountSlot(s); }, idx * 110));
-  });
-  syncAudioButtons();
   updateStrip();
+  syncAudioButtons();
+
+  if (state.layout === 'all') {
+    observeAll(myGen);
+  } else {
+    ensureHls().then(() => {
+      if (myGen !== gen) return;
+      for (let i = 0; i < n; i++) {
+        setTimeout(() => { if (myGen === gen) mountSlot(i); }, i * 90);
+      }
+    });
+  }
 }
-function destroyAll() {
-  Object.keys(live).forEach(k => {
-    const L = live[k];
-    try { if (L.hls) L.hls.destroy(); } catch (e) {}
-    try { if (L.video) { L.video.pause(); L.video.removeAttribute('src'); L.video.load(); } } catch (e) {}
-    try { if (L.iframe) { L.iframe.src = 'about:blank'; } } catch (e) {}
-    delete live[k];
-  });
-}
-var gen = 0;
-let hlsLoading = null;
-function ensureHls() {
-  if (window.Hls) return Promise.resolve();
-  if (hlsLoading) return hlsLoading;
-  hlsLoading = new Promise(resolve => {
-    const s = document.createElement('script');
-    s.src = 'https://cdn.jsdelivr.net/npm/hls.js@1.5.17/dist/hls.min.js';
-    s.onload = () => resolve();
-    s.onerror = () => resolve();
-    document.head.appendChild(s);
-  });
-  return hlsLoading;
+
+/* 전체 스크롤 — 뷰포트 근처만 마운트, 멀어지면 해제 (가상화) */
+function observeAll(myGen) {
+  const tiles = Array.prototype.slice.call(grid.querySelectorAll('.tile'));
+  if (!('IntersectionObserver' in window)) { ensureHls().then(() => tiles.forEach((t, i) => mountSlot(i))); return; }
+  io = new IntersectionObserver(entries => {
+    if (myGen !== gen) return;
+    entries.forEach(en => {
+      const i = parseInt(en.target.dataset.slot, 10);
+      if (en.isIntersecting) {
+        clearTimeout(en.target._unmountT);
+        ensureHls().then(() => { if (myGen === gen && !live[i]) mountSlot(i); });
+      } else if (live[i]) {
+        clearTimeout(en.target._unmountT);
+        en.target._unmountT = setTimeout(() => { if (myGen === gen) unmountSlot(i); }, 900);
+      }
+    });
+  }, { root: stage, rootMargin: IO_MARGIN, threshold: 0.01 });
+  tiles.forEach(t => { t.querySelector('.tile-media').innerHTML = idleFace(slotChannel(parseInt(t.dataset.slot, 10))); t.classList.add('is-idle'); io.observe(t); });
 }
 
 /* ── audio ─────────────────────────────────────────────────── */
-function setAudio(i) {
-  if (state.audio === i) { state.audio = null; state.muted = true; }
-  else if (i == null) { state.audio = null; state.muted = true; }
-  else { state.audio = i; state.muted = false; }
+function setAudio(chId) {
+  if (state.audioId === chId || chId == null) { state.audioId = null; state.muted = true; }
+  else { state.audioId = chId; state.muted = false; }
   applyAudio();
   save();
 }
 function applyAudio() {
   Object.keys(live).forEach(k => {
     const i = parseInt(k, 10), L = live[k];
-    const muted = state.muted || state.audio !== i;
+    const muted = state.muted || state.audioId !== L.ch.id;
     if (L.iframe) ytCmd(i, muted ? 'mute' : 'unMute');
     if (L.video != null) {
       L.video.muted = muted;
@@ -475,7 +569,8 @@ function applyAudio() {
 function syncAudioButtons() {
   grid.querySelectorAll('.tile').forEach(el => {
     const i = parseInt(el.dataset.slot, 10);
-    const on = !state.muted && state.audio === i;
+    const ch = slotChannel(i);
+    const on = !state.muted && state.audioId === ch.id;
     const btn = el.querySelector('[data-act="audio"]');
     if (!btn) return;
     btn.classList.toggle('is-on', on);
@@ -483,39 +578,60 @@ function syncAudioButtons() {
     btn.title = on ? '음성 켜짐 — 누르면 음소거' : '이 채널 단독 청취';
   });
   const mb = $('#btn-mute');
-  const anyOn = !state.muted && state.audio != null;
+  const anyOn = !state.muted && state.audioId != null;
   mb.classList.toggle('is-muted', !anyOn);
   mb.title = anyOn ? '전체 음소거' : '음성 켜기 (첫 채널)';
 }
 function updateStrip() {
-  const slots = visibleSlots();
-  const count = slots.length;
-  let ok = 0, warn = 0;
-  for (let n = 0; n < slots.length; n++) {
-    const i = slots[n];
-    const s = live[i] ? live[i].state : 'loading';
-    if (s === 'live') ok++;
-    else if (s === 'error' || s === 'offline') warn++;
+  const ids = slotIds();
+  let ok = 0, warn = 0, ready = 0;
+  for (let i = 0; i < ids.length; i++) {
+    if (!live[i]) continue;
+    ready++;
+    if (live[i].state === 'live') ok++;
+    else if (live[i].state === 'error' || live[i].state === 'offline') warn++;
   }
   const led = $('#ss-led');
   led.classList.toggle('is-warn', warn > 0);
-  $('#ss-status').textContent = 'MASTER CONTROL — ' + ok + '/' + count + ' FEEDS NOMINAL' + (warn ? ' · ' + warn + ' CHECK' : '');
-  const ch = state.audio != null ? slotChannel(state.audio) : null;
+  const label = state.layout === 'all'
+    ? 'MASTER CONTROL — ' + ok + ' LIVE · ' + ready + '/' + ids.length + ' MOUNTED'
+    : 'MASTER CONTROL — ' + ok + '/' + ids.length + ' FEEDS NOMINAL' + (warn ? ' · ' + warn + ' CHECK' : '');
+  $('#ss-status').textContent = label;
+  const ch = state.audioId ? byId(state.audioId) : null;
   $('#ss-audio').innerHTML = (state.muted || !ch) ? 'AUDIO — ALL MUTED' : 'AUDIO — <b>' + esc(ch.name) + '</b>';
 }
 
-/* ── focus ─────────────────────────────────────────────────── */
-function setFocus(i) {
-  state.focused = i;
-  grid.querySelectorAll('.tile').forEach(el => el.classList.toggle('is-focus', parseInt(el.dataset.slot, 10) === i));
+/* ── start layout menu ─────────────────────────────────────── */
+const START_NAMES = { '9':'9분할', '4':'4분할', '6':'6분할', '1':'1×1', 'all':'전체 스크롤' };
+function refreshStartUI() {
+  $('#start-label').textContent = START_NAMES[state.start] || '9분할';
+  document.querySelectorAll('#start-menu [data-start]').forEach(b => {
+    b.classList.toggle('is-current', b.dataset.start === state.start);
+  });
+  document.querySelectorAll('.layout-btn').forEach(b => {
+    b.classList.toggle('is-start', b.dataset.layout === state.start);
+  });
+}
+function setStart(layout) {
+  if (!LAYOUTS[layout]) return;
+  state.start = layout;
   save();
+  refreshStartUI();
+  toast('첫 화면 — ' + (START_NAMES[layout] || layout) + ' 저장');
 }
 
 /* ── modal ─────────────────────────────────────────────────── */
 function openModal(slot) {
-  modalSlot = (typeof slot === 'number') ? slot : null;
-  $('#modal-kicker').textContent = modalSlot == null ? 'SOURCE LIBRARY' : 'SOURCE PATCH BAY — SLOT ' + String(modalSlot + 1).padStart(2, '0');
-  $('#modal-title').textContent = modalSlot == null ? '소스 라이브러리 · 커스텀 소스' : '소스 선택 — ' + slotChannel(modalSlot).name;
+  modalSlot = (typeof slot === 'number' && state.layout !== 'all') ? slot : null;
+  const kicker = $('#modal-kicker'), title = $('#modal-title');
+  if (modalSlot == null) {
+    kicker.textContent = 'SOURCE LIBRARY · ' + (LAYOUTS[state.layout].label || '');
+    title.textContent = '소스 라이브러리 · 커스텀 소스';
+  } else {
+    const L = LAYOUTS[state.layout];
+    kicker.textContent = 'SOURCE PATCH BAY — ' + L.label + ' · SLOT ' + String(modalSlot + 1).padStart(2, '0');
+    title.textContent = '채널 변경 — ' + slotChannel(modalSlot).name;
+  }
   srcSearch.value = '';
   renderSources('');
   modalRoot.hidden = false;
@@ -526,34 +642,26 @@ function renderSources(q) {
   const query = (q || '').trim().toLowerCase();
   const list = allChannels().filter(c => {
     if (!query) return true;
-    return (c.name + ' ' + (c.country || '') + ' ' + (c.cc || '') + ' ' + (c.zone || '')).toLowerCase().indexOf(query) >= 0;
+    return (c.name + ' ' + (c.country || '') + ' ' + (c.cc || '') + ' ' + (c.short || '')).toLowerCase().indexOf(query) >= 0;
   });
-  const current = modalSlot != null ? state.slots[modalSlot] : null;
+  const current = (modalSlot != null) ? slotIds()[modalSlot] : null;
   srcGrid.innerHTML = '';
   if (!list.length) { srcGrid.innerHTML = '<div class="empty-note">검색 결과가 없습니다.</div>'; return; }
 
   const groups = {};
   list.forEach(c => { const z = c.zone || 'ASIA'; (groups[z] = groups[z] || []).push(c); });
-  const order = ['ASIA', 'AMERICAS', 'EUROPE', 'MIDEast', 'CUSTOM'];
+  const order = ['ASIA', 'OCEANIA', 'AMERICAS', 'EUROPE', 'MIDEAST', 'AFRICA', 'EXTERNAL', 'CUSTOM'];
+  const frag = document.createDocumentFragment();
   order.forEach(z => {
     const arr = groups[z];
     if (!arr) return;
-    if (!query) {
-      const lab = document.createElement('div');
-      lab.className = 'src-group-label';
-      lab.textContent = ZONES[z] || z;
-      srcGrid.appendChild(lab);
-      const sub = document.createElement('div');
-      sub.className = 'src-grid';
-      sub.style.gridColumn = '1 / -1';
-      arr.forEach(c => sub.appendChild(srcCard(c, current)));
-      srcGrid.appendChild(sub);
-    } else {
-      arr.forEach(c => srcGrid.appendChild(srcCard(c, current)));
-    }
+    const lab = document.createElement('div');
+    lab.className = 'src-group-label';
+    lab.innerHTML = '<span>' + esc(ZONE_LABEL[z] || z) + '</span><span class="sgl-count">' + arr.length + '</span>';
+    frag.appendChild(lab);
+    arr.forEach(c => frag.appendChild(srcCard(c, current)));
   });
-  if (!query) srcGrid.style.gridTemplateColumns = '1fr';
-  else srcGrid.style.gridTemplateColumns = '';
+  srcGrid.appendChild(frag);
 }
 function srcCard(c, current) {
   const b = document.createElement('button');
@@ -562,13 +670,14 @@ function srcCard(c, current) {
   b.dataset.kind = c.kind;
   b.dataset.id = c.id;
   const isCustom = !!c.custom;
+  const stateTxt = c.status === 'event' ? ' · EVENT' : c.status === 'external' ? ' · 외부' : '';
   b.innerHTML = `
     <span class="src-logo">${esc(c.short || c.name.slice(0, 3))}</span>
     <span class="src-info">
-      <span class="src-name">${esc(c.name)}</span>
+      <span class="src-name">${esc(c.name)}${c.alt ? '<span class="alt-tag">대체</span>' : ''}</span>
       <span class="src-meta">
         <span class="dot${c.status === 'event' || c.status === 'external' ? ' warn' : ''}"></span>
-        ${esc(c.cc || '')} · ${KIND_LABEL[c.kind] || ''}${c.status === 'event' ? ' · EVENT' : c.status === 'external' ? ' · 외부' : ''}
+        ${esc(c.cc || '')} · ${KIND_LABEL[c.kind] || ''}${stateTxt}
       </span>
     </span>
     ${isCustom ? '<span class="src-del" data-del="' + esc(c.id) + '" title="삭제"><svg viewBox="0 0 16 16"><g stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M4 4l8 8M12 4l-8 8"/></g></svg></span>' : ''}`;
@@ -577,34 +686,42 @@ function srcCard(c, current) {
     if (del) {
       ev.stopPropagation();
       state.custom = state.custom.filter(x => x.id !== del.dataset.del);
-      state.slots = state.slots.map(s => s === del.dataset.del ? 'nhk' : s);
+      Object.keys(state.sets).forEach(k => { state.sets[k] = state.sets[k].map(s => s === del.dataset.del ? 'nhk' : s); });
       save(); renderSources(srcSearch.value); rebuildGrid();
       toast('커스텀 소스를 삭제했습니다');
       return;
     }
-    if (modalSlot == null) { toast('타일의 소스 변경 버튼에서 슬롯을 지정할 수 있습니다'); return; }
+    if (modalSlot == null) {
+      if (state.layout === 'all') {
+        state.sets['1'] = [c.id];
+        applyLayout('1');
+        closeModal();
+        toast('1×1 — ' + c.name);
+      } else {
+        toast('타일의 ‘채널 변경’ 버튼에서 칸을 지정할 수 있습니다');
+      }
+      return;
+    }
     assignSource(modalSlot, c.id);
   });
   return b;
 }
 function assignSource(slot, id) {
-  state.slots[slot] = id;
+  state.sets[state.layout][slot] = id;
   save();
   closeModal();
   const ch = byId(id);
-  toast('SLOT ' + String(slot + 1).padStart(2, '0') + ' — ' + (ch ? ch.name : id));
+  toast(LAYOUTS[state.layout].label + ' SLOT ' + String(slot + 1).padStart(2, '0') + ' — ' + (ch ? ch.name : id));
   const el = grid.querySelector('.tile[data-slot="' + slot + '"]');
-  if (el) {
-    const fresh = buildTile(slot);
-    el.replaceWith(fresh);
-    if (state.layout === '1') fresh.classList.add('is-focus');
-  }
+  if (el) el.replaceWith(buildTile(slot));
+  delete live[slot];
   mountSlot(slot);
   applyAudio();
+  refreshStartUI();
 }
 
-/* ── custom source parsing ─────────────────────────────────── */
-function parseCustom(raw, name) {
+/* ── custom sources ────────────────────────────────────────── */
+function parseCustom(raw) {
   const u = String(raw || '').trim();
   if (!u) throw new Error('주소를 입력해 주세요.');
   let m;
@@ -644,6 +761,27 @@ function addCustom(raw, name) {
   return ch;
 }
 
+/* ── fullscreen / external ─────────────────────────────────── */
+function toggleFullscreen() {
+  if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
+  else document.documentElement.requestFullscreen().catch(() => toast('이 브라우저에서는 전체화면을 쓸 수 없습니다'));
+}
+function openExternal(i) {
+  const ch = slotChannel(i);
+  let url;
+  if (ch.kind === 'youtube') url = 'https://www.youtube.com/channel/' + ch.src + '/live';
+  else if (ch.kind === 'youtube-video') url = 'https://www.youtube.com/watch?v=' + ch.src;
+  else url = ch.src;
+  window.open(url, '_blank', 'noopener');
+}
+function showBig(i) {
+  const ch = slotChannel(i);
+  state.sets['1'] = [ch.id];
+  save();
+  applyLayout('1');
+  toast('1×1 — ' + ch.name);
+}
+
 /* ── events ────────────────────────────────────────────────── */
 function bindEvents() {
   document.querySelectorAll('.layout-btn').forEach(b => {
@@ -651,11 +789,30 @@ function bindEvents() {
   });
   $('#btn-fullscreen').addEventListener('click', toggleFullscreen);
   $('#btn-mute').addEventListener('click', () => {
-    if (!state.muted && state.audio != null) { state.audio = null; state.muted = true; applyAudio(); save(); }
-    else { setAudio(state.layout === '1' ? state.focused : state.focused || 0); }
+    if (!state.muted && state.audioId) { state.audioId = null; state.muted = true; applyAudio(); save(); }
+    else {
+      const first = chCount() ? slotChannel(0) : null;
+      if (first) setAudio(first.id);
+    }
   });
   $('#btn-reload').addEventListener('click', () => { rebuildGrid(); toast('모든 피드를 다시 연결합니다'); });
   $('#btn-sources').addEventListener('click', () => openModal(null));
+
+  // start layout menu
+  $('#btn-start').addEventListener('click', e => {
+    e.stopPropagation();
+    const m = $('#start-menu');
+    m.hidden = !m.hidden;
+  });
+  $('#start-menu').addEventListener('click', e => {
+    const b = e.target.closest('[data-start]');
+    if (!b) return;
+    setStart(b.dataset.start);
+    $('#start-menu').hidden = true;
+  });
+  document.addEventListener('click', e => {
+    if (!e.target.closest('.start-wrap')) $('#start-menu').hidden = true;
+  });
 
   grid.addEventListener('mouseover', e => {
     const t = e.target.closest('.tile'); if (!t) return;
@@ -671,12 +828,12 @@ function bindEvents() {
     const actBtn = e.target.closest('[data-act]');
     const act = actBtn ? actBtn.dataset.act : null;
     if (act === 'src') { openModal(i); return; }
-    if (act === 'audio') { setAudio(i); setFocus(i); return; }
-    if (act === 'max') { toggleFocusLayout(i); return; }
+    if (act === 'audio') { setAudio(slotChannel(i).id); return; }
+    if (act === 'max') { showBig(i); return; }
     if (act === 'pop') { openExternal(i); return; }
-    if (act === 'reload') { mountSlot(i); toast(slotChannel(i).name + ' — 재연결'); return; }
+    if (act === 'reload') { try { unmountSlot(i); } catch (x) {} mountSlot(i); toast(slotChannel(i).name + ' — 재연결'); return; }
     if (act === 'open') { openExternal(i); return; }
-    if (act === 'retry') { mountSlot(i); return; }
+    if (act === 'retry') { try { unmountSlot(i); } catch (x) {} mountSlot(i); return; }
     const L = live[i];
     const kd = slotChannel(i).kind;
     if (L && (kd === 'youtube' || kd === 'youtube-video') && L.ps !== 1) {
@@ -686,15 +843,18 @@ function bindEvents() {
         t.dataset.passTip = '1';
       }
     }
-    setFocus(i);
   });
   grid.addEventListener('dblclick', e => {
     const t = e.target.closest('.tile'); if (!t) return;
-    toggleFocusLayout(parseInt(t.dataset.slot, 10));
+    showBig(parseInt(t.dataset.slot, 10));
   });
 
   // modal
-  modalRoot.addEventListener('click', e => { if (e.target.closest('[data-close]')) closeModal(); });
+  modalRoot.addEventListener('click', e => {
+    if (e.target.closest('[data-close]')) closeModal();
+    const card = e.target.closest('.src-card');
+    if (card && !e.target.closest('[data-del]')) { /* handled per-card */ }
+  });
   srcSearch.addEventListener('input', () => renderSources(srcSearch.value));
   $('#custom-form').addEventListener('submit', e => {
     e.preventDefault();
@@ -716,11 +876,12 @@ function bindEvents() {
   document.addEventListener('keydown', e => {
     if (e.target.matches('input, textarea')) return;
     const k = e.key.toLowerCase();
-    if (k === 'escape') { if (!modalRoot.hidden) closeModal(); return; }
+    if (k === 'escape') { if (!modalRoot.hidden) closeModal(); else $('#start-menu').hidden = true; return; }
     if (k === '1') applyLayout('9');
     else if (k === '2') applyLayout('4');
     else if (k === '3') applyLayout('6');
     else if (k === '4') applyLayout('1');
+    else if (k === '5' || k === 'a') applyLayout('all');
     else if (k === 'f') toggleFullscreen();
     else if (k === 'm') $('#btn-mute').click();
     else if (k === 'r') rebuildGrid();
@@ -734,36 +895,20 @@ function bindEvents() {
   });
 }
 
-function toggleFocusLayout(i) {
-  if (state.layout === '1' && state.focused === i) { applyLayout('9'); return; }
-  state.focused = i;
-  applyLayout('1');
-  if (document.documentElement.requestFullscreen && !document.fullscreenElement) {
-    document.documentElement.requestFullscreen().catch(() => {});
-  }
-}
-function toggleFullscreen() {
-  if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
-  else document.documentElement.requestFullscreen().catch(() => toast('이 브라우저에서는 전체화면을 쓸 수 없습니다'));
-}
-function openExternal(i) {
-  const ch = slotChannel(i);
-  let url;
-  if (ch.kind === 'youtube') url = 'https://www.youtube.com/channel/' + ch.src + '/live';
-  else if (ch.kind === 'youtube-video') url = 'https://www.youtube.com/watch?v=' + ch.src;
-  else url = ch.src;
-  window.open(url, '_blank', 'noopener');
-}
-
-/* ── debug hook (검증용) ───────────────────────────────────── */
+/* ── debug hook ────────────────────────────────────────────── */
 window.WORLD_LIVE = {
   state: () => ({
-    layout: state.layout, muted: state.muted, audio: state.audio, focused: state.focused,
-    slots: state.slots.slice(),
-    tiles: Object.keys(live).map(k => ({ slot: +k, name: live[k].ch.name, kind: live[k].ch.kind, state: live[k].state, ps: live[k].ps == null ? null : live[k].ps, err: live[k].err || null }))
+    layout: state.layout, start: state.start, muted: state.muted, audio: state.audioId,
+    sets: JSON.parse(JSON.stringify(state.sets)),
+    count: chCount(),
+    channels: CHANNELS.length,
+    allIds: ALL_LIVE_IDS.slice(),
+    tiles: Object.keys(live).map(k => ({ slot: +k, id: live[k].ch.id, name: live[k].ch.name, kind: live[k].ch.kind, state: live[k].state, ps: live[k].ps == null ? null : live[k].ps, err: live[k].err || null }))
   }),
   setLayout: l => applyLayout(l),
-  setAudio: i => setAudio(i)
+  setAudio: id => setAudio(id),
+  mount: i => mountSlot(i),
+  unmount: i => unmountSlot(i)
 };
 
 /* ── boot ──────────────────────────────────────────────────── */
@@ -771,16 +916,17 @@ function boot() {
   const qs = new URLSearchParams(location.search);
   if (qs.has('reset')) { try { localStorage.removeItem(LS_KEY); } catch (e) {} }
   else load();
-  if (qs.get('layout') && LAYOUTS[qs.get('layout')]) state.layout = qs.get('layout');
+  const ql = qs.get('layout');
+  if (ql && LAYOUTS[ql]) state.layout = ql;
+  else state.layout = state.start;
   buildClocks();
   bindEvents();
+  refreshStartUI();
   applyLayout(state.layout, false);
   rebuildGrid();
   applyAudio();
   tickClocks();
   setInterval(tickClocks, 1000);
-  const first = CHANNELS[0];
-  $('#ss-status').textContent = 'MASTER CONTROL — ' + visibleCount() + ' FEEDS INITIALISING';
 }
 boot();
 

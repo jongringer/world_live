@@ -5,9 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <meta name="color-scheme" content="dark" />
 <title>WORLD LIVE // GLOBAL NEWSROOM MONITOR</title>
-<meta name="description" content="해외 주요 외신 24시간 라이브 멀티뷰 — NHK, CNN, BBC, ABC, Al Jazeera, Sky News, France 24, DW, CNA 등 20여 개 채널을 16:9 모니터 한 화면에서 동시 모니터링." />
+<meta name="description" content="전 세계 40여 개 뉴스 채널 24시간 라이브 멀티뷰 — CNN FAST·NHK·Al Jazeera·DW·France 24·CNA·SABC까지 16:9 모니터 한 화면에서 동시 모니터링. 9분할·4분할 채널 직접 선택, 전체 스크롤 모드." />
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23080B10'/%3E%3Crect x='6' y='9' width='20' height='14' rx='2' fill='none' stroke='%23C9A86A' stroke-width='1.4'/%3E%3Ccircle cx='16' cy='16' r='2.4' fill='%23FF3B4E'/%3E%3C/svg%3E" />
-<link rel="stylesheet" href="css/style.css" />
+<link rel="stylesheet" href="css/style.css?v=4" />
 </head>
 <body>
 <div id="app" class="app">
@@ -48,6 +48,10 @@
         <svg viewBox="0 0 20 20" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="1.2"><rect x="1.5" y="1.5" width="17" height="17" rx="1.6"/></g></svg>
         <span class="lb-txt">전체</span><span class="lb-dim">1×1</span>
       </button>
+      <button class="layout-btn layout-btn-all" data-layout="all" title="전 세계 LIVE 전체 스크롤  ·  키 5">
+        <svg viewBox="0 0 20 20" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="1.2"><rect x="1.5" y="1.5" width="17" height="17" rx="1.6"/><path d="M1.5 6.6h17M1.5 11.5h17M1.5 16.4h17"/></g></svg>
+        <span class="lb-txt">전체 스크롤</span><span class="lb-dim">ALL LIVE</span>
+      </button>
       <span class="nav-sep"></span>
       <button class="icon-btn wide" id="btn-fullscreen" title="브라우저 전체화면  ·  키 F">
         <svg viewBox="0 0 20 20" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="1.35" stroke-linecap="square"><path d="M7 2.2H2.2V7M13 2.2h4.8V7M7 17.8H2.2V13M13 17.8h4.8V13"/></g></svg>
@@ -58,6 +62,22 @@
     <div class="clocks" id="clocks" aria-label="세계 시각"></div>
 
     <div class="actions">
+      <div class="start-wrap">
+        <button class="icon-btn wide start-btn" id="btn-start" title="첫 화면(기본 시작 레이아웃) 설정">
+          <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 2.6l2.2 4.6 5 .7-3.6 3.5.9 5-4.5-2.4-4.5 2.4.9-5L2.8 7.9l5-.7z" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linejoin="round"/></svg>
+          <span class="lb-txt">첫 화면</span><span class="start-label" id="start-label">9분할</span>
+          <span class="cs-caret">▾</span>
+        </button>
+        <div class="start-menu" id="start-menu" hidden>
+          <div class="sm-head">시작 화면 고정</div>
+          <button data-start="9"><span>9분할</span><small>3×3 · 9채널</small></button>
+          <button data-start="4"><span>4분할</span><small>2×2 · 4채널</small></button>
+          <button data-start="6"><span>6분할</span><small>3×2 · 6채널</small></button>
+          <button data-start="all"><span>전체 스크롤</span><small>전 세계 LIVE</small></button>
+          <button data-start="1"><span>전체 1×1</span><small>한 채널</small></button>
+          <div class="sm-note">다음에 열 때 이 화면으로 시작합니다.</div>
+        </div>
+      </div>
       <button class="icon-btn" id="btn-mute" title="전체 음소거  ·  키 M">
         <svg viewBox="0 0 20 20" aria-hidden="true"><path class="ic-spk" d="M3 7.4h3L10 4v12L6 12.6H3z" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/><g class="ic-waves" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><path d="M12.6 7.4a3.6 3.6 0 0 1 0 5.2M15 5a7 7 0 0 1 0 10"/></g><g class="ic-x" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><path d="M13 7.8l4.4 4.4M17.4 7.8L13 12.2"/></g></svg>
       </button>
@@ -106,7 +126,7 @@
 
     <div class="modal-search">
       <svg viewBox="0 0 20 20" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="8.6" cy="8.6" r="5.4"/><path d="M12.6 12.6L17 17" stroke-linecap="round"/></g></svg>
-      <input id="src-search" type="search" placeholder="채널 검색 — NHK, CNN, BBC, Al Jazeera…" autocomplete="off" spellcheck="false" />
+      <input id="src-search" type="search" placeholder="채널 검색 — CNN, NHK, Al Jazeera, DW…" autocomplete="off" spellcheck="false" />
     </div>
 
     <div class="modal-body">
@@ -130,7 +150,7 @@
 
 <div class="toast-wrap" id="toast-wrap"></div>
 
-<script src="js/channels.js?v=3"></script>
-<script src="js/app.js?v=3"></script>
+<script src="js/channels.js?v=4"></script>
+<script src="js/app.js?v=4"></script>
 </body>
 </html>
