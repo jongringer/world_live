@@ -13,20 +13,11 @@
    alt: true  = 같은 채널의 대체 소스(소스 선택 목록에만 표시)
 
    지역 순서(지역·국가순 정렬 기준) =
-     KOREA → ASIA(일본·중국 먼저) → AMERICAS → EUROPE → MIDDLE EAST → OCEANIA → AFRICA → EXTERNAL
+     ASIA(일본·중국 먼저) → AMERICAS → EUROPE → MIDDLE EAST → OCEANIA → AFRICA → KOREA(맨 뒤) → EXTERNAL
+   ※ ‘한국 우선’ 정렬을 고르면 KBS·YTN·연합뉴스TV가 맨 앞으로 옵니다.
    ═══════════════════════════════════════════════════════════════ */
 
 const CHANNELS = [
-  /* ── KOREA (국내 뉴스 · 최상단) ────────────────────────── */
-  { id:'kbs24', name:'KBS NEWS 24', short:'KBS', country:'한국', cc:'KR', zone:'KOREA',
-    kind:'youtube-video', src:'zGFBJL_fhUU', status:'live' },
-
-  { id:'ytn24', name:'YTN 24시간 라이브', short:'YTN', country:'한국', cc:'KR', zone:'KOREA',
-    kind:'youtube-video', src:'aZyD6EPl6KU', status:'live' },
-
-  { id:'yonhap24', name:'연합뉴스TV 라이브', short:'YTV', country:'한국', cc:'KR', zone:'KOREA',
-    kind:'youtube-video', src:'6QZ_qc75ihU', status:'live' },
-
   /* ── ASIA / PACIFIC (일본·중국 먼저) ────────────────────────── */
   { id:'nhk', name:'NHK WORLD-JAPAN', short:'NHK', country:'일본', cc:'JP', zone:'ASIA',
     kind:'hls', src:'https://masterpl.hls.nhkworld.jp/hls/w/live/master.m3u8', status:'live' },
@@ -202,6 +193,16 @@ const CHANNELS = [
   { id:'sabc', name:'SABC NEWS', short:'SABC', country:'남아공', cc:'ZA', zone:'AFRICA',
     kind:'hls', src:'https://sabconetanw.cdn.mangomolo.com/news/smil:news.stream.smil/master.m3u8', status:'live' },
 
+  /* ── KOREA (국내 뉴스 · 지역순에서는 맨 뒤, ‘한국 우선’ 정렬에서 맨 앞) ── */
+  { id:'kbs24', name:'KBS NEWS 24', short:'KBS', country:'한국', cc:'KR', zone:'KOREA',
+    kind:'youtube-video', src:'zGFBJL_fhUU', status:'live' },
+
+  { id:'ytn24', name:'YTN 24시간 라이브', short:'YTN', country:'한국', cc:'KR', zone:'KOREA',
+    kind:'youtube-video', src:'aZyD6EPl6KU', status:'live' },
+
+  { id:'yonhap24', name:'연합뉴스TV 라이브', short:'YTV', country:'한국', cc:'KR', zone:'KOREA',
+    kind:'youtube-video', src:'6QZ_qc75ihU', status:'live' },
+
   /* ── 외부 공식 링크 (페이지 내 재생 불가) ────────────────────── */
   { id:'bbc_web', name:'BBC NEWS · WATCH LIVE', short:'BBC', country:'영국', cc:'GB', zone:'EXTERNAL',
     kind:'web', src:'https://www.bbc.com/watch-live-news', status:'external',
@@ -249,8 +250,8 @@ const ZONE_LABEL = {
   OCEANIA:'OCEANIA · 오세아니아', AFRICA:'AFRICA · 아프리카',
   EXTERNAL:'외부 공식 링크 (새 창)', CUSTOM:'CUSTOM SOURCES'
 };
-/* 지역·국가순 정렬 기준 — 한국 → 일본·중국(아시아) → 미국(미주) → 영국·유럽 → 중동 */
-const ZONE_ORDER = ['KOREA', 'ASIA', 'AMERICAS', 'EUROPE', 'MIDEAST', 'OCEANIA', 'AFRICA', 'EXTERNAL', 'CUSTOM'];
+/* 지역·국가순 정렬 기준 — 일본·중국(아시아) → 미국(미주) → 영국·유럽 → 중동 → 나머지 → 한국(맨 뒤) */
+const ZONE_ORDER = ['ASIA', 'AMERICAS', 'EUROPE', 'MIDEAST', 'OCEANIA', 'AFRICA', 'KOREA', 'EXTERNAL', 'CUSTOM'];
 
 const CHANNEL_BY_ID = CHANNELS.reduce((m, c) => (m[c.id] = c, m), {});
 /* ALL LIVE 스크롤에 나오는 채널 = 페이지 내 재생이 검증된 상시 채널 */

@@ -121,7 +121,7 @@ function load() {
 function allChannels() { return CHANNELS.concat(state.custom); }
 function byId(id) { return CHANNEL_BY_ID[id] || state.custom.find(c => c.id === id) || null; }
 const SORT_MODES = {
-  zone:  { label: '지역·국가순', sub: '한국 → 일본·중국 → 미국 → 유럽 → 중동' },
+  zone:  { label: '지역·국가순', sub: '일본·중국 → 미국 → 유럽 → 중동 → 한국' },
   name:  { label: '이름순 (A-Z)', sub: '채널명 가나다·알파벳' },
   kr:    { label: '한국 우선', sub: '국내 뉴스를 맨 앞으로' }
 };
@@ -138,7 +138,7 @@ function sortedIds() {
       return String(ca.name || '').localeCompare(String(cb.name || ''), 'ko');
     });
   } else if (state.sort === 'zone') {
-    // 한국 → 미주 → 영국·유럽 → 중동 → 아시아 → 오세아니아 → 아프리카 (같은 지역은 카탈로그 순서)
+    // 아시아(일본·중국) → 미주 → 영국·유럽 → 중동 → 오세아니아 → 아프리카 → 한국(맨 뒤) — 같은 지역은 카탈로그 순서
     ids.sort((a, b) => {
       const ra = zoneRank(byId(a)), rb = zoneRank(byId(b));
       if (ra !== rb) return ra - rb;
