@@ -31,10 +31,6 @@ const CHANNELS = [
     backup:'https://amg00405-rakutentv-cgtn-rakuten-i9tar.amagi.tv/master.m3u8',
     status:'live' },
 
-  { id:'cctv13', name:'CCTV-13 新闻', short:'C13', country:'중국', cc:'CN', zone:'ASIA',
-    kind:'iframe', src:'https://tv.cctv.com/live/cctv13/', status:'live',
-    note:'CCTV-13 공식 라이브 페이지를 그대로 삽입해 재생합니다. 공식 HLS는 자사 플레이어 전용(DRM·PMT)이라 hls.js로는 재생되지 않았습니다.' },
-
   { id:'ndtv', name:'NDTV 24x7', short:'NDTV', country:'인도', cc:'IN', zone:'ASIA',
     kind:'hls',
     src:'https://ndtv24x7elemarchana.akamaized.net/hls/live/2003678/ndtv24x7/master.m3u8',
@@ -212,6 +208,10 @@ const CHANNELS = [
     kind:'web', src:'https://www.bbc.com/watch-live-news', status:'external',
     note:'BBC 뉴스 채널 공식 LIVE 페이지입니다. 내장 BBC HLS가 지역 제한으로 막힐 때 여기서 시청하세요.' },
 
+  { id:'cctv13', name:'CCTV-13 新闻', short:'C13', country:'중국', cc:'CN', zone:'EXTERNAL',
+    kind:'web', src:'https://tv.cctv.com/live/cctv13/', status:'external',
+    note:'CCTV-13은 자사 플레이어(HTML5 CDN LIVE DRM) 전용이라 페이지 안에서는 재생되지 않습니다. 새 창의 공식 페이지에서는 재생됩니다(2026-11-22 확인).' },
+
   { id:'sky', name:'SKY NEWS', short:'SKY', country:'영국', cc:'GB', zone:'EXTERNAL',
     kind:'web', src:'https://news.sky.com/watch-live', status:'external',
     note:'Sky News는 YouTube 임베드가 차단되어(오류 150) 공식 페이지에서만 재생됩니다.' },
@@ -255,4 +255,7 @@ const ZONE_ORDER = ['ASIA', 'AMERICAS', 'EUROPE', 'MIDEAST', 'OCEANIA', 'AFRICA'
 
 const CHANNEL_BY_ID = CHANNELS.reduce((m, c) => (m[c.id] = c, m), {});
 /* ALL LIVE 스크롤에 나오는 채널 = 페이지 내 재생이 검증된 상시 채널 */
-const ALL_LIVE_IDS = CHANNELS.filter(c => !c.alt && c.kind !== 'web').map(c => c.id);
+/* 전체 스크롤(ALL LIVE)에 나오는 채널 = 페이지 안에서 라이브 신호가 들어오는 채널만
+   (외부 공식 링크·미송출/점검 채널은 소스 라이브러리에만 남기고 전체 스크롤에서는 뺌)
+   — 2026-11-22 브라우저 실측: 아래 HLS 35개 + YouTube 15개 모두 재생 확인 */
+const ALL_LIVE_IDS = CHANNELS.filter(c => !c.alt && c.kind !== 'web' && c.status === 'live').map(c => c.id);
