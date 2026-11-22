@@ -254,6 +254,16 @@ const ZONE_LABEL = {
 const ZONE_ORDER = ['ASIA', 'AMERICAS', 'EUROPE', 'MIDEAST', 'OCEANIA', 'AFRICA', 'KOREA', 'EXTERNAL', 'CUSTOM'];
 
 const CHANNEL_BY_ID = CHANNELS.reduce((m, c) => (m[c.id] = c, m), {});
+
+/* 이 카탈로그의 빌드 표식 — 화면 하단 신호 스트립에 표시됩니다.
+   휴대폰이 옛 파일(브라우저 캐시)을 불러왔는지 이 한 줄로 확인할 수 있고,
+   채널·소스를 고칠 때마다 이 값과 index.html의 ?v= 를 함께 올려 주세요. */
+const CHANNELS_BUILD = 'SRC 11-23a';
+const CHANNELS_BUILD_DETAIL = 'KBS nfnWxzTVJA4 · 2026-11-23 06:55 갱신';
+
+/* 다시 재생되지 않는 예전 소스 ID → 지금 쓰는 소스로 자동 교체
+   (브라우저에 저장된 커스텀 소스에 옛 ID가 남아 있어도 되살아나지 않게) */
+const RETIRED_SOURCES = { 'zGFBJL_fhUU': 'nfnWxzTVJA4' };
 /* ALL LIVE 스크롤에 나오는 채널 = 페이지 내 재생이 검증된 상시 채널 */
 /* 전체 스크롤(ALL LIVE)에 나오는 채널 = 페이지 안에서 라이브 신호가 들어오는 채널만
    (외부 공식 링크·미송출/점검 채널은 소스 라이브러리에만 남기고 전체 스크롤에서는 뺌)

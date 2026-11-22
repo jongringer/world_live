@@ -622,6 +622,8 @@ body.is-swapping .tile { transition: none; }
 .ss-mid b { color: #38BDF8; font-weight: 600; text-shadow: 0 0 8px rgba(56, 189, 248, 0.4); }
 .ss-right { display: flex; align-items: center; gap: 8px; color: #64748B; white-space: nowrap; }
 .ss-div { opacity: 0.35; }
+.ss-version { color: #64748B; opacity: 0.85; }
+.ss-version.is-stale { color: var(--amber); opacity: 1; }
 
 /* ─────────── MODAL (SOURCE PATCH BAY) ─────────── */
 .modal-root { position: fixed; inset: 0; z-index: 50; display: flex; align-items: center; justify-content: center; }

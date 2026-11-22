@@ -104,7 +104,13 @@
 - **캐시**: `index.html`의 `js/channels.js?v=30 → ?v=31`. 저장 배치(`localStorage` `worldlive.v3`)에는 **채널 ID(`kbs24`)만** 저장되고 영상 ID는 저장되지 않으므로, 기존 사용자도 새 `channels.js`를 받는 즉시 새 소스로 재생됩니다(별도 마이그레이션 불필요).
 - **APK 자산 동기화**: `android/app/src/main/assets/public/`의 `index.html`·`js/channels.js`도 같은 내용으로 갱신했습니다(저장된 APK 바이너리 `apk/worldnews.apk`는 재빌드 전까지 이전 소스).
 - **검증 (운영 페이지 `https://jongringer.github.io/world_live/`, 2026-11-23 06:56 KST)**: 1번 칸 iframe `src` = `https://www.youtube.com/embed/nfnWxzTVJA4?…&origin=https%3A%2F%2Fjongringer.github.io`, 타일 상태 `LIVE`, 화면에 KBS NEWS24 방송 영상이 실제로 재생됨(오류 150·153 없음). 같은 화면의 9개 타일 모두 LIVE.
-- **주의**: `nfnWxzTVJA4`는 KBS News(`@newskbs`) 채널의 **프로그램 단위 라이브**(제목 ‘[🔴LIVE] 뉴스광장 … 11월 23일(월) / KBS’)라, 그 방송이 끝나면 다시 새 영상 ID로 바뀝니다. 상시 자동 추적이 필요하면 앱이 이미 지원하는 채널 방식(`kind:'youtube', src:'UCcQTRi69dsVYHN3exePtZ1A'` = `@newskbs` 채널 ID, `embed/live_stream?channel=…`)으로 바꾸면 그때그때의 라이브를 자동으로 잡습니다.
+- **주의**: `nfnWxzTVJA4`는 KBS News(`@newskbs`) 채널의 **프로그램 단위 라이브**(제목 ‘[🔴LIVE] 뉴스광장 … 11월 23일(월) / KBS’)라, 그 방송이 끝나면 다시 새 영상 ID로 바뀝니다. **채널 자동 추적은 KBS에서 불가**: 2026-11-23 07:05 KST 운영 페이지에서 `embed/live_stream?channel=UCcQTRi69dsVYHN3exePtZ1A`(`@newskbs` 채널 ID)를 직접 미리보기로 열어 보니 **“이 동영상은 볼 수 없습니다.”** — KBS News는 채널 라이브 삽입을 막고 있어 이 방식은 쓸 수 없습니다. 방송이 끝나면 새 `/live/` 주소로 `kbs24`의 `src`를 교체해야 합니다.
+
+## 빌드 표식 (2026-11-23 추가)
+
+- 하단 신호 스트립에 **`SRC 11-23a`** 처럼 현재 불러온 채널 목록의 빌드가 표시됩니다(`js/channels.js`의 `CHANNELS_BUILD`). 휴대폰이 옛 파일을 캐시해 쓰고 있으면 `SRC BUILD ? · 옛 파일(캐시)`로 주황색으로 표시되어, 화면이 안 바뀌었을 때 캐시 문제인지 바로 구분할 수 있습니다.
+- 새 `app.js`가 옛 `channels.js`(캐시)와 함께 로드되면 **세션당 1회** `?r=<timestamp>`로 자동 새로고침해 최신 파일을 받아옵니다.
+- 저장된 **커스텀 소스**에 죽은 옛 영상 ID가 남아 있으면 `RETIRED_SOURCES` 맵으로 현재 소스로 치환합니다.
 
 ## HLS 소스 + 백업 자동 전환 (v3)
 

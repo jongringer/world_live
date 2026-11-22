@@ -88,7 +88,11 @@ function normalizeSet(arr, key) {
 }
 function applyStored(d) {
   if (!d || typeof d !== 'object') return;
-  if (Array.isArray(d.custom)) state.custom = d.custom.filter(c => c && c.id && c.kind && c.src);
+  if (Array.isArray(d.custom)) state.custom = d.custom.filter(c => c && c.id && c.kind && c.src)
+    .map(c => {
+      const map = (typeof RETIRED_SOURCES === 'object' && RETIRED_SOURCES) || {};
+      return map[c.src] ? Object.assign({}, c, { src: map[c.src] }) : c;
+    });
   if (d.sets && typeof d.sets === 'object') {
     Object.keys(state.sets).forEach(k => {
       const s = normalizeSet(d.sets[k], k);
@@ -825,6 +829,20 @@ function syncAudioButtons() {
   const anyOn = !state.muted && state.audioId != null;
   mb.classList.toggle('is-muted', !anyOn);
   mb.title = anyOn ? '전체 음소거' : '음성 켜기 (첫 채널)';
+}
+/* ── 빌드 표식(하단 신호 스트립) ────────────────────────────
+   지금 화면이 어떤 채널 목록을 불러왔는지 한 줄로 보여 준다.
+   값이 ‘SRC BUILD ? · 옛 파일(캐시)’이면 브라우저가 예전 파일을 쓰고 있다는 뜻. */
+function markBuild() {
+  const el = $('#ss-version');
+  if (!el) return;
+  const ok = typeof CHANNELS_BUILD === 'string';
+  const detail = typeof CHANNELS_BUILD_DETAIL === 'string' ? CHANNELS_BUILD_DETAIL : '';
+  el.textContent = ok ? CHANNELS_BUILD : 'SRC BUILD ? · 옛 파일(캐시)';
+  el.classList.toggle('is-stale', !ok);
+  el.title = ok
+    ? '불러온 채널 목록 빌드(' + detail + ') — 휴대폰에 옛 화면이 남았는지 확인하는 표식'
+    : '예전 채널 파일이 캐시에서 불러와졌습니다 — 새로고침해 주세요.';
 }
 function updateStrip() {
   const ids = slotIds();
@@ -1991,6 +2009,21 @@ window.WORLD_LIVE = {
 
 /* ── boot ──────────────────────────────────────────────────── */
 function boot() {
+  /* 캐시된 옛 channels.js가 먼저 도착한 경우 — 저장소에 표시된 빌드가 없으니
+     한 번만(세션당 1회) 캐시를 비켜 새로 불러온다. 실패하면 그냥 진행한다. */
+  if (typeof CHANNELS_BUILD !== 'string') {
+    let seen = '1';
+    try {
+      seen = sessionStorage.getItem('worldlive.srccheck');
+      sessionStorage.setItem('worldlive.srccheck', '1');
+    } catch (e) { seen = '1'; }
+    if (!seen) {
+      const u = new URL(location.href);
+      u.searchParams.set('r', String(Date.now()));
+      location.replace(u.toString());
+      return;
+    }
+  }
   const qs = new URLSearchParams(location.search);
   if (qs.has('reset')) { try { localStorage.removeItem(LS_KEY); LEGACY_LS_KEYS.forEach(k => localStorage.removeItem(k)); } catch (e) {} }
   else load();
@@ -2003,6 +2036,7 @@ function boot() {
   bindEvents();
   refreshStartUI();
   refreshSortUI();
+  markBuild();
   applyLayout(state.layout, false);
   rebuildGrid();
   applyAudio();
