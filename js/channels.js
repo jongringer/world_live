@@ -31,6 +31,10 @@ const CHANNELS = [
     backup:'https://amg00405-rakutentv-cgtn-rakuten-i9tar.amagi.tv/master.m3u8',
     status:'live' },
 
+  { id:'cctv13', name:'CCTV-13 新闻', short:'C13', country:'중국', cc:'CN', zone:'ASIA',
+    kind:'iframe', src:'https://tv.cctv.com/live/cctv13/', status:'live',
+    note:'CCTV-13 공식 라이브 페이지를 그대로 삽입해 재생합니다. 공식 HLS는 자사 플레이어 전용(DRM·PMT)이라 hls.js로는 재생되지 않았습니다.' },
+
   { id:'ndtv', name:'NDTV 24x7', short:'NDTV', country:'인도', cc:'IN', zone:'ASIA',
     kind:'hls',
     src:'https://ndtv24x7elemarchana.akamaized.net/hls/live/2003678/ndtv24x7/master.m3u8',
@@ -242,7 +246,7 @@ const DEFAULT_SETS = {
   '1': ['kbs24']
 };
 
-const KIND_LABEL = { youtube:'YT·LIVE', 'youtube-video':'YT·LIVE', hls:'HLS', web:'WEB' };
+const KIND_LABEL = { youtube:'YT·LIVE', 'youtube-video':'YT·LIVE', hls:'HLS', iframe:'PAGE', web:'WEB' };
 const ZONE_LABEL = {
   KOREA:'KOREA · 국내 뉴스',
   ASIA:'ASIA · 일본·중국·아시아', AMERICAS:'AMERICAS · 미주',

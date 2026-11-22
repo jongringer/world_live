@@ -358,12 +358,12 @@ function buildTile(i) {
       </div>
       ${isAll
         ? `<div class="tlay-right">
-             <div class="order-ctl" role="group" aria-label="이 채널 순서 바꾸기">
+             <div class="order-ctl" role="group" aria-label="이 칸의 순서 바꾸기">
                <button class="tbtn mv" data-act="mv-first" title="맨 앞으로">${ICONS.top}</button>
                <button class="tbtn mv" data-act="mv-prev" title="앞으로">${ICONS.left}</button>
                <button class="tbtn mv" data-act="mv-next" title="뒤로">${ICONS.right}</button>
              </div>
-             <button class="chan-switch is-view" data-act="max" title="이 채널 1×1로 크게 보기">${ICONS.max}<span>크게 보기</span></button>
+             <button class="chan-switch" data-act="src" title="이 칸의 채널 변경">${ICONS.src}<span>채널 변경</span>${ICONS.caret}</button>
            </div>`
         : `<button class="chan-switch" data-act="src" title="이 칸의 채널 변경">${ICONS.src}<span>채널 변경</span>${ICONS.caret}</button>`}
     </div>
@@ -453,6 +453,20 @@ function mountSlot(i) {
     v.addEventListener('playing', () => { setTileState(i, 'live'); v.dataset.ok = '1'; });
     v.addEventListener('waiting', () => { if (!v.dataset.ok) setTileState(i, 'sync'); });
     attachHls(i, v, ch.src, ch.backup);
+
+  } else if (ch.kind === 'iframe') {
+    // 방송사 공식 페이지를 그대로 삽입 (자사 플레이어로만 재생되는 채널)
+    const f = document.createElement('iframe');
+    f.src = ch.src;
+    f.allow = 'autoplay; encrypted-media; picture-in-picture; fullscreen';
+    f.allowFullscreen = true;
+    f.referrerPolicy = 'no-referrer-when-downgrade';
+    f.title = ch.name + ' live';
+    media.appendChild(f);
+    live[i].iframe = f;
+    setTimeout(() => {
+      if (live[i] && live[i].state === 'loading') setTileState(i, 'live');
+    }, 3500);
 
   } else if (ch.kind === 'web') {
     showVeil(i, '외부 공식 플레이어', ch.note || (ch.name + '은(는) 공식 사이트에서만 재생됩니다.'), '새 창에서 열기', 'open');
@@ -780,7 +794,7 @@ function refreshSortUI() {
 
 /* ── modal ─────────────────────────────────────────────────── */
 function openModal(slot) {
-  modalSlot = (typeof slot === 'number' && state.layout !== 'all') ? slot : null;
+  modalSlot = (typeof slot === 'number') ? slot : null;
   const kicker = $('#modal-kicker'), title = $('#modal-title');
   if (modalSlot == null) {
     kicker.textContent = 'SOURCE LIBRARY · ' + (LAYOUTS[state.layout].label || '');
@@ -870,6 +884,24 @@ function srcCard(c, current) {
   return b;
 }
 function assignSource(slot, id) {
+  if (state.layout === 'all') {
+    // 전체 스크롤 — 현재 순서에서 그 칸만 교체하고 ‘내 순서’로 고정
+    const order = sortedIds().slice();
+    const dup = order.indexOf(id);
+    if (dup >= 0 && dup !== slot) { const keep = order[slot]; order[slot] = id; order[dup] = keep; }
+    else order[slot] = id;
+    state.allOrder = order;
+    state.sort = 'custom';
+    refreshSortUI();
+    save();
+    closeModal();
+    const top = stage.scrollTop;
+    applyLayout('all');
+    stage.scrollTop = top;
+    const ch = byId(id);
+    toast('전체 스크롤 SLOT ' + String(slot + 1).padStart(2, '0') + ' — ' + (ch ? ch.name : id));
+    return;
+  }
   state.sets[state.layout][slot] = id;
   save();
   closeModal();

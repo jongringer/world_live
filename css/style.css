@@ -734,3 +734,6 @@ body.is-full.is-hud .chan-switch{opacity:1 !important;pointer-events:auto !impor
 .grid[data-layout="all"] .chan-tag{max-width:calc(100% - 190px);}
 body.is-full .order-ctl{opacity:0 !important;pointer-events:none !important;transition:opacity .18s;}
 body.is-full.is-hud .order-ctl{opacity:1 !important;pointer-events:auto !important;}
+
+/* 전체 스크롤 타일 — 순서 이동 + 채널 변경 칩이 함께 놓이므로 이름 영역 확보 */
+.grid[data-layout="all"] .chan-tag{max-width:calc(100% - 212px);}
