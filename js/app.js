@@ -168,6 +168,7 @@ window.addEventListener('message', function (e) {
   if (d.event === 'infoDelivery' && d.info) {
     const info = d.info;
     if (typeof info.playerState === 'number') {
+      L.stateSrc = 'api';
       if (info.playerState === 1) setTileState(slot, 'live');
       else if (info.playerState === 3) setTileState(slot, 'sync');
       else if (info.playerState === 0 || info.playerState === 2) setTileState(slot, 'offline');
@@ -175,8 +176,15 @@ window.addEventListener('message', function (e) {
     if (typeof info.muted === 'number' || typeof info.muted === 'boolean') L.ytMuted = !!info.muted;
   }
   if (d.event === 'onReady') { ytCmd(slot, state.muted || state.audio !== slot ? 'mute' : 'unMute'); }
-  if (d.event === 'onError') { setTileState(slot, 'error', 'YouTube 임베드 오류 (' + (d.info && d.info.data) + ')'); }
-  if (d.event === 'initialDelivery') { setTileState(slot, 'live'); }
+  if (d.event === 'onError') {
+    const code = (d.info && d.info.data) || '?';
+    L.err = code;
+    setTileState(slot, 'error');
+    showVeil(slot, 'YouTube 임베드 거부 (오류 ' + code + ')',
+      '방송사가 이 라이브의 외부 페이지 삽입을 제한했습니다. 새 창에서 공식 라이브를 열 수 있습니다.',
+      '새 창에서 열기', 'open');
+  }
+  if (d.event === 'initialDelivery') { L.stateSrc = 'api'; setTileState(slot, 'live'); }
 });
 
 /* ── tile build ────────────────────────────────────────────── */
@@ -658,6 +666,7 @@ function bindEvents() {
     if (act === 'max') { toggleFocusLayout(i); return; }
     if (act === 'pop') { openExternal(i); return; }
     if (act === 'reload') { mountSlot(i); toast(slotChannel(i).name + ' — 재연결'); return; }
+    if (act === 'open') { openExternal(i); return; }
     if (act === 'retry') { mountSlot(i); return; }
     setFocus(i);
   });
@@ -733,7 +742,7 @@ window.WORLD_LIVE = {
   state: () => ({
     layout: state.layout, muted: state.muted, audio: state.audio, focused: state.focused,
     slots: state.slots.slice(),
-    tiles: Object.keys(live).map(k => ({ slot: +k, name: live[k].ch.name, kind: live[k].ch.kind, state: live[k].state }))
+    tiles: Object.keys(live).map(k => ({ slot: +k, name: live[k].ch.name, kind: live[k].ch.kind, state: live[k].state, src: live[k].stateSrc || null, err: live[k].err || null }))
   }),
   setLayout: l => applyLayout(l),
   setAudio: i => setAudio(i)
