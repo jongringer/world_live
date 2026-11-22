@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><title>HLS probe</title>
+<style>body{background:#0b0f16;color:#dfe7f2;font:13px/1.6 monospace;padding:16px}
+#log{white-space:pre-wrap}#v{width:640px;max-width:100%;background:#000}</style></head>
+<body>
+<h3>HLS probe</h3>
+<video id="v" muted playsinline autoplay></video>
+<div id="log"></div>
+<script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.17/dist/hls.min.js"></script>
+<script>
+const log = (m) => { document.getElementById('log').textContent += m + "\n"; };
+const v = document.getElementById('v');
+const url = new URLSearchParams(location.search).get('u') || 'https://amg01918-cnnus-amg01918c1-vizio-us-1813.playouts.now.amagi.tv/playlist/amg01918-cnnus-cnnheadlines-vizious/playlist.m3u8';
+log('Hls present: ' + !!window.Hls + ' supported: ' + (window.Hls && Hls.isSupported()));
+log('url: ' + url);
+if (window.Hls && Hls.isSupported()) {
+  const hls = new Hls({ debug: false });
+  window.__hls = hls;
+  hls.on(Hls.Events.MANIFEST_PARSED, (e, d) => { log('MANIFEST_PARSED levels=' + d.levels.length); v.play().then(()=>log('play() ok')).catch(x=>log('play() rejected ' + x.name)); });
+  hls.on(Hls.Events.LEVEL_LOADED, (e, d) => log('LEVEL_LOADED frags=' + (d.details && d.details.fragments ? d.details.fragments.length : '?')));
+  hls.on(Hls.Events.FRAG_LOADED, (e, d) => log('FRAG_LOADED sn=' + (d.frag && d.frag.sn)));
+  hls.on(Hls.Events.ERROR, (e, d) => log('ERROR ' + d.type + ' ' + d.details + ' fatal=' + d.fatal + ' ' + (d.reason||'') + ' ' + (d.response && d.response.code ? 'http=' + d.response.code : '')));
+  hls.loadSource(url); hls.attachMedia(v);
+} else {
+  v.src = url; v.play().catch(x=>log('native play rejected ' + x.name));
+}
+['loadedmetadata','loadeddata','playing','waiting','stalled','error','progress','canplay'].forEach(ev => v.addEventListener(ev, () => log('video:' + ev + ' rs=' + v.readyState + ' ns=' + v.networkState + ' w=' + v.videoWidth)));
+setInterval(() => { log('tick rs=' + v.readyState + ' ct=' + v.currentTime.toFixed(2) + ' buf=' + (v.buffered.length ? v.buffered.end(0).toFixed(1) : 0) + (window.__hls ? ' hlsLevel=' + __hls.currentLevel : '')); }, 3000);
+</script>
+</body></html>
