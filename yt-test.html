@@ -13,7 +13,7 @@ pre{white-space:pre-wrap;font-size:11px;margin-top:8px}</style></head>
 const p = new URLSearchParams(location.search);
 const chs = (p.get('chs') || '').split(',').filter(Boolean);
 const vids = (p.get('vids') || '').split(',').filter(Boolean);
-chs.forEach(v => vids.push('v:' + v));
+vids.forEach(v => chs.push('v:' + v));
 const WAIT = parseInt(p.get('wait') || '12000', 10);
 const results = {};
 const logEl = document.getElementById('log');
