@@ -242,11 +242,14 @@ const RETIRED_IDS = [
   'ytn', 'yonhap', 'mbc', 'sbs', 'jtbc', 'mbn', 'channela', 'tvchosun', 'arirang', 'tbs', 'nhk_hls'
 ];
 
-/* 레이아웃별 기본 배치 — 4분할과 9분할은 서로 독립적으로 저장됩니다 */
+/* 레이아웃별 기본 배치 — 4분할과 9분할은 서로 독립적으로 저장됩니다
+   ※ 2026-11-24 사용자가 확정한 기본 순서(DEFAULT_SETS)
+      4분할 = KBS NEWS 24 · YTN · 연합뉴스TV · CNN INTERNATIONAL
+      9분할 = KBS · YTN · 연합뉴스TV · CNN INTERNATIONAL · BBC · ABC · 알자지라 · 이란(IRAN INTERNATIONAL) · 프랑스(FRANCE 24) */
 const DEFAULT_SETS = {
-  '9': ['kbs24', 'ytn24', 'yonhap24', 'nhk', 'cgtn', 'cnn_fast', 'bbc', 'abc', 'aj'],
-  '4': ['kbs24', 'nhk', 'cnn_fast', 'bbc'],
-  '6': ['kbs24', 'ytn24', 'yonhap24', 'nhk', 'cgtn', 'cnn_fast'],
+  '9': ['kbs24', 'ytn24', 'yonhap24', 'cnn', 'bbc', 'abc', 'aj', 'iranintl', 'f24'],
+  '4': ['kbs24', 'ytn24', 'yonhap24', 'cnn'],
+  '6': ['kbs24', 'ytn24', 'yonhap24', 'cnn', 'bbc', 'abc'],
   '1': ['kbs24']
 };
 
@@ -266,8 +269,8 @@ const CHANNEL_BY_ID = CHANNELS.reduce((m, c) => (m[c.id] = c, m), {});
 /* 이 카탈로그의 빌드 표식 — 화면 하단 신호 스트립에 표시됩니다.
    휴대폰이 옛 파일(브라우저 캐시)을 불러왔는지 이 한 줄로 확인할 수 있고,
    채널·소스를 고칠 때마다 이 값과 index.html의 ?v= 를 함께 올려 주세요. */
-const CHANNELS_BUILD = 'SRC 11-24a';
-const CHANNELS_BUILD_DETAIL = 'KBS 공식 온에어(news24 ch81) · 2026-11-24 07:45 갱신';
+const CHANNELS_BUILD = 'SRC 11-24b';
+const CHANNELS_BUILD_DETAIL = '기본 배치 확정(4분할 KBS·YTN·연합뉴스TV·CNN INTERNATIONAL / 9분할 9채널) · 2026-11-24 08:40 갱신';
 
 /* 다시 재생되지 않는 예전 소스 ID → 지금 쓰는 소스로 자동 교체
    (브라우저에 저장된 커스텀 소스에 옛 ID가 남아 있어도 되살아나지 않게) */
