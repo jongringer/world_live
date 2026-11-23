@@ -92,6 +92,17 @@
 }
 #install-tip .it-close:hover { background: rgba(255, 231, 168, 0.3); }
 
+
+/* 넓은 화면: 글자 포함 / 좁은 화면: 아이콘만 + '첫 화면' 값은 숨겨 넘침 방지 */
+@media (max-width: 1680px) {
+  .topbar .install-btn { width: 37px; padding: 0; gap: 0; }
+  .topbar .install-btn .lb-txt { display: none; }
+}
+@media (max-width: 1500px) {
+  body.has-install-btn .start-wrap .start-label { display: none; }
+  body.has-install-btn .start-wrap .cs-caret { display: none; }
+}
+
 /* 모바일: 상단 바가 좁으므로 아이콘만, 안내는 화면 하단 중앙 */
 @media (orientation: portrait), (max-aspect-ratio: 1/1) {
   .topbar .install-btn {
