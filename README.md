@@ -94,8 +94,19 @@
 
 ## KOREA · 국내 뉴스 (3사만 유지)
 
-- **KBS NEWS 24** (`nfnWxzTVJA4`, 2026-11-23 교체 · 이전 `zGFBJL_fhUU`는 재생 불가) · **YTN 24시간 라이브** (`aZyD6EPl6KU`) · **연합뉴스TV 라이브** (`6QZ_qc75ihU`) — 24시간 고정 라이브, 클릭 없이 즉시 자동재생.
+- **KBS NEWS 24** (KBS 공식 온에어 `kind:'kbs'`, 2026-11-24 교체) · **YTN 24시간 라이브** (`aZyD6EPl6KU`) · **연합뉴스TV 라이브** (`6QZ_qc75ihU`) — 24시간 고정 라이브, 클릭 없이 즉시 자동재생. KBS는 유튜브 라이브 ID가 매일 바뀌므로 공식 온에어 스트림을 직접 받아 재생합니다(아래 2026-11-24 항목).
 - MBC·SBS·JTBC·MBN·채널A·TV조선·아리랑 TV·TBS는 카탈로그에서 제거했습니다. 저장된 옛 배치에 그 ID가 남아 있으면 불러올 때 걸러지고 기본 채널로 대체됩니다(`localStorage` `worldlive.v3` 마이그레이션).
+
+## KBS NEWS 24 → KBS 공식 온에어 소스로 교체 (2026-11-24 KST)
+
+- **왜**: 유튜브 라이브(`nfnWxzTVJA4`)는 KBS News가 **프로그램 단위**로 만드는 라이브(‘뉴스광장 …’ 등)라 방송이 끝나면 영상이 사라져, 다음 날 타일이 `NO SIGNAL`이 됩니다(2026-11-24 07:40 KST oEmbed `Forbidden`). 사용자 요청: “KBS NEWS 24 주소가 매일 바뀌는 것 같다. www.kbs.co.kr에 들어가서 뉴스24 링크 걸어줘.”
+- **찾은 공식 소스**: `onair.kbs.co.kr`의 **KBS NEWS 24 = 채널코드 `81`**(`channel_id: news24`, `nid 51100012989542`). 그 페이지 플레이어가 호출하는 공개 API **`https://cfpwwwapi.kbs.co.kr/api/v1/landing/live/channel_code/81`** 가 `channel_item[0].service_url`로 **CloudFront 서명 .m3u8**(`https://news24.gscdn.kbs.co.kr/news24-02/news24-02_hd.m3u8?Policy=…&Signature=…`)을 내려줍니다. 서명은 **48시간 유효**(`DateLessThan` = 요청 시각 + 48h)·요청마다 새로 발급되므로 주소를 코드에 고정할 필요가 없습니다.
+- **적용**: `js/channels.js`의 `kbs24`를 `kind:'kbs'`, `src:'81'`, `api:`·`web:`(공식 온에어 페이지) 필드로 교체. `js/app.js`는 타일이 마운트될 때 API에서 주소를 받아 기존 `hls.js` 경로로 재생하고(`mountKbs`), 치명적 오류가 나면 **새 주소를 한 번 더 받아 재시도**합니다(`attachHls`의 `refresh` 인자). 채널 찾기 미리보기·1×1 FULL·오디오 탭·‘새 창에서 열기’(공식 온에어 페이지)·소스 라이브러리 칩(`KBS·ONAIR`)도 함께 연결했습니다.
+- **CORS 실측(2026-11-24)**: 매니페스트 응답 `access-control-allow-origin: *`, AES-128 키(`hls-key.play.kbs.co.kr`)·TS 세그먼트 모두 `*`. Referer 검사 없음(curl로 Referer 없이 200). 서명 없는 주소는 `403`.
+- **제약**: API는 **대한민국 IP에만** `service_url`을 내려줍니다(해외 IP는 빈 문자열 → `ipck.Domestic:false`). 이때 타일은 “KBS 공식 온에어 / KBS 온에어 열기” 안내로 바뀝니다. 또 `onair.kbs.co.kr` 응답에는 `X-Frame-Options`·CSP `frame-ancestors`가 없어, 필요하면 iframe 폴백도 가능합니다(현재는 미사용).
+- **캐시·저장 배치**: `index.html` `channels.js?v=32→33`·`app.js?v=89→90`, 빌드 표식 `SRC 11-23a → SRC 11-24a`. 저장 배치(`localStorage worldlive.v3`)에는 채널 ID(`kbs24`)만 남으므로 기존 사용자도 새 파일을 받으면 그대로 새 소스로 재생됩니다. 저장된 커스텀 소스에 죽은 ID(`nfnWxzTVJA4`)가 남아 있으면 불러올 때 제거합니다(`DEAD_SOURCES`).
+- **APK 자산 동기화**: `android/app/src/main/assets/public/`의 `index.html`·`js/app.js`·`js/channels.js`·`css/style.css`를 같은 내용으로 갱신했습니다(저장된 APK 바이너리 `apk/worldnews.apk`는 2026-11-23 빌드라 **재빌드 전까지 앱 안에서는 옛 소스**).
+- **검증 (운영 페이지 `https://jongringer.github.io/world_live/`, 2026-11-24 07:47 KST)**: 4분할 1번 칸 KBS NEWS 24가 **KBS 24 로고가 있는 실제 방송 화면**으로 재생(1280×720, `readyState 4`, `currentTime` 66초까지 증가, `error null`), 타일 클릭 시 `muted:false`·`volume:1`로 음성 청취, 같은 화면 NHK·CNN FAST·BBC 모두 LIVE(4/4). 1×1 FULL 전환 후에도 재생 유지. 채널 찾기 미리보기도 `LIVE` 배지로 재생. 스크린샷 `downloads/world_live_kbs24_20261124.png`.
 
 ## KBS NEWS 24 소스 교체 (2026-11-23 KST)
 
