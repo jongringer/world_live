@@ -815,6 +815,8 @@ body.is-swapping .tile { transition: none; }
 }
 .start-menu button.is-current small::after { content: "  ✓"; color: var(--gold); font-weight: 700; }
 .sm-note { margin-top: 6px; padding: 8px 8px 4px; border-top: 1px solid rgba(255, 255, 255, 0.08); font-size: 9.5px; line-height: 1.5; color: var(--text-4); }
+.start-menu button.sm-reset { margin-top: 4px; border-top: 1px solid rgba(255, 255, 255, 0.09); border-radius: 0 0 3px 3px; }
+.start-menu button.sm-reset span { color: var(--gold-2, #E8C86A); }
 
 .layout-btn.is-start::after {
   content: ""; position: absolute; right: 4px; top: 3px; width: 4.5px; height: 4.5px; border-radius: 50%;

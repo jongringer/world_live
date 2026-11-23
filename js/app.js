@@ -2,6 +2,7 @@
    WORLD LIVE // GLOBAL NEWSROOM MONITOR — app.js  (v2)
    16:9 broadcast multiview · 42 verified live feeds
    layouts 9 / 4 / 6 / 1 / ALL(스크롤·지연 마운트) · 독립 배치 저장
+   시작 기본값(2026-11-24 확정): 4분할 · KBS(음성 ON)/YTN/연합뉴스TV/CNN INTERNATIONAL
    ═══════════════════════════════════════════════════════════════ */
 (function () {
 'use strict';
@@ -9,6 +10,11 @@
 /* ── constants ─────────────────────────────────────────────── */
 const LS_KEY = 'worldlive.v3';
 const LEGACY_LS_KEYS = ['worldlive.v2', 'worldlive.v1'];   // v3 마이그레이션 원본
+/* 기본 배치 버전 — 이 값이 오르면 예전 저장 상태는 ‘한 번만’ 새 기본값으로 맞춘다.
+   (2 = 2026-11-24 사용자 확정: 4분할 시작 · KBS/YTN/연합뉴스TV/CNN INTERNATIONAL · KBS 음성 ON) */
+const PRESET_VER = 2;
+const DEFAULT_AUDIO = 'kbs24';       // 기본 청취 채널 — 1번 칸 KBS NEWS 24
+const DEFAULT_LAYOUT = '4';          // 시작 화면 = 4분할
 const LAYOUTS = {
   '9':  { cols: 3, rows: 3, count: 9, label: '9분할' },
   '4':  { cols: 2, rows: 2, count: 4, label: '4분할' },
@@ -29,16 +35,16 @@ function freshSets() {
   };
 }
 const state = {
-  layout: '9',
-  start: '9',
+  layout: DEFAULT_LAYOUT,
+  start: DEFAULT_LAYOUT,
   startPinned: false,      // ‘첫 화면’을 직접 골랐는지 — 고르지 않았으면 마지막 화면으로 시작
   sort: 'zone',
   sets: freshSets(),
   allOrder: [],            // ‘내 순서’ — 전체 스크롤(ALL LIVE) 채널 순서
   custom: [],
-  audioId: null,
-  muted: true,
-  selSlot: null,           // 액티브 오디오 탤리 — 지금 듣고 있는 타일(흰색 테두리)
+  audioId: DEFAULT_AUDIO,  // 기본은 1번 칸 KBS NEWS 24 단독 청취
+  muted: false,
+  selSlot: 0,              // 액티브 오디오 탤리 — 지금 듣고 있는 타일(흰색 테두리)
   startedAt: Date.now()
 };
 const live = {};            // slot index -> { node, media, ch, state, iframe, video, hls, ps }
@@ -61,6 +67,7 @@ let modalSlot = null;
 function save() {
   try {
     localStorage.setItem(LS_KEY, JSON.stringify({
+      presetVer: PRESET_VER,
       layout: state.layout, start: state.start, startPinned: state.startPinned, sort: state.sort, sets: state.sets,
       allOrder: state.allOrder,
       custom: state.custom, audioId: state.audioId, muted: state.muted
@@ -107,29 +114,47 @@ function applyStored(d) {
   if (typeof d.sort === 'string' && SORT_MODES[d.sort]) state.sort = d.sort;
   if (Array.isArray(d.allOrder)) state.allOrder = d.allOrder.filter(id => typeof id === 'string' && byId(id));
   if (typeof d.audioId === 'string' && byId(d.audioId)) { state.audioId = d.audioId; state.muted = false; }
-  else if (typeof d.muted === 'boolean') state.muted = d.muted;
+  else {
+    if (d.audioId === null) state.audioId = null;      // 사용자가 ‘전체 음소거’로 저장한 상태
+    if (typeof d.muted === 'boolean') state.muted = d.muted;
+  }
 }
+/* 새 기본 배치 — 시작 화면 4분할, KBS·YTN·연합뉴스TV·CNN INTERNATIONAL, 1번 칸 KBS 음성 ON */
+function applyPresetDefaults() {
+  state.sets = freshSets();
+  state.layout = DEFAULT_LAYOUT;
+  state.start = DEFAULT_LAYOUT;
+  state.startPinned = false;
+  state.audioId = DEFAULT_AUDIO;
+  state.muted = false;
+  state.selSlot = 0;
+}
+/* 저장 상태 읽기.
+   - presetVer가 현재 버전이면 저장된 배치를 그대로 쓴다(사용자가 바꿔 둔 분할·채널·순서·음성 유지).
+   - 예전 저장 상태(버전 없음 < PRESET_VER)면 새 기본 배치를 ‘한 번만’ 적용하고,
+     사용자가 직접 추가한 커스텀 소스와 전체 스크롤 ‘내 순서’는 남긴다. */
 function load() {
+  let d = null;
   try {
     const raw = localStorage.getItem(LS_KEY);
-    if (raw) { applyStored(JSON.parse(raw)); return; }
-    // v2 / v1 → v3 마이그레이션 (제거된 채널 ID는 기본 채널로 폴백)
-    for (let i = 0; i < LEGACY_LS_KEYS.length; i++) {
-      const old = localStorage.getItem(LEGACY_LS_KEYS[i]);
-      if (!old) continue;
-      const o = JSON.parse(old);
-      if (o && typeof o === 'object') {
-        applyStored({
-          layout: o.layout,
-          start: o.start || o.layout,
-          sort: o.sort,
-          sets: o.sets || (Array.isArray(o.slots) ? { '9': o.slots } : null),
-          custom: o.custom, audioId: o.audioId, muted: o.muted
-        });
-      }
-      break;
+    if (raw) d = JSON.parse(raw);
+  } catch (e) { d = null; }
+  if (!d || typeof d !== 'object') {
+    // v2 / v1에 남아 있던 커스텀 소스만 건져 온다 (분할·배치는 새 기본값)
+    for (let i = 0; i < LEGACY_LS_KEYS.length && !d; i++) {
+      try {
+        const old = localStorage.getItem(LEGACY_LS_KEYS[i]);
+        if (!old) continue;
+        const o = JSON.parse(old);
+        if (o && typeof o === 'object') d = { custom: o.custom };
+      } catch (e) {}
     }
-  } catch (e) {}
+  }
+  const ver = (d && Number(d.presetVer)) || 0;
+  if (ver >= PRESET_VER) { applyStored(d); return; }
+  if (d) applyStored({ custom: d.custom, allOrder: d.allOrder, sort: d.sort });
+  applyPresetDefaults();
+  save();
 }
 
 /* ── channel helpers ───────────────────────────────────────── */
@@ -598,7 +623,9 @@ function attachHls(i, v, primary, backup, refresh) {
       hls.loadSource(url);
       hls.attachMedia(v);
       hls.on(window.Hls.Events.MANIFEST_PARSED, () => {
-        v.play().catch(() => { v.muted = true; v.play().catch(() => {}); });
+        const wantSound = !state.muted && !!live[i] && state.audioId === live[i].ch.id;
+        if (wantSound) playWithSound(v);
+        else v.play().catch(() => {});
       });
       hls.on(window.Hls.Events.ERROR, (evt, data) => {
         if (!data || !data.fatal) return;
@@ -627,7 +654,8 @@ function attachHls(i, v, primary, backup, refresh) {
     } else if (nativeHls) {
       v.onerror = () => next('재생 오류');
       v.src = url;
-      v.play().catch(() => {});
+      const wantSound = !state.muted && !!live[i] && state.audioId === live[i].ch.id;
+      if (wantSound) playWithSound(v); else v.play().catch(() => {});
     } else {
       failHls(i, '이 브라우저는 HLS를 지원하지 않습니다');
     }
@@ -802,6 +830,32 @@ function clearAudio() {
   state.muted = true;
   state.selSlot = null;
 }
+/* ── 소리 켜진 자동재생 ───────────────────────────────────────
+   브라우저 자동재생 정책상 사용자가 화면을 한 번 누르기 전에는 소리 켜진 재생이
+   막힌다(NotAllowedError). 막히면 그 채널은 음소거 상태로 계속 보여 주고, 첫 터치·키
+   입력 순간 선택된 채널의 소리를 켜 준다 — 기본값은 1번 칸 KBS NEWS 24다. */
+function playWithSound(v) {
+  if (!v) return;
+  v.muted = false;
+  const p = v.play();
+  if (p && typeof p.catch === 'function') p.catch(() => {
+    v.muted = true;
+    try { v.play().catch(() => {}); } catch (e) {}
+    armSoundUnlock();
+  });
+}
+let soundUnlockArmed = false;
+function armSoundUnlock() {
+  if (soundUnlockArmed || state.muted || !state.audioId) return;
+  soundUnlockArmed = true;
+  const go = () => {
+    soundUnlockArmed = false;
+    ['pointerdown', 'touchstart', 'keydown'].forEach(t => window.removeEventListener(t, go, true));
+    if (state.muted || !state.audioId) return;
+    applyAudio();
+  };
+  ['pointerdown', 'touchstart', 'keydown'].forEach(t => window.addEventListener(t, go, true));
+}
 /* 타일 클릭 = 그 채널 단독 청취 + 흰색 테두리 */
 function selectSlot(i) {
   const ch = slotChannel(i);
@@ -865,7 +919,7 @@ function applyAudio() {
       L.video.muted = muted;
       if (!muted) {
         try { L.video.volume = 1; } catch (e) {}
-        L.video.play().catch(() => {});
+        playWithSound(L.video);
       }
     }
   });
@@ -935,6 +989,7 @@ function refreshStartUI() {
   });
 }
 function setStart(layout) {
+  if (layout === 'reset') { resetPreset(); return; }
   if (layout === 'auto') {
     state.startPinned = false;
     save();
@@ -948,6 +1003,22 @@ function setStart(layout) {
   save();
   refreshStartUI();
   toast('첫 화면 — ' + (START_NAMES[layout] || layout) + ' 저장');
+}
+/* 기본 배치 복원 — 예전에 바꿔 둔 분할·채널·순서·음성을 새 기본값으로 되돌린다.
+   직접 추가한 커스텀 소스는 지우지 않는다. */
+function resetPreset() {
+  const custom = state.custom.slice();
+  applyPresetDefaults();
+  state.custom = custom;
+  state.sort = 'zone';
+  state.allOrder = [];
+  save();
+  refreshSortUI();
+  refreshStartUI();
+  applyLayout(DEFAULT_LAYOUT, false);
+  rebuildGrid();
+  applyAudio();
+  toast('기본 배치로 초기화 — 4분할 · KBS / YTN / 연합뉴스TV / CNN INTERNATIONAL (KBS 음성 ON)');
 }
 
 function refreshSortUI() {
