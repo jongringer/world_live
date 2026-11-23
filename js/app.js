@@ -1369,6 +1369,11 @@ function selectedChannel() {
 function showCleanFull() {
   const ch = selectedChannel();
   if (!ch) return;
+  // 모바일 브라우저는 타일 더블 터치와 같은 16:9 클린 시네마로 통일
+  if (isMobileWeb()) {
+    enterCinema(state.selSlot != null ? state.selSlot : 0);
+    return;
+  }
   showBigChannel(ch, true, true);
 }
 function showBigChannel(ch, fromDbl, clean) {
@@ -1451,7 +1456,7 @@ function restoreAfterDblFull() {
      화면비가 깨져도 100vw×100dvh 검은 배경 위 16:9 중앙 오버레이로 항상 뜬다.
    · 레이아웃(state.layout)은 건드리지 않고 보던 타일만 확대하므로
      영상이 새로 로드되지 않고 그 자리에서 커진다. */
-const CINEMA = { active: false, slot: -1, pushed: false, scroll: 0, hudTimer: null, ignorePop: false, fsSuppress: false };
+const CINEMA = { active: false, slot: -1, pushed: false, scroll: 0, hudTimer: null, ignorePop: false, fsSuppress: false, audio: null, audioTimer: null };
 
 /* 스마트폰·태블릿 브라우저인가 (APK 네이티브는 기존 경로를 그대로 쓴다) */
 function isMobileWeb() {
@@ -1461,14 +1466,49 @@ function isMobileWeb() {
   return navigator.maxTouchPoints > 0 && window.matchMedia('(pointer: coarse)').matches;
 }
 function isCinema() { return CINEMA.active; }
+/* 시네마 중 실제로 세로로 들고 있어 CSS 90도 회전이 걸린 상태인가 */
+function isCinemaRotated() { return CINEMA.active && window.innerHeight > window.innerWidth; }
+
+/* 화면 전체화면 + 가로 회전(자동회전) 요청 — 둘 다 거부되어도 CSS 회전 폴백으로 동작 */
+function lockLandscape() {
+  try {
+    const o = (screen.orientation || screen.msOrientation || screen.mozOrientation);
+    if (o && o.lock) {
+      const p = o.lock('landscape');
+      if (p && p.catch) p.catch(() => {});
+    }
+  } catch (e) {}
+}
+function unlockOrientation() {
+  try {
+    const o = screen.orientation || screen.msOrientation || screen.mozOrientation;
+    if (o && o.unlock) o.unlock();
+  } catch (e) {}
+}
 function requestPageFullscreen() {
   const el = document.documentElement;
   const fn = el.requestFullscreen || el.webkitRequestFullscreen;
-  if (!fn) return;
+  if (!fn) { lockLandscape(); return; }
   try {
     const p = fn.call(el, { navigationUI: 'hide' });
-    if (p && p.catch) p.catch(() => {});
-  } catch (e) {}
+    if (p && p.then) p.then(lockLandscape, lockLandscape);   // 전체화면 후 자동 가로 회전
+    else lockLandscape();
+  } catch (e) { lockLandscape(); }
+}
+
+/* 시네마에서 보던 채널의 소리를 복귀 후에도 그대로 이어 준다 */
+function reassertCinemaAudio() {
+  const a = CINEMA.audio;
+  if (!a || !a.id || a.muted) return;
+  state.audioId = a.id;
+  state.muted = false;
+  try { applyAudio(); } catch (e) {}
+  const i = slotIds().indexOf(a.id);
+  if (i < 0) return;
+  const L = live[i];
+  if (!L) return;
+  if (L.iframe) { ytCmd(i, 'unMute'); ytCmd(i, 'setVolume', [100]); ytCmd(i, 'playVideo'); }
+  if (L.video) { try { L.video.muted = false; L.video.volume = 1; L.video.play().catch(() => {}); } catch (e) {} }
 }
 function showCinemaHud(ms) {
   if (!CINEMA.active) return;
@@ -1497,6 +1537,9 @@ function enterCinema(slot) {
   CINEMA.scroll = stage.scrollTop;            // 클래스 적용 전에 스크롤 위치를 기억
   document.body.classList.add('is-cinema');
   grid.querySelectorAll('.tile').forEach(t => t.classList.toggle('is-cinema-target', t === el));
+  // 이 채널을 그대로 듣는다 — 음소거였으면 이 칸으로 소리를 켠다(한 번 탭과 같은 규칙)
+  if (state.muted || state.audioId !== ch.id) { try { selectSlot(slot); } catch (e) {} }
+  CINEMA.audio = { id: state.audioId, muted: !!state.muted };
   try { history.pushState({ worldliveCinema: 1 }, ''); CINEMA.pushed = true; } catch (e) { CINEMA.pushed = false; }
   showCinemaHud(2400);                        // 진입 직후 2.4초 안내 → 곧 완전 클린
   requestPageFullscreen();
@@ -1517,6 +1560,7 @@ function exitCinema(opts) {
     CINEMA.fsSuppress = true;                 // 우리가 뺀 전체화면 이벤트는 무시
     try { document.exitFullscreen().catch(() => {}); } catch (e) {}
   }
+  unlockOrientation();                        // 자동 가로 회전 해제 → 원래 방향으로
   if (wasPushed && !opts.fromPop) {
     CINEMA.ignorePop = true;                  // 우리가 부른 history.back()의 popstate 무시
     try { history.back(); } catch (e) { CINEMA.ignorePop = false; }
@@ -1524,6 +1568,7 @@ function exitCinema(opts) {
   setTimeout(() => {
     try { stage.scrollTop = backTo; } catch (e) {}
     try { sizeGrid(); } catch (e) {}
+    reassertCinemaAudio();                    // 보던 채널 소리 그대로 이어서
   }, 40);
   if (!opts.silent) toast('분할 화면으로 복귀');
 }
@@ -2101,7 +2146,14 @@ function bindEvents() {
     else if (k === 's') openModal(null);
   });
 
-  window.addEventListener('resize', () => sizeGrid());
+  window.addEventListener('resize', () => {
+    sizeGrid();
+    // 회전·전체화면 전환 뒤에도 보던 채널의 소리가 끊기지 않게 다시 걸어 준다
+    if (isCinema()) {
+      clearTimeout(CINEMA.audioTimer);
+      CINEMA.audioTimer = setTimeout(reassertCinemaAudio, 260);
+    }
+  });
   document.addEventListener('fullscreenchange', () => {
     const fb = $('#btn-fullscreen');
     if (fb) fb.classList.toggle('is-active', !!document.fullscreenElement);
@@ -2137,6 +2189,7 @@ window.WORLD_LIVE = {
     full: isFull(),
     cinema: isCinema(),
     cinemaSlot: CINEMA.slot,
+    cinemaRotated: isCinemaRotated(),
     sets: JSON.parse(JSON.stringify(state.sets)),
     count: chCount(),
     channels: CHANNELS.length,
