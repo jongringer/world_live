@@ -1,0 +1,113 @@
+/* ═══════════════════════════════════════════════════════════════
+   WORLD LIVE — PWA 설치 버튼 · 안내 툴팁 (pwa.css)
+   기존 상단 바 디자인(골드/블루 글래스)에 맞춘 최소 추가분만 담습니다.
+   ═══════════════════════════════════════════════════════════════ */
+
+.icon-btn.install-btn {
+  color: #FFE9A8;
+  border-color: rgba(245, 210, 132, 0.45);
+  background:
+    linear-gradient(180deg, rgba(255, 231, 168, 0.20) 0%, rgba(214, 158, 40, 0.10) 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 244, 214, 0.35),
+    0 2px 10px rgba(214, 158, 40, 0.25);
+}
+.icon-btn.install-btn:hover {
+  color: #FFF8E2;
+  border-color: rgba(255, 231, 168, 0.75);
+  background:
+    linear-gradient(180deg, rgba(255, 231, 168, 0.32) 0%, rgba(214, 158, 40, 0.18) 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 250, 232, 0.5),
+    0 4px 14px rgba(214, 158, 40, 0.4);
+}
+.icon-btn.install-btn svg { width: 16px; height: 16px; }
+.icon-btn.install-btn[hidden] { display: none !important; }
+
+/* 설치 가능 상태 표시 — 골드 점이 은은하게 맥동 */
+.icon-btn.install-btn::after {
+  content: "";
+  position: absolute;
+  top: 5px; right: 5px;
+  width: 5px; height: 5px;
+  border-radius: 50%;
+  background: #FFD978;
+  box-shadow: 0 0 6px rgba(255, 217, 120, 0.9);
+  animation: wlInstallPulse 2.2s ease-in-out infinite;
+}
+@keyframes wlInstallPulse {
+  0%, 100% { opacity: 0.35; transform: scale(0.85); }
+  50%      { opacity: 1;    transform: scale(1.15); }
+}
+
+/* 설치 안내 툴팁 */
+#install-tip {
+  position: fixed;
+  z-index: 90;
+  right: 18px;
+  top: calc(var(--topbar-h, 56px) + 12px);
+  width: min(360px, calc(100vw - 28px));
+  padding: 14px 16px 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(245, 229, 192, 0.45);
+  background:
+    radial-gradient(320px 120px at 100% 0%, rgba(212, 175, 55, 0.20), transparent 70%),
+    linear-gradient(180deg, rgba(22, 32, 48, 0.98), rgba(10, 16, 26, 0.99));
+  box-shadow: 0 18px 42px -10px rgba(0, 0, 0, 0.85), inset 0 1px 0 rgba(255, 255, 255, 0.14);
+  color: #E9F1FB;
+  font-size: 13.5px;
+  line-height: 1.55;
+  letter-spacing: -0.01em;
+  word-break: keep-all;
+}
+#install-tip[hidden] { display: none !important; }
+#install-tip .it-head {
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  color: #FFD978;
+  margin-bottom: 6px;
+}
+#install-tip .it-body { color: #F2F7FF; }
+#install-tip .it-body b { color: #FFE9A8; }
+#install-tip .it-sub {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  font-size: 11.5px;
+  color: #9FB0C6;
+}
+#install-tip .it-close {
+  margin-top: 11px;
+  width: 100%;
+  height: 32px;
+  border-radius: 7px;
+  border: 1px solid rgba(245, 210, 132, 0.5);
+  background: linear-gradient(180deg, rgba(255, 231, 168, 0.22), rgba(214, 158, 40, 0.12));
+  color: #FFF3D6;
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 700;
+  cursor: pointer;
+}
+#install-tip .it-close:hover { background: rgba(255, 231, 168, 0.3); }
+
+/* 모바일: 상단 바가 좁으므로 아이콘만, 안내는 화면 하단 중앙 */
+@media (orientation: portrait), (max-aspect-ratio: 1/1) {
+  .topbar .install-btn {
+    width: 28px !important;
+    height: 28px !important;
+    padding: 0 !important;
+    gap: 0 !important;
+  }
+  .topbar .install-btn .lb-txt { display: none !important; }
+  .topbar .install-btn::after { top: 3px; right: 3px; width: 4px; height: 4px; }
+  #install-tip {
+    left: 12px;
+    right: 12px;
+    top: auto;
+    bottom: calc(var(--strip-h, 24px) + var(--sab, 0px) + 14px);
+    width: auto;
+    font-size: 13px;
+  }
+}

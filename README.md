@@ -19,6 +19,34 @@
 
 ---
 
+## 📲 크롬 PWA 앱 설치 (2026-11-24 추가 · pwa1)
+
+이제 **APK를 새로 내려받지 않아도** 크롬에서 그대로 '앱 설치 / 홈 화면에 추가'가 됩니다.
+홈 화면 아이콘으로 열리고, 사이트를 고치면 다음에 열 때 최신 버전이 자동 반영됩니다.
+
+- **설치 방법 (안드로이드 크롬)**: 상단 바 오른쪽 **`앱 설치`** 버튼 → 설치 창에서 `설치`.
+  `앱 설치` 버튼이 없으면 크롬 오른쪽 위 **⋮ → 앱 설치 / 홈 화면에 추가**.
+- **설치 방법 (PC 크롬)**: 주소창 오른쪽 설치 아이콘 또는 **⋮ → 저장 및 공유 → 앱 설치**.
+- 이미 앱으로 열고 있으면(`standalone`) 설치 버튼은 자동으로 숨습니다.
+- APK(`apk/worldnews.apk`)는 그대로 남겨 둡니다 — 필요할 때만 쓰는 예비 경로입니다.
+
+구성 파일:
+
+| 파일 | 역할 |
+|---|---|
+| `manifest.webmanifest` | 이름·시작 주소·standalone 표시·테마 색(`#0F1D32`)·192/512 아이콘(+maskable) |
+| `sw.js` | **network-first** 서비스 워커. `skipWaiting()` + `clients.claim()` 으로 새 버전 즉시 활성화, 외부 스트림(`.m3u8`·`.ts`·youtube·kbs·CDN)은 가로채지 않음 |
+| `js/pwa.js` | 서비스 워커 등록, `beforeinstallprompt` 포착, 설치 버튼·안내 툴팁 |
+| `css/pwa.css` | 골드 글래스 설치 버튼·툴팁 (모바일은 아이콘만) |
+| `icons/icon-192.png` `icons/icon-512.png` | 앱 아이콘 — 다크 블루 슬레이트 + 입체 지구본(골드 대륙) + 골드 라이트닝 + 신호 링 |
+| `icons/icon-maskable-192.png` `icons/icon-maskable-512.png` | 안드로이드 adaptive 아이콘용 maskable(안전 영역 80%) |
+| `icons/apple-touch-icon.png` | iOS 홈 화면 아이콘(180×180) |
+
+캐시를 갇히게 하지 않기 위해 **정적 파일도 항상 네트워크에서 먼저** 받고(`cache: 'no-cache'` → ETag 304),
+통신이 끊겼을 때만 캐시로 대체합니다. 그래서 GitHub Pages에 푸시한 수정이 앱을 다시 열 때 그대로 보입니다.
+
+---
+
 ## 레이아웃
 
 | 버튼 | 구성 | 단축키 |
@@ -257,6 +285,11 @@ index.html          마크업 · 컨트롤 바(정렬·첫 화면 메뉴) · 소
 css/style.css       딥네이비 주조정실 테마 + v4 상단 바/미리보기 + ALL 스크롤 그리드 + FULL 순수 영상 + v5 오디오 탤리/드래그 규칙
 js/channels.js      채널 카탈로그(59개 항목) + 레이아웃별 기본 배치 + 지역 정렬 기준
 js/app.js           레이아웃 엔진 · 지연 마운트 · 독립 배치 저장 · HLS 백업 폴백 · 내 순서
+manifest.webmanifest PWA 매니페스트 (앱 이름·아이콘·standalone·테마 색)
+sw.js               서비스 워커 — network-first, 새 버전 즉시 활성화
+js/pwa.js           설치 버튼 · beforeinstallprompt · 서비스워커 등록
+css/pwa.css         설치 버튼·안내 툴팁 (골드 글래스)
+icons/              PWA 아이콘 192/512 · maskable · apple-touch-icon (+ build_icons.py 생성기)
 hls-multi.html      (개발용) HLS 다중 재생 프로브
 yt-test.html        (개발용) YouTube 임베드 다채널 프로브
 ```
