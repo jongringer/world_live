@@ -124,6 +124,9 @@
     const ext = (!info.android && info.ios && isKakao) ? kakaoExternal(location.href) : '';
     const primaryHref = intent || ext;
 
+    const btnLabel = info.ios ? 'Safari로 열어서 앱 설치하기' : '크롬으로 열어서 앱 설치하기';
+    const browserName = info.ios ? 'Safari' : '크롬';
+
     let steps = '';
     if (info.ios) {
       steps = '<ol class="wl-b-steps">'
@@ -145,13 +148,13 @@
       + '<div class="wl-b-card">'
       +   '<div class="wl-b-tag"><span class="wl-b-dot"></span>' + appName + ' 안에서 열렸습니다</div>'
       +   '<h2 class="wl-b-title" id="wl-bridge-title">' + appName + '에서는<br>앱 설치가 제한됩니다</h2>'
-      +   '<p class="wl-b-desc">아래 버튼을 누르면 <b>크롬</b>에서 열리고, 한 번만 설치하면<br>홈 화면 아이콘으로 앱처럼 바로 쓸 수 있습니다.</p>'
+      +   '<p class="wl-b-desc">아래 버튼을 누르면 <b>' + browserName + '</b>에서 열리고, 한 번만 설치하면<br>홈 화면 아이콘으로 앱처럼 바로 쓸 수 있습니다.</p>'
       +   (primaryHref
             ? '<a class="wl-b-primary" id="wl-b-open" href="' + primaryHref + '"'
               + ' data-intent="' + (intent || '') + '" rel="noopener">'
               + '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">'
               + '<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.6 3 2.6 15 0 18M12 3c-2.6 3-2.6 15 0 18"/></svg>'
-              + '<span>크롬으로 열어서 앱 설치하기</span></a>'
+              + '<span>' + btnLabel + '</span></a>'
             : '')
       +   (steps || '')
       +   '<button type="button" class="wl-b-ghost" data-wl-bridge-close="1">닫기 (그냥 웹으로 보기)</button>'
