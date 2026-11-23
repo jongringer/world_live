@@ -17,3 +17,6 @@ android/captures/
 # OS files
 .DS_Store
 Thumbs.db
+
+# 아이콘 생성 미리보기
+preview_icons.png
