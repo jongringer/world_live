@@ -17,7 +17,7 @@
     window.matchMedia('(display-mode: fullscreen)').matches ||
     window.matchMedia('(display-mode: minimal-ui)').matches ||
     navigator.standalone === true ||
-    (typeof window.Capacitor !== 'undefined' && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
+    (typeof window.Capacitor !== 'undefined');   // Capacitor APK 안에서는 설치 버튼이 필요 없음
 
   const isIOS = () => /iphone|ipad|ipod/i.test(navigator.userAgent);
   const isMobile = () => /android|iphone|ipad|ipod|mobile/i.test(navigator.userAgent);
