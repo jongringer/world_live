@@ -116,6 +116,8 @@
     if (old) old.remove();
   }
 
+  /* 안내 바는 '고정 오버레이'가 아니라 문서 흐름(normal flow) 속 한 줄 띠입니다.
+     상단 바와 타일 그리드 사이에 끼워 넣어, 어떤 타일도 가리지 않고 터치도 막지 않습니다. */
   function buildBanner(info) {
     removeBanner();
     const isKakao = info.key === 'kakao';
@@ -123,48 +125,35 @@
     const intent = info.android ? chromeIntent(location.href) : '';
     const ext = (!info.android && info.ios && isKakao) ? kakaoExternal(location.href) : '';
     const primaryHref = intent || ext;
-
-    const btnLabel = info.ios ? 'Safari로 열어서 앱 설치하기' : '크롬으로 열어서 앱 설치하기';
-    const browserName = info.ios ? 'Safari' : '크롬';
-
-    let steps = '';
-    if (info.ios) {
-      steps = '<ol class="wl-b-steps">'
-        + '<li><b>' + (isKakao ? '오른쪽 위 ⋯' : '오른쪽 위 ⋯') + '</b> → <b>Safari로 열기</b></li>'
-        + '<li>Safari 아래 <b>공유</b> → <b>홈 화면에 추가</b></li>'
-        + '</ol>';
-    } else {
-      steps = '<p class="wl-b-hint">버튼이 안 열리면 오른쪽 위 <b>⋮</b> → <b>다른 브라우저로 열기</b> → <b>Chrome</b></p>';
-    }
+    const btnLabel = info.ios ? 'Safari로 열기' : '크롬으로 열기';
+    const sub = info.ios
+      ? '오른쪽 위 ⋯ → Safari로 열기 → 공유 → 홈 화면에 추가'
+      : (info.android ? '한 번만 설치하면 홈 화면 아이콘으로 앱처럼 열립니다' : '다른 브라우저(크롬)로 열면 앱으로 설치됩니다');
 
     const el = document.createElement('div');
     el.id = 'wl-bridge';
     el.className = 'wl-bridge' + (info.ios ? ' is-ios' : '');
-    el.setAttribute('role', 'dialog');
-    el.setAttribute('aria-modal', 'true');
-    el.setAttribute('aria-labelledby', 'wl-bridge-title');
+    el.setAttribute('role', 'region');
+    el.setAttribute('aria-label', appName + ' 안내');
     el.innerHTML =
-        '<div class="wl-b-scrim" data-wl-bridge-close="1"></div>'
-      + '<div class="wl-b-card">'
-      +   '<div class="wl-b-tag"><span class="wl-b-dot"></span>' + appName + ' 안에서 열렸습니다</div>'
-      +   '<h2 class="wl-b-title" id="wl-bridge-title">' + appName + '에서는<br>앱 설치가 제한됩니다</h2>'
-      +   '<p class="wl-b-desc">아래 버튼을 누르면 <b>' + browserName + '</b>에서 열리고, 한 번만 설치하면<br>홈 화면 아이콘으로 앱처럼 바로 쓸 수 있습니다.</p>'
-      +   (primaryHref
-            ? '<a class="wl-b-primary" id="wl-b-open" href="' + primaryHref + '"'
-              + ' data-intent="' + (intent || '') + '" rel="noopener">'
-              + '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">'
-              + '<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.6 3 2.6 15 0 18M12 3c-2.6 3-2.6 15 0 18"/></svg>'
-              + '<span>' + btnLabel + '</span></a>'
+        '<span class="wl-b-dot" aria-hidden="true"></span>'
+      + '<div class="wl-b-text">'
+      +   '<b>' + appName + ' 안에서는 앱 설치가 제한됩니다</b>'
+      +   '<span>' + sub + '</span>'
+      + '</div>'
+      + (primaryHref
+            ? '<a class="wl-b-go" id="wl-b-open" href="' + primaryHref + '"'
+              + ' data-intent="' + (intent || '') + '" rel="noopener">' + btnLabel + '</a>'
             : '')
-      +   (steps || '')
-      +   '<button type="button" class="wl-b-ghost" data-wl-bridge-close="1">닫기 (그냥 웹으로 보기)</button>'
-      + '</div>';
-    document.body.appendChild(el);
-    document.body.classList.add('has-bridge');
+      + '<button type="button" class="wl-b-x" data-wl-bridge-close="1" aria-label="안내 닫기">✕</button>';
+
+    // 상단 바 바로 아래(문서 흐름)에 넣는다 — 타일을 덮지 않음
+    const stage = document.getElementById('stage');
+    if (stage && stage.parentNode) stage.parentNode.insertBefore(el, stage);
+    else document.body.appendChild(el);
 
     el.addEventListener('click', function (e) {
-      const a = e.target.closest && e.target.closest('#wl-b-open');
-      if (a) { store.set(K_CLOSED, '1'); return; }             // 버튼을 눌렀으면 배너는 역할을 다함
+      if (e.target.closest && e.target.closest('#wl-b-open')) { store.set(K_CLOSED, '1'); return; }
       if (e.target.closest && e.target.closest('[data-wl-bridge-close]')) closeBanner();
     });
     return el;
@@ -172,11 +161,12 @@
 
   function closeBanner() {
     store.set(K_CLOSED, '1');
-    document.body.classList.remove('has-bridge');
     removeBanner();
   }
 
   /* ── 5. 크롬에서 from=kakao 로 도착했을 때 설치 버튼 강조 ── */
+  /* 크롬에서 ?from=kakao 로 도착했을 때 — 영상(타일)을 가리는 상자를 띄우지 않습니다.
+     상단 '앱 설치' 버튼만 골드로 맥동하고, 안내는 2.6초짜리 하단 토스트 한 줄로 끝냅니다. */
   function markChromeArrival() {
     if (!fromKakao) return;
     document.body.classList.add('from-kakao');
@@ -184,22 +174,7 @@
     if (btn) btn.classList.add('install-cta');
     if (store.get(K_HINT) === '1') return;
     store.set(K_HINT, '1');
-    setTimeout(showHandoffHint, 700);
-  }
-
-  function showHandoffHint() {
-    if (document.getElementById('wl-chrome-hint') || isStandalone()) return;
-    const el = document.createElement('div');
-    el.id = 'wl-chrome-hint';
-    el.className = 'wl-chrome-hint';
-    el.innerHTML = '<b>크롬에서 열렸습니다</b>'
-      + '<span>위쪽 <b>앱 설치</b>를 누르면 홈 화면에 앱으로 설치됩니다.</span>'
-      + '<button type="button" aria-label="닫기">×</button>';
-    document.body.appendChild(el);
-    el.addEventListener('click', e => {
-      if (e.target.tagName === 'BUTTON' || e.target === el) el.remove();
-    });
-    setTimeout(() => { if (el.parentNode) el.remove(); }, 15000);
+    // 영상 위에 아무것도 띄우지 않습니다. (상단 '앱 설치' 버튼만 골드로 맥동)
   }
 
   /* ── 6. 설치 버튼 · 툴팁 ────────────────────────────────── */
@@ -253,7 +228,7 @@
     if (!detected.inApp) { removeBanner(); document.body.classList.remove('has-bridge'); return detected; }
     if (store.get(K_CLOSED) === '1') return detected;
     buildBanner(detected);
-    hideBtn();                                  // 인앱 브라우저에서는 설치 버튼 대신 배너
+    hideBtn();                                  // 인앱 브라우저에서는 설치 버튼 대신 안내 바
     if (o.auto !== false) setTimeout(() => autoEscape(detected), 30);
     return detected;
   }
@@ -283,8 +258,6 @@
     hideBtn();
     document.body.classList.remove('from-kakao');
     if (btn) btn.classList.remove('install-cta');
-    const h = document.getElementById('wl-chrome-hint');
-    if (h) h.remove();
     if (typeof window.toast === 'function') window.toast('홈 화면에 앱이 설치되었습니다');
   });
 

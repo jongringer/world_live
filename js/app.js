@@ -339,6 +339,7 @@ window.addEventListener('message', function (e) {
   if (d.event === 'onReady') {
     const muted = state.muted || state.audioId !== L.ch.id;
     ytCmd(slot, muted ? 'mute' : 'unMute');
+    if (!muted) armSoundUnlock();          // 모바일이 소리를 막으면 첫 터치에서 켠다
     setTimeout(() => ytCmd(slot, 'playVideo'), 300);
   }
   if (d.event === 'onError') {
@@ -450,7 +451,10 @@ function mountSlot(i) {
 
   if (ch.kind === 'youtube' || ch.kind === 'youtube-video') {
     const params = new URLSearchParams({
-      autoplay: '1', mute: muted ? '1' : '0', controls: '0', rel: '0',
+      /* 자동재생은 '음소거' 상태에서만 허용됩니다(mute=0&autoplay=1 은 모바일·데스크톱 모두 차단).
+         그래서 모든 유튜브 타일은 mute=1 로 먼저 띄워 '바로 재생'되게 하고,
+         음성 채널은 onReady 에서 unMute 를 시도, 막히면 첫 터치에서 소리를 켭니다(armSoundUnlock). */
+      autoplay: '1', mute: '1', controls: '0', rel: '0',
       modestbranding: '1', playsinline: '1', disablekb: '1', fs: '0',
       iv_load_policy: '3', enablejsapi: '1', loop: '0'
     });
@@ -2367,6 +2371,40 @@ window.WORLD_LIVE = {
   srcCount: () => srcEntries.length
 };
 
+/* ── 첫 화면 오디오 폴백 ────────────────────────────────────────
+   기본 청취 채널(YTN)이 첫 화면에서 8초 안에 재생 상태(playerState=1)에
+   이르지 못하면 — 모바일 자동재생 정책·임베드 지연·방송측 일시 장애 등 —
+   같은 화면의 다음 한국 채널(연합뉴스TV)로 소리를 넘깁니다.
+   · 사용자가 그전에 타일을 눌러 직접 고른 경우에는 건드리지 않습니다.
+   · YTN이 정상 재생되면 아무 것도 하지 않습니다. */
+let audioFallbackArmed = false;
+function armAudioFallback() {
+  if (audioFallbackArmed) return;
+  audioFallbackArmed = true;
+  if (state.audioId !== 'ytn24') return;
+  const picked = state.selSlot;
+  const startedAt = Date.now();
+  const check = () => {
+    if (state.audioId !== 'ytn24' || state.selSlot !== picked) return;   // 사용자가 바꿈
+    const ids = slotIds();
+    const at = ids.indexOf('ytn24');
+    if (at < 0) return;
+    const L = live[at];
+    const ch = L && L.ch;
+    const isYt = ch && (ch.kind === 'youtube' || ch.kind === 'youtube-video');
+    const ok = isYt
+      ? (L.ps === 1)
+      : !!(L && L.video && L.video.readyState >= 2 && !L.video.paused);
+    if (ok) return;                                   // 정상 재생 — 폴백 불필요
+    if (Date.now() - startedAt < 8000) { setTimeout(check, 1200); return; }
+    const alt = ids.indexOf('yonhap24');
+    if (alt < 0) return;
+    selectSlot(alt);
+    toast('YTN이 지연되어 연합뉴스TV 소리로 전환했습니다 — YTN 타일을 누르면 다시 YTN 소리');
+  };
+  setTimeout(check, 3000);
+}
+
 /* ── boot ──────────────────────────────────────────────────── */
 function boot() {
   /* 캐시된 옛 channels.js가 먼저 도착한 경우 — 저장소에 표시된 빌드가 없으니
@@ -2400,6 +2438,7 @@ function boot() {
   applyLayout(state.layout, false);
   rebuildGrid();
   applyAudio();
+  armAudioFallback();
   tickClocks();
   setInterval(tickClocks, 1000);
 }

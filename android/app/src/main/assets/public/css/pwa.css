@@ -125,179 +125,105 @@
 
 
 /* ═══════════════════════════════════════════════════════════════
-   인앱 브라우저(카카오톡·네이버·인스타그램 등) → 크롬 안내 배너
-   · 앱 안에서는 '앱 설치'가 막히므로 크롬으로 넘어가는 길을 크게 안내합니다.
-   · 일반 크롬·PC에서는 이 배너가 만들어지지 않습니다.
+   인앱 브라우저(카카오톡·네이버·인스타그램 등) → 크롬 안내 바
+   · 카카오톡 등 '앱 안의 브라우저'에서만 만들어집니다(일반 크롬·PC는 없음).
+   · position:fixed 오버레이가 아니라 상단 바와 타일 사이의 '문서 흐름' 한 줄 띠입니다.
+     → 1번 칸 YTN을 포함한 어떤 타일도 가리지 않고, 터치·재생을 막지 않습니다.
+   · ?from=kakao 로 크롬에 도착했을 때는 영상 위에 아무 것도 띄우지 않고
+     상단 '앱 설치' 버튼만 골드로 맥동합니다.
    ═══════════════════════════════════════════════════════════════ */
-body.has-bridge { overflow: hidden; }
 
 .wl-bridge {
-  position: fixed;
-  inset: 0;
-  z-index: 240;
+  position: relative;            /* 문서 흐름 — 화면을 덮지 않음 */
+  flex: 0 0 auto;
+  z-index: 2;
   display: flex;
-  align-items: flex-end;
-  justify-content: center;
-}
-.wl-b-scrim {
-  position: absolute;
-  inset: 0;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 14px;
+  border-bottom: 1px solid rgba(245, 229, 192, 0.22);
   background:
-    radial-gradient(120% 80% at 50% 100%, rgba(12, 24, 40, 0.92), rgba(3, 6, 11, 0.86) 70%);
-  -webkit-backdrop-filter: blur(4px);
-  backdrop-filter: blur(4px);
-}
-.wl-b-card {
-  position: relative;
-  width: min(480px, 100%);
-  padding: 22px 20px calc(18px + env(safe-area-inset-bottom, 0px));
-  border-radius: 22px 22px 0 0;
-  border: 1px solid rgba(245, 229, 192, 0.38);
-  border-bottom: 0;
-  background:
-    radial-gradient(420px 160px at 100% 0%, rgba(212, 175, 55, 0.22), transparent 68%),
-    linear-gradient(180deg, rgba(23, 33, 50, 0.99), rgba(9, 15, 25, 0.995));
-  box-shadow: 0 -20px 60px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.16);
+    radial-gradient(420px 90px at 6% 0%, rgba(212, 175, 55, 0.16), transparent 70%),
+    linear-gradient(180deg, rgba(24, 34, 52, 0.97), rgba(12, 19, 31, 0.99));
   color: #EAF2FC;
   font-family: Pretendard, "Pretendard Variable", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
-  text-align: center;
-  animation: wlBridgeUp 0.34s cubic-bezier(0.22, 0.9, 0.2, 1);
+  line-height: 1.35;
   word-break: keep-all;
+  animation: wlBarIn 0.24s ease-out;
 }
-@keyframes wlBridgeUp {
-  from { transform: translateY(26px); opacity: 0; }
-  to   { transform: translateY(0);    opacity: 1; }
-}
-.wl-b-card::before {          /* 카드 위쪽 골드 라인 */
-  content: "";
-  position: absolute;
-  left: 22px; right: 22px; top: 0;
-  height: 2px;
-  border-radius: 2px;
-  background: linear-gradient(90deg, transparent, rgba(255, 214, 120, 0.9), transparent);
-}
-.wl-b-tag {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  margin-bottom: 12px;
-  padding: 5px 12px;
-  border-radius: 999px;
-  border: 1px solid rgba(255, 214, 120, 0.42);
-  background: rgba(255, 214, 120, 0.10);
-  color: #FFDF9B;
-  font-size: 11.5px;
-  font-weight: 800;
-  letter-spacing: 0.02em;
-}
+@keyframes wlBarIn { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: none; } }
+
 .wl-b-dot {
+  flex: 0 0 auto;
   width: 6px; height: 6px;
   border-radius: 50%;
   background: #FFD36B;
   box-shadow: 0 0 7px rgba(255, 211, 107, 0.95);
   animation: wlInstallPulse 1.8s ease-in-out infinite;
 }
-.wl-b-title {
-  margin: 0 0 10px;
-  font-size: 22px;
-  line-height: 1.34;
-  font-weight: 800;
-  letter-spacing: -0.02em;
-  color: #FFFFFF;
-  text-shadow: 0 2px 14px rgba(0, 0, 0, 0.45);
-}
-.wl-b-desc {
-  margin: 0 0 18px;
-  font-size: 14px;
-  line-height: 1.62;
-  color: #C7D5E8;
-}
-.wl-b-desc b { color: #FFE1A3; font-weight: 800; }
-
-.wl-b-primary {
+.wl-b-text {
+  flex: 1 1 auto;
+  min-width: 0;
   display: flex;
+  flex-direction: column;
+  gap: 1px;
+  text-align: left;
+}
+.wl-b-text b {
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: -0.015em;
+  color: #FFFFFF;
+}
+.wl-b-text span {
+  font-size: 11.5px;
+  color: #C0CFE3;
+  letter-spacing: -0.01em;
+}
+.wl-b-go {
+  flex: 0 0 auto;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 9px;
-  width: 100%;
-  min-height: 56px;
-  padding: 12px 16px;
-  border-radius: 12px;
+  height: 32px;
+  padding: 0 13px;
+  border-radius: 8px;
   border: 1px solid rgba(255, 236, 178, 0.85);
-  background:
-    linear-gradient(180deg, #FFE9A8 0%, #F5C24B 45%, #D99A1C 100%);
-  box-shadow:
-    0 10px 26px -8px rgba(217, 154, 28, 0.85),
-    inset 0 1px 0 rgba(255, 252, 236, 0.9);
+  background: linear-gradient(180deg, #FFE9A8 0%, #F5C24B 45%, #D99A1C 100%);
+  box-shadow: 0 6px 16px -8px rgba(217, 154, 28, 0.9), inset 0 1px 0 rgba(255, 252, 236, 0.9);
   color: #2A1B02;
-  font-size: 16px;
+  font-size: 12.5px;
   font-weight: 900;
   letter-spacing: -0.02em;
   text-decoration: none;
+  white-space: nowrap;
   -webkit-tap-highlight-color: transparent;
 }
-.wl-b-primary:active { transform: translateY(1px); filter: brightness(0.96); }
-.wl-b-primary svg { width: 21px; height: 21px; flex: none; }
-
-.wl-b-steps {
-  margin: 0 0 16px;
-  padding: 12px 14px 12px 30px;
-  border-radius: 10px;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  background: rgba(255, 255, 255, 0.05);
-  text-align: left;
-  font-size: 13.5px;
-  line-height: 1.75;
-  color: #DCE7F6;
-}
-.wl-b-steps b { color: #FFE1A3; }
-.wl-b-hint {
-  margin: 12px 0 0;
-  font-size: 12px;
-  line-height: 1.6;
-  color: #9FB0C6;
-}
-.wl-b-hint b { color: #D8E4F4; }
-.wl-b-ghost {
-  margin-top: 12px;
-  width: 100%;
-  min-height: 46px;
-  border-radius: 11px;
-  border: 1px solid rgba(255, 255, 255, 0.20);
+.wl-b-go:active { filter: brightness(0.96); }
+.wl-b-x {
+  flex: 0 0 auto;
+  width: 30px; height: 30px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
   background: rgba(255, 255, 255, 0.05);
   color: #C9D6E6;
   font: inherit;
-  font-size: 14px;
-  font-weight: 700;
+  font-size: 12.5px;
+  line-height: 1;
   cursor: pointer;
 }
-.wl-b-ghost:active { background: rgba(255, 255, 255, 0.11); }
+.wl-b-x:active { background: rgba(255, 255, 255, 0.12); }
 
-/* 가로 화면(폰을 눕힘) — 배너가 화면을 다 덮지 않게 */
-@media (orientation: landscape) and (max-height: 520px) {
-  .wl-bridge { align-items: center; }
-  .wl-b-card {
-    width: min(560px, calc(100% - 28px));
-    border-radius: 18px;
-    border-bottom: 1px solid rgba(245, 229, 192, 0.38);
-    padding: 16px 18px;
-  }
-  .wl-b-title { font-size: 18px; }
-  .wl-b-desc { margin-bottom: 12px; font-size: 13px; }
-  .wl-b-primary { min-height: 48px; font-size: 15px; }
-  .wl-b-ghost { min-height: 40px; }
-}
-/* 데스크톱에서 강제로 열어 볼 때(검증·시뮬레이션) */
-@media (min-width: 720px) and (min-height: 560px) {
-  .wl-bridge { align-items: center; }
-  .wl-b-card {
-    border-radius: 20px;
-    border: 1px solid rgba(245, 229, 192, 0.38);
-    padding: 26px 26px 22px;
-  }
+/* 좁은 화면(스마트폰): 설명 줄을 숨겨 딱 한 줄로 */
+@media (max-width: 560px) {
+  .wl-bridge { gap: 8px; padding: 6px 10px; }
+  .wl-b-text b { font-size: 12px; }
+  .wl-b-text span { display: none; }
+  .wl-b-go { height: 30px; padding: 0 11px; font-size: 11.5px; }
+  .wl-b-x { width: 28px; height: 28px; font-size: 11.5px; }
 }
 
-/* 크롬에서 from=kakao 로 도착 — 설치 버튼 강조 + 도착 안내 */
+/* 크롬에서 from=kakao 로 도착 — 설치 버튼만 골드로 맥동(영상 위에 아무 것도 없음) */
 .icon-btn.install-btn.install-cta {
   color: #FFF6DA;
   border-color: rgba(255, 231, 168, 0.95);
@@ -307,46 +233,4 @@ body.has-bridge { overflow: hidden; }
 @keyframes wlInstallCta {
   0%, 100% { box-shadow: 0 0 0 0 rgba(255, 211, 107, 0.55), inset 0 1px 0 rgba(255, 250, 232, 0.5); }
   50%      { box-shadow: 0 0 0 7px rgba(255, 211, 107, 0.0), inset 0 1px 0 rgba(255, 250, 232, 0.7); }
-}
-
-.wl-chrome-hint {
-  position: fixed;
-  z-index: 95;
-  right: 14px;
-  top: calc(var(--topbar-h, 56px) + 10px);
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-  max-width: min(340px, calc(100vw - 24px));
-  padding: 12px 40px 12px 14px;
-  border-radius: 11px;
-  border: 1px solid rgba(255, 214, 120, 0.55);
-  background: linear-gradient(180deg, rgba(24, 34, 52, 0.98), rgba(10, 16, 26, 0.99));
-  box-shadow: 0 16px 36px -12px rgba(0, 0, 0, 0.85);
-  color: #E9F1FB;
-  font-size: 12.5px;
-  line-height: 1.55;
-  word-break: keep-all;
-  animation: wlBridgeUp 0.3s ease-out;
-}
-.wl-chrome-hint b { color: #FFD978; font-size: 13px; }
-.wl-chrome-hint span b { color: #FFE9A8; font-size: inherit; }
-.wl-chrome-hint > button {
-  position: absolute;
-  top: 6px; right: 6px;
-  width: 26px; height: 26px;
-  border: 0;
-  border-radius: 7px;
-  background: transparent;
-  color: #9FB0C6;
-  font-size: 17px;
-  line-height: 1;
-  cursor: pointer;
-}
-@media (orientation: portrait), (max-aspect-ratio: 1/1) {
-  .wl-chrome-hint {
-    left: 12px; right: 12px;
-    top: calc(var(--topbar-h, 56px) + 8px);
-    max-width: none;
-  }
 }
