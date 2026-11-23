@@ -180,6 +180,7 @@
   function markChromeArrival() {
     if (!fromKakao) return;
     document.body.classList.add('from-kakao');
+    if (!isStandalone()) showBtn();          // 안내한 대로 바로 누를 수 있게 버튼을 먼저 보여 줍니다
     if (btn) btn.classList.add('install-cta');
     if (store.get(K_HINT) === '1') return;
     store.set(K_HINT, '1');
