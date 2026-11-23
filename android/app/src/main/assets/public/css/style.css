@@ -1436,3 +1436,167 @@ body.is-native-full .grid[data-layout="1"] .tile {
   aspect-ratio: 16 / 9 !important;
   transform: none !important;
 }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   MOBILE WEB DOUBLE-TAP CINEMA — 16:9 클린 풀화면
+   스마트폰 브라우저에서 타일을 더블 터치하면 진입한다.
+   · 상·하단 바·타일 배지·버튼·탤리 링·토스트 전부 숨김 (100% 클린)
+   · 세로 모드 : 가운데 16:9 꽉 차게 + 상하 검은 레터박스
+   · 가로 모드 : 화면 폭에 꽉 찬 16:9
+   · 레이아웃(state.layout)은 건드리지 않고 보던 타일만 확대 → 영상 재로딩 없음
+   ═══════════════════════════════════════════════════════════════════════ */
+.tile, .tile-hit { touch-action: manipulation; }   /* 더블 탭 줌만 끄고 스크롤·핀치는 그대로 */
+
+body.is-cinema {
+  position: fixed !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  overflow: hidden !important;
+  background: #000 !important;
+  overscroll-behavior: none;
+}
+body.is-cinema .topbar,
+body.is-cinema .signal-strip,
+body.is-cinema .toast-wrap,
+body.is-cinema .modal-root,
+body.is-cinema .preview-root { display: none !important; }
+
+body.is-cinema .stage {
+  position: fixed !important;
+  inset: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  height: 100dvh !important;
+  max-width: none !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  overflow: hidden !important;
+  background: #000 !important;
+  scroll-snap-type: none !important;
+}
+body.is-cinema .grid,
+body.is-cinema .grid[data-layout] {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  height: 100dvh !important;
+  max-width: none !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  gap: 0 !important;
+  grid-template-columns: none !important;
+  grid-template-rows: none !important;
+  overflow: visible !important;
+  background: transparent !important;
+}
+body.is-cinema .grid .tile { display: none !important; }
+body.is-cinema .grid .tile.is-cinema-target {
+  display: block !important;
+  position: relative !important;
+  flex: 0 0 auto !important;
+  width: min(100vw, calc(100dvh * 16 / 9)) !important;
+  height: min(100dvh, calc(100vw * 9 / 16)) !important;
+  min-width: 0 !important;
+  max-width: none !important;
+  max-height: none !important;
+  aspect-ratio: 16 / 9 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  transform: none !important;
+  background: #000 !important;
+  overflow: hidden !important;
+  scroll-snap-align: none !important;
+}
+body.is-cinema .grid .tile.is-cinema-target::before { content: none !important; }
+body.is-cinema .grid .tile.is-cinema-target .tlay-top,
+body.is-cinema .grid .tile.is-cinema-target .tlay-ctrl,
+body.is-cinema .grid .tile.is-cinema-target .chan-switch,
+body.is-cinema .grid .tile.is-cinema-target .chan-tag,
+body.is-cinema .grid .tile.is-cinema-target .live-badge,
+body.is-cinema .grid .tile.is-cinema-target .tally-ring,
+body.is-cinema .grid .tile.is-cinema-target .tile-veil,
+body.is-cinema .grid .tile.is-cinema-target .idle-face {
+  display: none !important;
+  opacity: 0 !important;
+}
+body.is-cinema .grid .tile.is-cinema-target .tile-media {
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  background: #000 !important;
+}
+body.is-cinema .grid .tile.is-cinema-target .tile-media iframe,
+body.is-cinema .grid .tile.is-cinema-target .tile-media video {
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  border: 0 !important;
+  object-fit: contain !important;
+  background: #000 !important;
+}
+
+/* 시네마 HUD — 한 번 터치하면 잠깐 나타났다가 사라진다 */
+.cinema-hud { position: fixed; inset: 0; z-index: 95; display: none; pointer-events: none; }
+body.is-cinema .cinema-hud.is-on { display: block; }
+.cinema-hud .chud-top {
+  position: absolute;
+  top: calc(env(safe-area-inset-top, 0px) + 12px);
+  left: calc(env(safe-area-inset-left, 0px) + 12px);
+  right: calc(env(safe-area-inset-right, 0px) + 12px);
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+}
+.cinema-hud .chud-ident {
+  display: inline-flex; align-items: center; gap: 8px;
+  min-width: 0; max-width: calc(100% - 62px);
+  padding: 8px 13px; border-radius: 999px;
+  background: rgba(8, 12, 18, 0.8);
+  border: 1px solid rgba(245, 229, 192, 0.24);
+  box-shadow: 0 6px 22px rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(10px) saturate(140%);
+  color: #F1F5F9; font-size: 12px; font-weight: 700; letter-spacing: -0.01em;
+}
+.cinema-hud .chud-live {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-family: var(--mono); font-size: 8.5px; font-weight: 800; letter-spacing: 0.08em;
+  color: #FF3B4E;
+}
+.cinema-hud .chud-live i {
+  width: 5px; height: 5px; border-radius: 50%; background: #FF3B4E;
+  box-shadow: 0 0 8px rgba(255, 59, 78, 0.95);
+}
+.cinema-hud .chud-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cinema-hud .chud-close {
+  pointer-events: auto;
+  width: 42px; height: 42px; flex: 0 0 42px;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 50%;
+  border: 1px solid rgba(245, 229, 192, 0.32);
+  background: rgba(8, 12, 18, 0.84);
+  color: #F5E5C0;
+  box-shadow: 0 6px 22px rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(10px) saturate(140%);
+}
+.cinema-hud .chud-close svg { width: 15px; height: 15px; }
+.cinema-hud .chud-close:active { background: rgba(212, 175, 55, 0.32); }
+.cinema-hud .chud-hint {
+  position: absolute;
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 14px);
+  left: 50%; transform: translateX(-50%);
+  padding: 7px 13px; border-radius: 999px;
+  background: rgba(8, 12, 18, 0.74);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: rgba(226, 232, 240, 0.88);
+  font-size: 10.5px; font-weight: 600; letter-spacing: -0.01em;
+  white-space: nowrap; backdrop-filter: blur(8px);
+}

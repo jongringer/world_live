@@ -643,6 +643,7 @@ function isPortrait() {
 }
 
 function sizeGrid() {
+  if (isCinema()) return;              // 시네마(16:9 클린 풀화면)는 CSS가 배치를 고정한다
   if (isPortrait()) {
     grid.style.width = '100%';
     grid.style.height = 'auto';
@@ -1352,6 +1353,8 @@ function openExternal(i) {
   window.open(url, '_blank', 'noopener');
 }
 function showBig(i, fromDbl) {
+  // 모바일 브라우저의 돋보기(타일 최대화) 버튼도 같은 16:9 클린 시네마로
+  if (isMobileWeb() && !isCinema()) { enterCinema(i); return; }
   showBigChannel(slotChannel(i), !!fromDbl, false);
 }
 /* 오디오로 듣고 있는 채널(없으면 현재 1번 칸) */
@@ -1440,6 +1443,91 @@ function restoreAfterDblFull() {
   applyLayout(back);
   toast('이전 화면으로 복귀 — ' + (START_NAMES[back] || back));
 }
+
+/* ── 모바일 웹 더블 터치 — 16:9 클린 시네마(풀화면) ──────────────
+   스마트폰 브라우저에서 채널 타일을 더블 터치하면 상·하단 바·배지·버튼이
+   모두 사라진 16:9 클린 풀화면으로 들어간다.
+   · Fullscreen API는 ‘시도’만 한다(Chrome Android). 거부되거나(iOS Safari)
+     화면비가 깨져도 100vw×100dvh 검은 배경 위 16:9 중앙 오버레이로 항상 뜬다.
+   · 레이아웃(state.layout)은 건드리지 않고 보던 타일만 확대하므로
+     영상이 새로 로드되지 않고 그 자리에서 커진다. */
+const CINEMA = { active: false, slot: -1, pushed: false, scroll: 0, hudTimer: null, ignorePop: false, fsSuppress: false };
+
+/* 스마트폰·태블릿 브라우저인가 (APK 네이티브는 기존 경로를 그대로 쓴다) */
+function isMobileWeb() {
+  if (typeof window.AndroidNative !== 'undefined') return false;
+  const ua = navigator.userAgent || '';
+  if (/Android|iPhone|iPad|iPod|Mobile/i.test(ua)) return true;
+  return navigator.maxTouchPoints > 0 && window.matchMedia('(pointer: coarse)').matches;
+}
+function isCinema() { return CINEMA.active; }
+function requestPageFullscreen() {
+  const el = document.documentElement;
+  const fn = el.requestFullscreen || el.webkitRequestFullscreen;
+  if (!fn) return;
+  try {
+    const p = fn.call(el, { navigationUI: 'hide' });
+    if (p && p.catch) p.catch(() => {});
+  } catch (e) {}
+}
+function showCinemaHud(ms) {
+  if (!CINEMA.active) return;
+  const hud = $('#cinema-hud');
+  const nm = $('#cinema-name');
+  if (nm) nm.textContent = (slotChannel(CINEMA.slot) || {}).name || '채널';
+  if (hud) hud.classList.add('is-on');
+  clearTimeout(CINEMA.hudTimer);
+  CINEMA.hudTimer = setTimeout(hideCinemaHud, ms || 2800);
+}
+function hideCinemaHud() {
+  clearTimeout(CINEMA.hudTimer);
+  CINEMA.hudTimer = null;
+  const hud = $('#cinema-hud');
+  if (hud) hud.classList.remove('is-on');
+}
+function enterCinema(slot) {
+  if (CINEMA.active) return;
+  const el = grid.querySelector('.tile[data-slot="' + slot + '"]');
+  const ch = slotChannel(slot);
+  if (!el || !ch) return;
+  if (ch.kind === 'web') { toast(ch.name + ' — 공식 사이트에서만 재생됩니다'); return; }
+  CINEMA.active = true;
+  CINEMA.slot = slot;
+  CINEMA.fsSuppress = false;
+  CINEMA.scroll = stage.scrollTop;            // 클래스 적용 전에 스크롤 위치를 기억
+  document.body.classList.add('is-cinema');
+  grid.querySelectorAll('.tile').forEach(t => t.classList.toggle('is-cinema-target', t === el));
+  try { history.pushState({ worldliveCinema: 1 }, ''); CINEMA.pushed = true; } catch (e) { CINEMA.pushed = false; }
+  showCinemaHud(2400);                        // 진입 직후 2.4초 안내 → 곧 완전 클린
+  requestPageFullscreen();
+  if (navigator.vibrate) { try { navigator.vibrate(12); } catch (e) {} }
+  setTimeout(sizeGridSafe, 60);
+}
+function exitCinema(opts) {
+  opts = opts || {};
+  if (!CINEMA.active) return;
+  const wasPushed = CINEMA.pushed;
+  const backTo = CINEMA.scroll;
+  CINEMA.active = false;
+  CINEMA.pushed = false;
+  hideCinemaHud();
+  document.body.classList.remove('is-cinema');
+  grid.querySelectorAll('.tile.is-cinema-target').forEach(t => t.classList.remove('is-cinema-target'));
+  if (document.fullscreenElement) {
+    CINEMA.fsSuppress = true;                 // 우리가 뺀 전체화면 이벤트는 무시
+    try { document.exitFullscreen().catch(() => {}); } catch (e) {}
+  }
+  if (wasPushed && !opts.fromPop) {
+    CINEMA.ignorePop = true;                  // 우리가 부른 history.back()의 popstate 무시
+    try { history.back(); } catch (e) { CINEMA.ignorePop = false; }
+  }
+  setTimeout(() => {
+    try { stage.scrollTop = backTo; } catch (e) {}
+    try { sizeGrid(); } catch (e) {}
+  }, 40);
+  if (!opts.silent) toast('분할 화면으로 복귀');
+}
+function sizeGridSafe() { try { sizeGrid(); } catch (e) {} }
 
 /* ── drag & drop: 타일 채널 자리 바꾸기 ────────────────────────
    HTML5 draggable은 iframe·video 위에서 먹통이 되므로, 투명 인터셉트
@@ -1612,6 +1700,11 @@ function bindEvents() {
   grid.addEventListener('pointerdown', onTilePointerDown);
   grid.addEventListener('click', e => {
     if (Date.now() < suppressClickUntil) return;               // 드래그 직후의 click 무시
+    // 시네마(16:9 클린 풀화면): 한 번 터치 = HUD(닫기·채널명) 잠깐 표시
+    if (isCinema()) {
+      if (!e.target.closest('[data-cinema-close]')) showCinemaHud(2800);
+      return;
+    }
     const t = e.target.closest('.tile'); if (!t) return;
     const i = parseInt(t.dataset.slot, 10);
     const actBtn = e.target.closest('[data-act]');
@@ -1641,23 +1734,42 @@ function bindEvents() {
     }
   });
   grid.addEventListener('dblclick', e => {
+    if (Date.now() < suppressClickUntil) return;
+    // 모바일 브라우저 = 16:9 클린 시네마 / 데스크톱 = 기존 1×1 + FULL
+    if (isCinema()) { exitCinema(); return; }
     const t = e.target.closest('.tile'); if (!t) return;
-    showBig(parseInt(t.dataset.slot, 10), true);       // 1×1 + FULL, ESC → 이전 화면
+    const i = parseInt(t.dataset.slot, 10);
+    if (isMobileWeb()) { enterCinema(i); return; }
+    showBig(i, true);                                  // 1×1 + FULL, ESC → 이전 화면
   });
 
-  /* ── Mobile Touch Gestures: Double Tap & Pinch-Out/In ────────────────
-     9:16 모바일/세로 화면에서 더블 탭 또는 핀치 아웃 시 풀화면 회전 확대,
-     풀화면에서 더블 탭 또는 핀치 인 시 이전 4분할 스크롤 복귀 */
-  /* ── Mobile Touch Gestures: Double Tap, Pinch-Out/In & Long-Press Drag-to-Swap ──
-     1) 더블 탭 / 핀치 아웃: 16:9 가로 풀화면 회전 확대
-     2) 뒤로가기 / 더블 탭 / 핀치 인: 이전 분할 화면 복귀
-     3) 롱프레스(꾹 누르기 320ms): 손으로 눌러 소스 자리 바꾸기 (드래그 스왑) */
-  let lastTouchTime = 0;
-  let lastTouchSlot = -1;
+  /* ── Mobile Touch Gestures — 더블 터치 · 핀치 · 롱프레스 ──────────────
+     1) 더블 터치: touchend 기준, 같은 타일에서 320ms 이내 두 번째 탭
+        (이동 거리 26px 이내의 ‘탭’만 인정) → 16:9 클린 시네마 풀화면
+     2) 시네마에서 더블 터치 / 뒤로가기 / ESC / ✕ → 보던 분할 화면 복귀
+     3) 핀치 아웃/인: 확대·복귀 (기존 유지)
+     4) 롱프레스(320ms): 손으로 눌러 소스 자리 바꾸기 (기존 유지)
+     한 번 탭(오디오 선택)과 드래그·핀치가 서로 잡아먹지 않도록
+     탭 판정은 ‘손을 뗀 순간’의 이동 거리·시간으로만 한다. */
+  const DOUBLE_TAP_MS = 320;     // 두 탭 사이 최대 간격
+  const TAP_MAX_PX = 26;         // 탭으로 인정하는 최대 이동 거리
+  const TAP_MAX_MS = 700;        // 한 번 탭이 유지될 수 있는 최대 시간
+  let lastTapAt = 0;
+  let lastTapSlot = -1;
   let pinchStartDist = 0;
   let pinchTile = null;
 
+  /* 더블 터치로 큰 화면 열기 — 모바일 브라우저는 16:9 클린 시네마,
+     데스크톱은 기존 1×1 + FULL, 이미 1×1이면 분할 화면 복귀 */
+  function tapOpenBig(slot) {
+    if (isCinema()) return;
+    if (state.layout === '1') { restoreAfterDblFull(); return; }
+    if (isMobileWeb()) { enterCinema(slot); return; }
+    showBig(slot, true);
+  }
+
   let touchStartPos = { x: 0, y: 0 };
+  let touchStartAt = 0;
   let longPressTimer = null;
   let touchDragSlot = -1;
   let isTouchDragging = false;
@@ -1666,6 +1778,11 @@ function bindEvents() {
     const dx = t1.clientX - t2.clientX;
     const dy = t1.clientY - t2.clientY;
     return Math.sqrt(dx * dx + dy * dy);
+  }
+  function slotAt(node) {
+    if (isCinema()) return CINEMA.slot;
+    const t = node && node.closest ? node.closest('.tile') : null;
+    return t ? parseInt(t.dataset.slot, 10) : -1;
   }
 
   grid.addEventListener('touchstart', e => {
@@ -1677,45 +1794,30 @@ function bindEvents() {
       pinchTile = e.target.closest('.tile');
       return;
     }
-    // 1-finger: Double Tap or Long Press Drag
-    if (e.touches.length === 1) {
-      // 채널 변경 등 버튼 위 터치는 제스처/롱프레스 제외 (버튼 클릭 즉시 동작 보장)
-      if (e.target.closest('button, a, [data-act]')) return;
-      const touch = e.touches[0];
-      touchStartPos = { x: touch.clientX, y: touch.clientY };
-      const t = e.target.closest('.tile');
-      if (!t) return;
-      const slot = parseInt(t.dataset.slot, 10);
-      const now = Date.now();
+    // 1-finger: 탭(더블 터치) / 롱프레스
+    if (e.touches.length !== 1) return;
+    // 채널 변경 등 버튼 위 터치는 제스처/롱프레스 제외 (버튼 클릭 즉시 동작 보장)
+    if (e.target.closest('button, a, [data-act], [data-cinema-close]')) return;
+    const touch = e.touches[0];
+    touchStartPos = { x: touch.clientX, y: touch.clientY };
+    touchStartAt = Date.now();
+    if (isCinema()) return;                       // 시네마에서는 롱프레스 이동 없음
+    const t = e.target.closest('.tile');
+    if (!t) return;
+    const slot = parseInt(t.dataset.slot, 10);
 
-      // 더블 탭 검사 (320ms)
-      if (now - lastTouchTime < 320 && lastTouchSlot === slot) {
-        if (longPressTimer) { clearTimeout(longPressTimer); longPressTimer = null; }
-        e.preventDefault();
-        lastTouchTime = 0;
-        if (state.layout === '1') {
-          restoreAfterDblFull();
-        } else {
-          showBig(slot, true);
-        }
-        return;
-      }
-      lastTouchTime = now;
-      lastTouchSlot = slot;
-
-      // 롱프레스 (320ms 꾹 누르면 손으로 소스 위치 이동 활성화)
-      if (state.layout !== '1' && chCount() >= 2) {
-        if (longPressTimer) clearTimeout(longPressTimer);
-        longPressTimer = setTimeout(() => {
-          longPressTimer = null;
-          isTouchDragging = true;
-          touchDragSlot = slot;
-          t.classList.add('is-dragging');
-          document.body.classList.add('is-swapping');
-          if (navigator.vibrate) navigator.vibrate(60);
-          toast('채널 이동: 원하는 칸으로 끌어다 놓으세요');
-        }, 320);
-      }
+    // 롱프레스 (320ms 꾹 누르면 손으로 소스 위치 이동 활성화)
+    if (state.layout !== '1' && chCount() >= 2) {
+      if (longPressTimer) clearTimeout(longPressTimer);
+      longPressTimer = setTimeout(() => {
+        longPressTimer = null;
+        isTouchDragging = true;
+        touchDragSlot = slot;
+        t.classList.add('is-dragging');
+        document.body.classList.add('is-swapping');
+        if (navigator.vibrate) navigator.vibrate(60);
+        toast('채널 이동: 원하는 칸으로 끌어다 놓으세요');
+      }, 320);
     }
   }, { passive: false });
 
@@ -1723,15 +1825,15 @@ function bindEvents() {
     if (e.touches.length === 2 && pinchStartDist > 0) {
       const curDist = touchDist(e.touches[0], e.touches[1]);
       const ratio = curDist / pinchStartDist;
-      if (ratio > 1.32 && state.layout !== '1') {
+      if (ratio > 1.32 && !isCinema() && state.layout !== '1') {
         const t = pinchTile || e.target.closest('.tile');
         pinchStartDist = 0;
         pinchTile = null;
-        if (t) showBig(parseInt(t.dataset.slot, 10), true);
-      } else if (ratio < 0.72 && state.layout === '1') {
+        if (t) tapOpenBig(parseInt(t.dataset.slot, 10));
+      } else if (ratio < 0.72 && (isCinema() || state.layout === '1')) {
         pinchStartDist = 0;
         pinchTile = null;
-        restoreAfterDblFull();
+        if (isCinema()) exitCinema(); else restoreAfterDblFull();
       }
       return;
     }
@@ -1780,7 +1882,30 @@ function bindEvents() {
         if (navigator.vibrate) navigator.vibrate([40, 50, 40]);
         swapSlots(fromSlot, to);
       }
+      lastTapAt = 0;
+      lastTapSlot = -1;
+      return;
     }
+
+    // 더블 터치 판정 — 손을 뗀 순간의 이동 거리·시간으로만 탭을 센다
+    if (e.changedTouches.length !== 1 || e.touches.length > 0) return;
+    const touch = e.changedTouches[0];
+    const dx = touch.clientX - touchStartPos.x;
+    const dy = touch.clientY - touchStartPos.y;
+    const moved = Math.sqrt(dx * dx + dy * dy);
+    const held = Date.now() - touchStartAt;
+    if (moved > TAP_MAX_PX || held > TAP_MAX_MS) { lastTapAt = 0; lastTapSlot = -1; return; }  // 스크롤·드래그
+    const now = Date.now();
+    const slot = slotAt(e.target);
+    const isDouble = (now - lastTapAt <= DOUBLE_TAP_MS) && lastTapSlot === slot;
+    lastTapAt = isDouble ? 0 : now;
+    lastTapSlot = isDouble ? -1 : slot;
+    if (!isDouble) return;
+    // 두 번째 탭: 브라우저 기본 더블 탭 줌·합성 click 차단 후 화면 전환
+    if (e.cancelable) e.preventDefault();
+    suppressClickUntil = Date.now() + 500;
+    if (isCinema()) exitCinema();
+    else tapOpenBig(slot);
   }, { passive: false });
 
   grid.addEventListener('touchcancel', () => {
@@ -1788,7 +1913,10 @@ function bindEvents() {
     if (isTouchDragging) { clearDragVisuals(); isTouchDragging = false; touchDragSlot = -1; }
     pinchStartDist = 0;
     pinchTile = null;
+    lastTapAt = 0;
+    lastTapSlot = -1;
   });
+
 
   // 로고 클릭 시 홈 화면(9분할)으로 즉시 복귀
   const brand = $('.brand');
@@ -1803,6 +1931,10 @@ function bindEvents() {
   // ── 안드로이드 뒤로가기(Back Button) & 웹 브라우저 백 제스처 전역 핸들러 ──
   let lastBackExitAt = 0;
   window.handleAndroidBack = function() {
+    // 0. 시네마(16:9 클린 풀화면)이면 바로 분할 화면 복귀
+    if (CINEMA.ignorePop) { CINEMA.ignorePop = false; return true; }
+    if (isCinema()) { exitCinema({ fromPop: true }); return true; }
+
     // 1. 채널 미리보기 모달 열려 있으면 닫기
     const pv = $('#preview-root');
     if (pv && !pv.hidden) { closePreview(true); return true; }
@@ -1913,6 +2045,16 @@ function bindEvents() {
       if (e.target.closest('[data-apk-close]')) apkModalRoot.hidden = true;
     });
   }
+  // 시네마 HUD 닫기(✕) — 분할 화면 복귀
+  const cinemaClose = $('#cinema-close');
+  if (cinemaClose) {
+    cinemaClose.addEventListener('click', e => {
+      e.preventDefault();
+      e.stopPropagation();
+      exitCinema();
+    });
+  }
+
   $('#pv-add-all').addEventListener('click', pvAddToAllFront);
   $('#pv-audio').addEventListener('click', pvToggleAudio);
   $('#custom-form').addEventListener('submit', e => {
@@ -1942,6 +2084,7 @@ function bindEvents() {
     }
     const k = e.key.toLowerCase();
     if (k === 'escape') {
+      if (isCinema()) { exitCinema(); return; }
       if (!pvRoot.hidden) { closePreview(true); return; }
       if (!modalRoot.hidden) closeModal(); else $('#start-menu').hidden = true;
       return;
@@ -1962,6 +2105,18 @@ function bindEvents() {
   document.addEventListener('fullscreenchange', () => {
     const fb = $('#btn-fullscreen');
     if (fb) fb.classList.toggle('is-active', !!document.fullscreenElement);
+    if (isCinema()) {
+      // 시네마 중 브라우저 전체화면이 해제되면(시스템 제스처·뒤로가기) 시네마도 정리
+      if (!document.fullscreenElement) exitCinema({ silent: true });
+      return;
+    }
+    if (CINEMA.fsSuppress) {              // 시네마 종료로 우리가 뺀 전체화면 — 기존 로직 건너뜀
+      CINEMA.fsSuppress = false;
+      document.body.classList.remove('is-full');
+      hideHud();
+      setTimeout(sizeGrid, 60);
+      return;
+    }
     if (document.fullscreenElement) {
       document.body.classList.add('is-full');
       if (cleanFullEntry) { cleanFullEntry = false; hideHud(); }   // 전체화면 버튼 = 순수 영상
@@ -1980,6 +2135,8 @@ window.WORLD_LIVE = {
     prevLayout: prevLayout,
     enteredFullByDbl: enteredFullByDbl,
     full: isFull(),
+    cinema: isCinema(),
+    cinemaSlot: CINEMA.slot,
     sets: JSON.parse(JSON.stringify(state.sets)),
     count: chCount(),
     channels: CHANNELS.length,
