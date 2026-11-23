@@ -12,8 +12,8 @@ const LS_KEY = 'worldlive.v3';
 const LEGACY_LS_KEYS = ['worldlive.v2', 'worldlive.v1'];   // v3 마이그레이션 원본
 /* 기본 배치 버전 — 이 값이 오르면 예전 저장 상태는 ‘한 번만’ 새 기본값으로 맞춘다.
    (2 = 2026-11-24 사용자 확정: 4분할 시작 · KBS/YTN/연합뉴스TV/CNN INTERNATIONAL · KBS 음성 ON) */
-const PRESET_VER = 2;
-const DEFAULT_AUDIO = 'kbs24';       // 기본 청취 채널 — 1번 칸 KBS NEWS 24
+const PRESET_VER = 3;
+const DEFAULT_AUDIO = 'ytn24';       // 기본 청취 채널 — 1번 칸 YTN
 const DEFAULT_LAYOUT = '4';          // 시작 화면 = 4분할
 const LAYOUTS = {
   '9':  { cols: 3, rows: 3, count: 9, label: '9분할' },
@@ -42,7 +42,7 @@ const state = {
   sets: freshSets(),
   allOrder: [],            // ‘내 순서’ — 전체 스크롤(ALL LIVE) 채널 순서
   custom: [],
-  audioId: DEFAULT_AUDIO,  // 기본은 1번 칸 KBS NEWS 24 단독 청취
+  audioId: DEFAULT_AUDIO,  // 기본은 1번 칸 YTN 단독 청취
   muted: false,
   selSlot: 0,              // 액티브 오디오 탤리 — 지금 듣고 있는 타일(흰색 테두리)
   startedAt: Date.now()
@@ -119,7 +119,7 @@ function applyStored(d) {
     if (typeof d.muted === 'boolean') state.muted = d.muted;
   }
 }
-/* 새 기본 배치 — 시작 화면 4분할, KBS·YTN·연합뉴스TV·CNN INTERNATIONAL, 1번 칸 KBS 음성 ON */
+/* 새 기본 배치 — 시작 화면 4분할, YTN·연합뉴스TV·KBS·CNN INTERNATIONAL, 1번 칸 YTN 음성 ON */
 function applyPresetDefaults() {
   state.sets = freshSets();
   state.layout = DEFAULT_LAYOUT;
@@ -1018,7 +1018,7 @@ function resetPreset() {
   applyLayout(DEFAULT_LAYOUT, false);
   rebuildGrid();
   applyAudio();
-  toast('기본 배치로 초기화 — 4분할 · KBS / YTN / 연합뉴스TV / CNN INTERNATIONAL (KBS 음성 ON)');
+  toast('기본 배치로 초기화 — 4분할 · YTN / 연합뉴스TV / KBS / CNN INTERNATIONAL (YTN 음성 ON)');
 }
 
 function refreshSortUI() {

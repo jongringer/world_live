@@ -243,14 +243,14 @@ const RETIRED_IDS = [
 ];
 
 /* 레이아웃별 기본 배치 — 4분할과 9분할은 서로 독립적으로 저장됩니다
-   ※ 2026-11-24 사용자가 확정한 기본 순서(DEFAULT_SETS)
-      4분할 = KBS NEWS 24 · YTN · 연합뉴스TV · CNN INTERNATIONAL
-      9분할 = KBS · YTN · 연합뉴스TV · CNN INTERNATIONAL · BBC · ABC · 알자지라 · 이란(IRAN INTERNATIONAL) · 프랑스(FRANCE 24) */
+   ※ 2026-11-24 사용자가 확정한 기본 순서(DEFAULT_SETS) — 모든 분할에서 YTN → 연합뉴스TV → KBS 순
+      4분할 = YTN · 연합뉴스TV · KBS NEWS 24 · CNN INTERNATIONAL
+      9분할 = YTN · 연합뉴스TV · KBS · CNN INTERNATIONAL · BBC · ABC · 알자지라 · 이란(IRAN INTERNATIONAL) · 프랑스(FRANCE 24) */
 const DEFAULT_SETS = {
-  '9': ['kbs24', 'ytn24', 'yonhap24', 'cnn', 'bbc', 'abc', 'aj', 'iranintl', 'f24'],
-  '4': ['kbs24', 'ytn24', 'yonhap24', 'cnn'],
-  '6': ['kbs24', 'ytn24', 'yonhap24', 'cnn', 'bbc', 'abc'],
-  '1': ['kbs24']
+  '9': ['ytn24', 'yonhap24', 'kbs24', 'cnn', 'bbc', 'abc', 'aj', 'iranintl', 'f24'],
+  '4': ['ytn24', 'yonhap24', 'kbs24', 'cnn'],
+  '6': ['ytn24', 'yonhap24', 'kbs24', 'cnn', 'bbc', 'abc'],
+  '1': ['ytn24']
 };
 
 const KIND_LABEL = { youtube:'YT·LIVE', 'youtube-video':'YT·LIVE', hls:'HLS', kbs:'KBS·ONAIR', iframe:'PAGE', web:'WEB' };
@@ -269,7 +269,7 @@ const CHANNEL_BY_ID = CHANNELS.reduce((m, c) => (m[c.id] = c, m), {});
 /* 이 카탈로그의 빌드 표식 — 화면 하단 신호 스트립에 표시됩니다.
    휴대폰이 옛 파일(브라우저 캐시)을 불러왔는지 이 한 줄로 확인할 수 있고,
    채널·소스를 고칠 때마다 이 값과 index.html의 ?v= 를 함께 올려 주세요. */
-const CHANNELS_BUILD = 'SRC 11-24b';
+const CHANNELS_BUILD = 'SRC 11-24c';
 const CHANNELS_BUILD_DETAIL = '기본 배치 확정(4분할 KBS·YTN·연합뉴스TV·CNN INTERNATIONAL / 9분할 9채널) · 2026-11-24 08:40 갱신';
 
 /* 다시 재생되지 않는 예전 소스 ID → 지금 쓰는 소스로 자동 교체

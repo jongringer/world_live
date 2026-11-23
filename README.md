@@ -36,8 +36,8 @@
 |---|---|
 | `manifest.webmanifest` | 이름·시작 주소·standalone 표시·테마 색(`#0F1D32`)·192/512 아이콘(+maskable) |
 | `sw.js` | **network-first** 서비스 워커. `skipWaiting()` + `clients.claim()` 으로 새 버전 즉시 활성화, 외부 스트림(`.m3u8`·`.ts`·youtube·kbs·CDN)은 가로채지 않음 |
-| `js/pwa.js` | 서비스 워커 등록, `beforeinstallprompt` 포착, 설치 버튼·안내 툴팁 |
-| `css/pwa.css` | 골드 글래스 설치 버튼·툴팁 (모바일은 아이콘만) |
+| `js/pwa.js` | 서비스 워커 등록, `beforeinstallprompt` 포착, 설치 버튼·안내 툴팁, **인앱 브라우저 → 크롬 전환** |
+| `css/pwa.css` | 골드 글래스 설치 버튼·툴팁, **크롬 전환 안내 배너** (모바일은 아이콘만) |
 | `icons/icon-192.png` `icons/icon-512.png` | 앱 아이콘 — 다크 블루 슬레이트 + 입체 지구본(골드 대륙) + 골드 라이트닝 + 신호 링 |
 | `icons/icon-maskable-192.png` `icons/icon-maskable-512.png` | 안드로이드 adaptive 아이콘용 maskable(안전 영역 80%) |
 | `icons/apple-touch-icon.png` | iOS 홈 화면 아이콘(180×180) |
@@ -45,15 +45,29 @@
 캐시를 갇히게 하지 않기 위해 **정적 파일도 항상 네트워크에서 먼저** 받고(`cache: 'no-cache'` → ETag 304),
 통신이 끊겼을 때만 캐시로 대체합니다. 그래서 GitHub Pages에 푸시한 수정이 앱을 다시 열 때 그대로 보입니다.
 
+### 💬 카카오톡으로 링크를 받았을 때 — 크롬으로 자동 전환 (2026-11-24 추가 · pwa2)
+
+카카오톡에서 링크를 누르면 **카카오톡 안의 브라우저**로 열려 앱 설치가 막힙니다. 그래서 주소를 복사해 크롬에 붙여넣지 않아도 되게 만들었습니다.
+
+- **안드로이드 · 카카오톡(그리고 네이버·인스타그램·페이스북·라인·밴드 등 앱 내 브라우저)**: 페이지에 들어오는 즉시
+  `intent://jongringer.github.io/world_live/…?from=kakao#Intent;scheme=https;package=com.android.chrome;S.browser_fallback_url=…;end`
+  로 **크롬 전환을 1회 시도**합니다. 웹뷰가 막거나 사용자가 취소하면 **안내 배너**가 그대로 남습니다 —
+  “카카오톡에서는 앱 설치가 제한됩니다” + 큰 **`크롬으로 열어서 앱 설치하기`** 버튼(탭 = 사용자 제스처라 인텐트가 확실히 열림) + **`닫기 (그냥 웹으로 보기)`**.
+- **무한 루프 방지**: 자동 전환은 `sessionStorage['wl.escape.tried']` 로 **탭마다 1회만** 시도합니다. 인텐트가 실패하면 `S.browser_fallback_url` 이 같은 주소를 다시 열지만, 가드 때문에 또 넘어가지 않고 배너만 남습니다.
+- **iOS · 카카오톡**: 인텐트 대신 `kakaotalk://web/openExternal?url=…`(카카오톡의 외부 브라우저 열기)를 시도하고, 안 되면 **`⋯ → Safari로 열기` → `공유 → 홈 화면에 추가`** 단계를 배너에 적어 줍니다.
+- **크롬에서 도착하면**: 주소에 `?from=kakao` 가 남아 상단 **`앱 설치`** 버튼이 골드로 맥동하고, “크롬에서 열렸습니다 — 앱 설치를 누르세요” 안내가 한 번 뜹니다(1회). `beforeinstallprompt` 가 잡혀 있으면 그 버튼 한 번으로 설치 창이 뜹니다.
+- **일반 크롬·PC·이미 설치된 앱(standalone)에서는 배너가 만들어지지 않습니다** — UA에 카카오톡·앱 내 브라우저 표시가 없으면 동작 자체를 하지 않습니다.
+- 검증용 훅: `WorldLivePWA.inApp.detect(ua)` · `.intent(href)` · `.show(ua, {auto:false})` · `.tryAuto(ua)` · `.tried()` — 실제 배포 코드의 같은 함수를 UA 문자열만 바꿔 실행합니다.
+
 ---
 
 ## 레이아웃
 
 | 버튼 | 구성 | 단축키 |
 |---|---|---|
-| 9분할 | 3×3 — 기본(**KBS · YTN · 연합뉴스TV / CNN INTERNATIONAL · BBC · ABC / 알자지라 · 이란(IRAN INTERNATIONAL) · 프랑스(FRANCE 24)**) | `1` |
-| 6분할 | 3×2 — 기본(KBS·YTN·연합뉴스TV·CNN INTERNATIONAL·BBC·ABC) | `2` |
-| 4분할 | 2×2 — 기본(**KBS · YTN · 연합뉴스TV · CNN INTERNATIONAL**), 1번 칸 KBS 음성 ON | `3` |
+| 9분할 | 3×3 — 기본(**YTN · 연합뉴스TV · KBS NEWS 24 / CNN INTERNATIONAL · BBC · ABC / 알자지라 · 이란(IRAN INTERNATIONAL) · 프랑스(FRANCE 24)**) | `1` |
+| 6분할 | 3×2 — 기본(YTN·연합뉴스TV·KBS·CNN INTERNATIONAL·BBC·ABC) | `2` |
+| 4분할 | 2×2 — 기본(**YTN · 연합뉴스TV · KBS NEWS 24 · CNN INTERNATIONAL**), 1번 칸 YTN 음성 ON | `3` |
 | **전체화면** | 듣고 있는 채널(없으면 1번 칸)을 **1×1 + 브라우저 FULL = 클린 화면**(상하단 바·배지·버튼 없이 영상만), `ESC`로 직전 분할 화면 복귀 | `4` |
 | **전체 스크롤** | 전 세계 채널 3열(넓으면 4열) 16:9 그리드, 스크롤로 훑어보기 | `5` / `A` |
 | FULL (키만) | `F` — 지금 보고 있는 분할(9·6·4·스크롤)을 그대로 브라우저 전체화면으로 토글 (v6에서 상단 `FULL` 버튼은 제거) | `F` |
@@ -65,10 +79,11 @@
 ## 기본 배치 확정 — 4분할 시작 · 9분할 9채널 (2026-11-24 KST · v8.9)
 
 - **사용자 지시(원문)**: “일단 이걸 디폴트로 나오게 하고 본인이 필요하면 바꾸게. 시작화면은 4분할. 첫번째 KBS 오디오 들리게 / 두번째 YTN / 세번째 연합뉴스 / 네번째 CNN INTERNATIONAL”, 이어서 “9분할 디폴트 1. KBS 2. YTN 3. 연합뉴스 4. CNN International 5. BBC 6. ABC 7. 알자지라 8. 이란TV 9. 프랑스.”
-- **4분할 기본값** (`DEFAULT_SETS['4']`): `kbs24` · `ytn24` · `yonhap24` · `cnn`(= CNN INTERNATIONAL HLS). 시작 레이아웃도 `4`로 바꿔, 처음 여는 화면이 4분할입니다. 사용자가 다른 분할로 바꾸면 그 화면이 저장되어 다음에 그대로 시작합니다(‘첫 화면’ 메뉴에서 특정 화면 고정도 가능).
-- **9분할 기본값** (`DEFAULT_SETS['9']`): `kbs24` · `ytn24` · `yonhap24` · `cnn` · `bbc` · `abc` · `aj`(Al Jazeera English) · `iranintl`(IRAN INTERNATIONAL — 사용자가 말한 ‘이란TV’, 카탈로그에 이미 있던 이란 뉴스 채널) · `f24`(FRANCE 24 ENGLISH — ‘프랑스’). 6분할 기본값도 앞 6개(KBS·YTN·연합·CNN·BBC·ABC)로 맞췄습니다.
-- **기본 오디오**: `audioId:'kbs24'`·`muted:false`·선택 칸 1번 — 첫 화면에서 **KBS NEWS 24 타일에 흰색 테두리(탤리)가 켜지고 하단 `AUDIO — KBS NEWS 24`**로 시작합니다. 단, 브라우저 자동재생 정책상 소리 켜진 자동재생이 차단되면(모바일 크롬 등) 그 채널은 **음소거 상태로 화면을 계속 보여 주고**, 첫 터치·키 입력 순간 자동으로 소리를 켭니다(`playWithSound`·`armSoundUnlock`). UI 상태(KBS 음성 ON)와 실제 `muted` 설정은 처음부터 KBS 기준입니다.
-- **저장 상태 1회 갱신(`presetVer:2`)**: `localStorage('worldlive.v3')`에 `presetVer`를 함께 저장합니다. 버전이 없는 예전 배치(이미 폰에서 열어 본 사용자 포함)는 **딱 한 번** 새 기본값으로 맞추고, 그 뒤로는 사용자가 바꾼 분할·채널·순서·음성이 그대로 저장·복원됩니다. 초기화에서도 직접 추가한 커스텀 소스와 전체 스크롤 ‘내 순서’는 지우지 않습니다.
+- **2026-11-24 두 번째 지시(원문)**: “월드뉴스 첫번째는 모든 분할화면에서 YTN 연합뉴스 KBS순서로 바꿔줘. KBS가 실시간이 아니네” → **모든 분할의 앞 3칸을 `ytn24` → `yonhap24` → `kbs24`** 로 바꾸고, `presetVer`를 **3**으로 올려 기존 저장 배치도 1회 갱신했습니다(이후 사용자 변경은 유지).
+- **4분할 기본값** (`DEFAULT_SETS['4']`): `ytn24` · `yonhap24` · `kbs24` · `cnn`(= CNN INTERNATIONAL HLS). 시작 레이아웃도 `4`로 바꿔, 처음 여는 화면이 4분할입니다. 사용자가 다른 분할로 바꾸면 그 화면이 저장되어 다음에 그대로 시작합니다(‘첫 화면’ 메뉴에서 특정 화면 고정도 가능).
+- **9분할 기본값** (`DEFAULT_SETS['9']`): `ytn24` · `yonhap24` · `kbs24` · `cnn` · `bbc` · `abc` · `aj`(Al Jazeera English) · `iranintl`(IRAN INTERNATIONAL — 사용자가 말한 ‘이란TV’, 카탈로그에 이미 있던 이란 뉴스 채널) · `f24`(FRANCE 24 ENGLISH — ‘프랑스’). 6분할 기본값도 앞 6개(YTN·연합·KBS·CNN·BBC·ABC)로 맞췄습니다.
+- **기본 오디오**: `audioId:'ytn24'`·`muted:false`·선택 칸 1번 — 첫 화면에서 **YTN 타일에 흰색 테두리(탤리)가 켜지고 하단 `AUDIO — YTN 24시간 라이브`**로 시작합니다. 단, 브라우저 자동재생 정책상 소리 켜진 자동재생이 차단되면(모바일 크롬 등) 그 채널은 **음소거 상태로 화면을 계속 보여 주고**, 첫 터치·키 입력 순간 자동으로 소리를 켭니다(`playWithSound`·`armSoundUnlock`). UI 상태(YTN 음성 ON)와 실제 `muted` 설정은 처음부터 YTN 기준입니다.
+- **저장 상태 1회 갱신(`presetVer:3`)**: `localStorage('worldlive.v3')`에 `presetVer`를 함께 저장합니다. 버전이 없는 예전 배치(이미 폰에서 열어 본 사용자 포함)는 **딱 한 번** 새 기본값으로 맞추고, 그 뒤로는 사용자가 바꾼 분할·채널·순서·음성이 그대로 저장·복원됩니다. 초기화에서도 직접 추가한 커스텀 소스와 전체 스크롤 ‘내 순서’는 지우지 않습니다.
 - **기본값 복원**: 상단 `★ 첫 화면` 메뉴 맨 아래 **`기본 배치로 초기화`** 항목(및 `?reset=1`)이 위 4분할 기본값으로 되돌립니다.
 - **스마트폰 상단 버튼 순서(v8.9.1)**: 스마트폰 폭(`max-width:820px` 또는 세로 화면)에서는 분할 버튼이 **`4분할 → 9분할 → 전체 스크롤`** 순으로 앞에 오고 6분할·전체화면은 뒤로 밀립니다(CSS `order`). 데스크톱은 `9분할 · 6분할 · 4분할 · 전체화면 · 전체 스크롤` 그대로입니다.
 - **검증 (운영 페이지 `https://jongringer.github.io/world_live/?v=def2`, 2026-11-24 08:33 KST)**: 첫 화면 4분할 = KBS NEWS 24(흰 테두리·음성 ON, 1280×720·`readyState 4`·`currentTime` 증가·`muted:false`) / YTN / 연합뉴스TV / CNN INTERNATIONAL, **4/4 FEEDS NOMINAL**. 9분할 전환 시 위 9개 순서로 **9/9 FEEDS NOMINAL**(KBS 1280×720·CNN 640×360·BBC 960×540·ABC 1024×576·알자지라 854×480·IRAN INTERNATIONAL 1047×576·FRANCE 24 1920×1080 모두 재생). 2번 칸을 NHK로 바꾼 뒤 새로고침해도 그 배치가 유지되고 기본값으로 되돌아가지 않음(커스텀 보존 확인). 스크린샷 `downloads/world_live_default4_20261124.png`·`downloads/world_live_default9_20261124.png`.
