@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="robots" content="noindex,nofollow" />
+<title>QA — WORLD LIVE 모바일/데스크톱 폭 점검</title>
+<style>
+  body { margin: 0; background: #11161f; color: #cbd6e4; font: 13px/1.4 system-ui, sans-serif; }
+  .row { display: flex; gap: 16px; padding: 14px; align-items: flex-start; flex-wrap: wrap; }
+  .cell { border: 1px solid #2b3a52; border-radius: 10px; overflow: hidden; background: #0b1220; }
+  .cap { padding: 6px 10px; font-weight: 700; color: #ffd978; }
+  iframe { display: block; border: 0; background: #000; }
+</style>
+</head>
+<body>
+<div class="row">
+  <div class="cell"><div class="cap">360 × 780</div>
+    <iframe id="f360" src="./?v=pwa1" width="360" height="780" loading="lazy"></iframe></div>
+  <div class="cell"><div class="cap">412 × 780</div>
+    <iframe id="f412" src="./?v=pwa1" width="412" height="780" loading="lazy"></iframe></div>
+  <div class="cell"><div class="cap">1280 × 780</div>
+    <iframe id="f1280" src="./?v=pwa1" width="1280" height="780" loading="lazy"></iframe></div>
+</div>
+</body>
+</html>
