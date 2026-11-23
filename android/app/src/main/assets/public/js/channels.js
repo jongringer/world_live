@@ -5,6 +5,7 @@
    kind: 'hls'      = .m3u8 (hls.js · CORS 확인) — 클릭 없이 즉시 재생
          'youtube'  = 채널 ID → embed/live_stream (현재 라이브 자동 추적)
          'youtube-video' = 영상 ID 고정
+         'kbs'      = KBS 공식 온에어 API가 내려주는 서명 .m3u8 (매일 바뀌지 않음)
          'web'      = 방송사 정책상 삽입 불가 → 공식 페이지 새 창
    status: 'live'     = 24시간 상시 송출 (검증)
            'event'    = 뉴스 편성·속보 때만 라이브 (평소 OFFLINE)
@@ -194,8 +195,15 @@ const CHANNELS = [
     kind:'hls', src:'https://sabconetanw.cdn.mangomolo.com/news/smil:news.stream.smil/master.m3u8', status:'live' },
 
   /* ── KOREA (국내 뉴스 · 지역순에서는 맨 뒤, ‘한국 우선’ 정렬에서 맨 앞) ── */
+  /* KBS NEWS 24 — KBS 공식 온에어 실시간 스트림 (onair.kbs.co.kr · 채널코드 81)
+     유튜브 24시간 라이브는 방송사가 매일 새 영상으로 갈아 끼워 주소가 바뀌므로,
+     공식 온에어 API가 내려주는 서명된 .m3u8 주소를 화면에서 받아 hls.js로 직접 재생한다.
+     (서명 유효 48시간 · 열 때마다 새로 받음 · 대한민국 IP에서만 주소가 내려옴) */
   { id:'kbs24', name:'KBS NEWS 24', short:'KBS', country:'한국', cc:'KR', zone:'KOREA',
-    kind:'youtube-video', src:'nfnWxzTVJA4', status:'live' },
+    kind:'kbs', src:'81', status:'live',
+    api:'https://cfpwwwapi.kbs.co.kr/api/v1/landing/live/channel_code/81',
+    web:'https://onair.kbs.co.kr/index.html?sname=onair&stype=live&ch_code=81&ch_type=globalList',
+    note:'KBS 공식 온에어(onair.kbs.co.kr)의 KBS NEWS 24 실시간 주소를 그때그때 받아 재생합니다. 해외 IP에서는 KBS가 주소를 주지 않아 공식 페이지로 안내합니다.' },
 
   { id:'ytn24', name:'YTN 24시간 라이브', short:'YTN', country:'한국', cc:'KR', zone:'KOREA',
     kind:'youtube-video', src:'aZyD6EPl6KU', status:'live' },
@@ -242,7 +250,7 @@ const DEFAULT_SETS = {
   '1': ['kbs24']
 };
 
-const KIND_LABEL = { youtube:'YT·LIVE', 'youtube-video':'YT·LIVE', hls:'HLS', iframe:'PAGE', web:'WEB' };
+const KIND_LABEL = { youtube:'YT·LIVE', 'youtube-video':'YT·LIVE', hls:'HLS', kbs:'KBS·ONAIR', iframe:'PAGE', web:'WEB' };
 const ZONE_LABEL = {
   KOREA:'KOREA · 국내 뉴스',
   ASIA:'ASIA · 일본·중국·아시아', AMERICAS:'AMERICAS · 미주',
@@ -258,12 +266,16 @@ const CHANNEL_BY_ID = CHANNELS.reduce((m, c) => (m[c.id] = c, m), {});
 /* 이 카탈로그의 빌드 표식 — 화면 하단 신호 스트립에 표시됩니다.
    휴대폰이 옛 파일(브라우저 캐시)을 불러왔는지 이 한 줄로 확인할 수 있고,
    채널·소스를 고칠 때마다 이 값과 index.html의 ?v= 를 함께 올려 주세요. */
-const CHANNELS_BUILD = 'SRC 11-23a';
-const CHANNELS_BUILD_DETAIL = 'KBS nfnWxzTVJA4 · 2026-11-23 06:55 갱신';
+const CHANNELS_BUILD = 'SRC 11-24a';
+const CHANNELS_BUILD_DETAIL = 'KBS 공식 온에어(news24 ch81) · 2026-11-24 07:45 갱신';
 
 /* 다시 재생되지 않는 예전 소스 ID → 지금 쓰는 소스로 자동 교체
    (브라우저에 저장된 커스텀 소스에 옛 ID가 남아 있어도 되살아나지 않게) */
 const RETIRED_SOURCES = { 'zGFBJL_fhUU': 'nfnWxzTVJA4' };
+/* 유튜브 KBS NEWS 24 라이브 ID(nfnWxzTVJA4)는 2026-11-24 방송 종료로 재생 불가 —
+   내장 채널은 공식 온에어(kind:'kbs')로 교체했고, 저장된 커스텀 소스에 남은 ID는
+   아래 목록에서 걸러 낸다(치환할 새 ID가 없으므로 제거). */
+const DEAD_SOURCES = ['nfnWxzTVJA4'];
 /* ALL LIVE 스크롤에 나오는 채널 = 페이지 내 재생이 검증된 상시 채널 */
 /* 전체 스크롤(ALL LIVE)에 나오는 채널 = 페이지 안에서 라이브 신호가 들어오는 채널만
    (외부 공식 링크·미송출/점검 채널은 소스 라이브러리에만 남기고 전체 스크롤에서는 뺌)

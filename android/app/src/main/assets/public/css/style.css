@@ -707,6 +707,11 @@ body.is-swapping .tile { transition: none; }
   background: linear-gradient(160deg, rgba(56, 189, 248, 0.2) 0%, rgba(56, 189, 248, 0.05) 100%);
   border-color: rgba(56, 189, 248, 0.35);
 }
+.src-card[data-kind="kbs"] .src-logo {
+  color: #FFD7A8;
+  background: linear-gradient(160deg, rgba(255, 120, 60, 0.24) 0%, rgba(255, 120, 60, 0.06) 100%);
+  border-color: rgba(255, 150, 90, 0.4);
+}
 .src-card[data-kind="web"] .src-logo {
   color: rgba(255, 255, 255, 0.6);
   background: rgba(255, 255, 255, 0.06);

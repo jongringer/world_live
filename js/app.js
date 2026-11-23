@@ -88,7 +88,9 @@ function normalizeSet(arr, key) {
 }
 function applyStored(d) {
   if (!d || typeof d !== 'object') return;
+  const dead = (typeof DEAD_SOURCES !== 'undefined' && DEAD_SOURCES) || [];
   if (Array.isArray(d.custom)) state.custom = d.custom.filter(c => c && c.id && c.kind && c.src)
+    .filter(c => !(c.kind === 'youtube-video' && dead.indexOf(c.src) >= 0))
     .map(c => {
       const map = (typeof RETIRED_SOURCES === 'object' && RETIRED_SOURCES) || {};
       return map[c.src] ? Object.assign({}, c, { src: map[c.src] }) : c;
@@ -463,6 +465,19 @@ function mountSlot(i) {
     v.addEventListener('waiting', () => { if (!v.dataset.ok) setTileState(i, 'sync'); });
     attachHls(i, v, ch.src, ch.backup);
 
+  } else if (ch.kind === 'kbs') {
+    // KBS 공식 온에어 — 서명된 .m3u8 주소를 공개 API에서 받아 hls.js로 재생
+    const v = document.createElement('video');
+    v.muted = muted; v.autoplay = true; v.playsInline = true; v.controls = false;
+    v.setAttribute('playsinline', '');
+    v.title = ch.name + ' live';
+    media.appendChild(v);
+    live[i].video = v;
+    v.addEventListener('playing', () => { setTileState(i, 'live'); v.dataset.ok = '1'; });
+    v.addEventListener('waiting', () => { if (!v.dataset.ok) setTileState(i, 'sync'); });
+    setTileState(i, 'sync');
+    mountKbs(i, v, ch);
+
   } else if (ch.kind === 'iframe') {
     // 방송사 공식 페이지를 그대로 삽입 (자사 플레이어로만 재생되는 채널)
     const f = document.createElement('iframe');
@@ -498,11 +513,45 @@ function unmountSlot(i) {
   delete live[i];
 }
 
+/* KBS 공식 온에어 — onair.kbs.co.kr 플레이어가 쓰는 공개 API가 채널별 서명 주소를 내려준다.
+   서명은 48시간 유효하고 요청할 때마다 새로 발급되므로 화면을 열 때 한 번 받고,
+   재생이 끊기면(만료·일시 장애) 한 번 더 받아 스스로 회복한다.
+   ※ service_url은 대한민국 IP에서만 내려온다(해외에서는 빈 값) → 공식 페이지로 안내. */
+function kbsFetchUrl(ch) {
+  const base = (ch && ch.api) || '';
+  if (!base) return Promise.resolve('');
+  const u = base + (base.indexOf('?') >= 0 ? '&' : '?') + '_=' + Date.now();
+  return fetch(u, { cache: 'no-store', credentials: 'omit' })
+    .then(r => (r.ok ? r.json() : Promise.reject(new Error('HTTP ' + r.status))))
+    .then(j => {
+      const items = (j && j.channel_item) || [];
+      const it = items.filter(x => x.media_type === 'tv')[0] || items[0] || {};
+      return it.service_url || '';
+    });
+}
+function mountKbs(i, v, ch) {
+  kbsFetchUrl(ch).then(url => {
+    const cur = live[i];
+    if (!cur || cur.ch.id !== ch.id) return;
+    if (!url) { kbsNoFeed(i, ch); return; }
+    attachHls(i, v, url, null, () => kbsFetchUrl(ch));
+  }).catch(() => {
+    if (!live[i] || live[i].ch.id !== ch.id) return;
+    setTileState(i, 'error');
+    showVeil(i, 'KBS 온에어 연결 실패', ch.name + ' — KBS 온에어 주소를 받아오지 못했습니다. 잠시 후 다시 시도해 주세요.', '다시 시도', 'retry');
+  });
+}
+function kbsNoFeed(i, ch) {
+  setTileState(i, 'external');
+  showVeil(i, 'KBS 공식 온에어', 'KBS가 이 네트워크(해외 IP로 보임)에는 실시간 주소를 내려주지 않습니다. KBS 공식 온에어 페이지에서 시청하세요.', 'KBS 온에어 열기', 'open');
+}
+
 /* HLS 재생 — 1차 주소가 치명적 오류(매니페스트/세그먼트 실패)를 내면
-   백업(backup) 주소로 한 번 자동 전환한 뒤, 그래도 안 되면 오류 안내 */
-function attachHls(i, v, primary, backup) {
+   백업(backup) 주소로 한 번 자동 전환한 뒤, 그래도 안 되면 오류 안내.
+   refresh가 있으면(동적으로 주소를 받는 채널) 오류 시 새 주소를 한 번 더 받아 재시도한다. */
+function attachHls(i, v, primary, backup, refresh) {
   const urls = [primary].concat(backup ? [backup] : []);
-  let ui = 0;
+  let ui = 0, refreshed = false;
 
   function next(reason) {
     const cur = live[i];
@@ -514,6 +563,15 @@ function attachHls(i, v, primary, backup) {
       setTileState(i, 'sync');
       toast(cur.ch.name + ' — 백업 소스로 전환');
       start();
+    } else if (typeof refresh === 'function' && !refreshed) {
+      refreshed = true;
+      setTileState(i, 'sync');
+      Promise.resolve().then(refresh).then(u => {
+        if (!live[i]) return;
+        if (!u) { failHls(i, reason || 'HLS 스트림 연결 실패'); return; }
+        urls.push(u);
+        start();
+      }).catch(() => { if (live[i]) failHls(i, reason || 'HLS 스트림 연결 실패'); });
     } else {
       failHls(i, reason || 'HLS 스트림 연결 실패');
     }
@@ -759,7 +817,7 @@ function selectSlot(i) {
     ytCmd(i, 'unMute');
     ytCmd(i, 'setVolume', [100]);
     ytCmd(i, 'playVideo');
-  } else if (ch.kind === 'hls' && L.video) {
+  } else if ((ch.kind === 'hls' || ch.kind === 'kbs') && L.video) {
     try { L.video.volume = 1; } catch (e) {}
     if (L.video.paused) L.video.play().catch(() => {});
   }
@@ -1062,6 +1120,7 @@ function pvExternalUrl(ch) {
   if (!ch) return '#';
   if (ch.kind === 'youtube') return 'https://www.youtube.com/channel/' + ch.src + '/live';
   if (ch.kind === 'youtube-video') return 'https://www.youtube.com/watch?v=' + ch.src;
+  if (ch.kind === 'kbs') return ch.web || '#';
   return ch.src || '#';
 }
 function pvSetBadge(kind) {
@@ -1187,7 +1246,7 @@ function openPreview(ch) {
   $('#pv-pop').href = pvExternalUrl(ch);
   $('#pv-audio').classList.remove('is-on');
   $('#pv-audio-txt').textContent = '소리 켜기';
-  $('#pv-audio').hidden = !(ch.kind === 'youtube' || ch.kind === 'youtube-video' || ch.kind === 'hls');
+  $('#pv-audio').hidden = !(ch.kind === 'youtube' || ch.kind === 'youtube-video' || ch.kind === 'hls' || ch.kind === 'kbs');
   pvSetBadge('preview');
 
   const st = $('#pv-stage');
@@ -1223,6 +1282,25 @@ function openPreview(ch) {
     v.addEventListener('error', () => pvSetBadge('error'));
     pvSetBadge('sync');
     ensureHls().then(() => { if (pvVideo === v) pvAttachHls(v, ch); });
+
+  } else if (ch.kind === 'kbs') {
+    const v = document.createElement('video');
+    v.muted = true; v.autoplay = true; v.playsInline = true; v.controls = true;
+    v.setAttribute('playsinline', '');
+    v.title = ch.name + ' 미리보기';
+    st.appendChild(v);
+    pvVideo = v;
+    v.addEventListener('playing', () => pvSetBadge('live'));
+    v.addEventListener('error', () => pvSetBadge('error'));
+    pvSetBadge('sync');
+    ensureHls().then(() => {
+      if (pvVideo !== v) return;
+      kbsFetchUrl(ch).then(url => {
+        if (pvVideo !== v) return;
+        if (!url) { pvSetBadge('error'); return; }
+        pvAttachHls(v, Object.assign({}, ch, { src: url, backup: null }));
+      }).catch(() => { if (pvVideo === v) pvSetBadge('error'); });
+    });
 
   } else if (ch.kind === 'iframe') {
     const f = document.createElement('iframe');
@@ -1349,6 +1427,7 @@ function openExternal(i) {
   let url;
   if (ch.kind === 'youtube') url = 'https://www.youtube.com/channel/' + ch.src + '/live';
   else if (ch.kind === 'youtube-video') url = 'https://www.youtube.com/watch?v=' + ch.src;
+  else if (ch.kind === 'kbs') url = ch.web || '#';
   else url = ch.src;
   window.open(url, '_blank', 'noopener');
 }
