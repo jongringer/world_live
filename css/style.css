@@ -377,13 +377,8 @@ svg { display: block; }
   box-shadow: inset 0 0 28px -6px rgba(255, 255, 255, 0.4) !important;
 }
 
-/* FULL 순수 영상 모드에서도 화이트 테두리 유지 */
-body.is-full .tile.is-tally { border: 0; box-shadow: none; }
-body.is-full .tile.is-tally::before { content: none; }
-body.is-full .tile.is-tally .tally-ring {
-  opacity: 1; border-color: #FFFFFF; border-radius: 0;
-  box-shadow: inset 0 0 20px rgba(255, 255, 255, 0.2);
-}
+/* FULL(브라우저 전체화면)에서는 화이트 테두리를 남기지 않는다 —
+   파일 끝 ‘FULL 화이트 테두리 완전 제거’ 블록에서 처리합니다. */
 
 /* DRAG TO SWAP (채널 자리바꾸기) */
 .tile.is-dragging {
@@ -1623,4 +1618,43 @@ body.is-cinema .cinema-hud.is-on { display: block; }
 @media (orientation: portrait) {
   .cinema-hud .chud-hint .hint-portrait { display: inline; }
   .cinema-hud .chud-hint .hint-landscape { display: none; }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   FULL 풀화면 — 외곽 흰 테두리(Tally border) 완전 제거   (v8.7.2 · 2026-11-23)
+   · 멀티 분할(9·6·4·전체 스크롤)에서는 선택(오디오) 채널의 흰 테두리를
+     그대로 유지해 어느 화면을 듣고 있는지 보인다.
+   · 풀화면으로 들어가면(상단 전체화면 버튼 · 1×1 전체화면 · 타일 더블클릭 ·
+     F 키 · 모바일 더블 터치 16:9 시네마 · APK 네이티브 가로) 화면 가장자리에
+     흰선이 남지 않도록 타일 테두리·그림자·탤리 링을 모두 끈다.
+   · 풀화면에서 나가면 body.is-full 이 빠지면서 흰 테두리가 자동으로 돌아온다.
+   · 아래 규칙은 파일 맨 끝에 두어, 위쪽 미디어쿼리(!important) 규칙보다
+     항상 우선하도록 선택자를 한 단계 더 좁혔다.
+   ═══════════════════════════════════════════════════════════════════════ */
+body.is-full .tile,
+body.is-full .tile:hover,
+body.is-full .tile.is-hover,
+body.is-full .tile.is-tally,
+body.is-full .tile.is-tally:hover {
+  border: 0 !important;
+  outline: 0 !important;
+  box-shadow: none !important;
+}
+body.is-full .tile::before,
+body.is-full .tile.is-tally::before { content: none !important; }
+body.is-full .grid .tile .tally-ring,
+body.is-full .grid .tile.is-tally .tally-ring {
+  display: none !important;
+  opacity: 0 !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+/* 시네마·APK 네이티브 풀화면도 같은 규칙으로 한 번 더 막아 둔다 */
+body.is-cinema .grid .tile.is-tally .tally-ring,
+body.is-mobile-full .grid .tile.is-tally .tally-ring,
+body.is-native-full .grid .tile.is-tally .tally-ring {
+  display: none !important;
+  opacity: 0 !important;
+  border: 0 !important;
+  box-shadow: none !important;
 }
