@@ -270,7 +270,7 @@ const CHANNEL_BY_ID = CHANNELS.reduce((m, c) => (m[c.id] = c, m), {});
    휴대폰이 옛 파일(브라우저 캐시)을 불러왔는지 이 한 줄로 확인할 수 있고,
    채널·소스를 고칠 때마다 이 값과 index.html의 ?v= 를 함께 올려 주세요. */
 const CHANNELS_BUILD = 'SRC 11-24c';
-const CHANNELS_BUILD_DETAIL = '기본 배치 확정(YTN·연합뉴스TV·KBS·CNN INTERNATIONAL / 9분할 9채널) · 2026-11-24 08:45 갱신';
+const CHANNELS_BUILD_DETAIL = '기본 배치 확정(YTN·연합뉴스TV·KBS·CNN INTERNATIONAL / 9분할 9채널, 기본 소리=연합뉴스TV) · 2026-11-24 09:00 갱신';
 
 /* 다시 재생되지 않는 예전 소스 ID → 지금 쓰는 소스로 자동 교체
    (브라우저에 저장된 커스텀 소스에 옛 ID가 남아 있어도 되살아나지 않게) */

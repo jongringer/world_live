@@ -12,8 +12,8 @@ const LS_KEY = 'worldlive.v3';
 const LEGACY_LS_KEYS = ['worldlive.v2', 'worldlive.v1'];   // v3 마이그레이션 원본
 /* 기본 배치 버전 — 이 값이 오르면 예전 저장 상태는 ‘한 번만’ 새 기본값으로 맞춘다.
    (2 = 2026-11-24 사용자 확정: 4분할 시작 · KBS/YTN/연합뉴스TV/CNN INTERNATIONAL · KBS 음성 ON) */
-const PRESET_VER = 3;
-const DEFAULT_AUDIO = 'ytn24';       // 기본 청취 채널 — 1번 칸 YTN
+const PRESET_VER = 4;
+const DEFAULT_AUDIO = 'yonhap24';    // 기본 청취 채널 — 2번 칸 연합뉴스TV
 const DEFAULT_LAYOUT = '4';          // 시작 화면 = 4분할
 const LAYOUTS = {
   '9':  { cols: 3, rows: 3, count: 9, label: '9분할' },
@@ -42,9 +42,9 @@ const state = {
   sets: freshSets(),
   allOrder: [],            // ‘내 순서’ — 전체 스크롤(ALL LIVE) 채널 순서
   custom: [],
-  audioId: DEFAULT_AUDIO,  // 기본은 1번 칸 YTN 단독 청취
+  audioId: DEFAULT_AUDIO,  // 기본은 2번 칸 연합뉴스TV 단독 청취
   muted: false,
-  selSlot: 0,              // 액티브 오디오 탤리 — 지금 듣고 있는 타일(흰색 테두리)
+  selSlot: 1,              // 액티브 오디오 탤리 — 지금 듣고 있는 타일(흰색 테두리, 2번 칸 연합뉴스TV)
   startedAt: Date.now()
 };
 const live = {};            // slot index -> { node, media, ch, state, iframe, video, hls, ps }
@@ -119,7 +119,7 @@ function applyStored(d) {
     if (typeof d.muted === 'boolean') state.muted = d.muted;
   }
 }
-/* 새 기본 배치 — 시작 화면 4분할, YTN·연합뉴스TV·KBS·CNN INTERNATIONAL, 1번 칸 YTN 음성 ON */
+/* 새 기본 배치 — 시작 화면 4분할, YTN·연합뉴스TV·KBS·CNN INTERNATIONAL, 2번 칸 연합뉴스TV 음성 ON */
 function applyPresetDefaults() {
   state.sets = freshSets();
   state.layout = DEFAULT_LAYOUT;
@@ -127,7 +127,7 @@ function applyPresetDefaults() {
   state.startPinned = false;
   state.audioId = DEFAULT_AUDIO;
   state.muted = false;
-  state.selSlot = 0;
+  state.selSlot = 1;
 }
 /* 저장 상태 읽기.
    - presetVer가 현재 버전이면 저장된 배치를 그대로 쓴다(사용자가 바꿔 둔 분할·채널·순서·음성 유지).
@@ -1022,7 +1022,7 @@ function resetPreset() {
   applyLayout(DEFAULT_LAYOUT, false);
   rebuildGrid();
   applyAudio();
-  toast('기본 배치로 초기화 — 4분할 · YTN / 연합뉴스TV / KBS / CNN INTERNATIONAL (YTN 음성 ON)');
+  toast('기본 배치로 초기화 — 4분할 · YTN / 연합뉴스TV / KBS / CNN INTERNATIONAL (연합뉴스TV 음성 ON)');
 }
 
 function refreshSortUI() {
@@ -2372,22 +2372,23 @@ window.WORLD_LIVE = {
 };
 
 /* ── 첫 화면 오디오 폴백 ────────────────────────────────────────
-   기본 청취 채널(YTN)이 첫 화면에서 8초 안에 재생 상태(playerState=1)에
-   이르지 못하면 — 모바일 자동재생 정책·임베드 지연·방송측 일시 장애 등 —
-   같은 화면의 다음 한국 채널(연합뉴스TV)로 소리를 넘깁니다.
+   선택된 음성 채널이 첫 화면에서 8초 안에 재생 상태(playerState=1)에 이르지
+   못하면 — 모바일 정책·임베드 지연·방송측 장애 — 같은 화면의 다른 한국 채널
+   (KBS NEWS 24 → 연합뉴스TV → YTN 순)로 소리를 넘깁니다.
    · 사용자가 그전에 타일을 눌러 직접 고른 경우에는 건드리지 않습니다.
-   · YTN이 정상 재생되면 아무 것도 하지 않습니다. */
+   · 정상 재생되면 아무 것도 하지 않습니다. */
 let audioFallbackArmed = false;
 function armAudioFallback() {
   if (audioFallbackArmed) return;
   audioFallbackArmed = true;
-  if (state.audioId !== 'ytn24') return;
+  const want = state.audioId;
+  if (!want) return;
   const picked = state.selSlot;
   const startedAt = Date.now();
   const check = () => {
-    if (state.audioId !== 'ytn24' || state.selSlot !== picked) return;   // 사용자가 바꿈
+    if (state.audioId !== want || state.selSlot !== picked) return;   // 사용자가 바꿈
     const ids = slotIds();
-    const at = ids.indexOf('ytn24');
+    const at = ids.indexOf(want);
     if (at < 0) return;
     const L = live[at];
     const ch = L && L.ch;
@@ -2397,10 +2398,12 @@ function armAudioFallback() {
       : !!(L && L.video && L.video.readyState >= 2 && !L.video.paused);
     if (ok) return;                                   // 정상 재생 — 폴백 불필요
     if (Date.now() - startedAt < 8000) { setTimeout(check, 1200); return; }
-    const alt = ids.indexOf('yonhap24');
-    if (alt < 0) return;
+    const order = ['kbs24', 'yonhap24', 'ytn24'];
+    const alt = order.map(id => ids.indexOf(id)).filter(i => i >= 0 && ids[i] !== want)[0];
+    if (alt == null || alt < 0) return;
+    const altCh = byId(ids[alt]);
     selectSlot(alt);
-    toast('YTN이 지연되어 연합뉴스TV 소리로 전환했습니다 — YTN 타일을 누르면 다시 YTN 소리');
+    toast((ch ? ch.short || ch.name : '선택 채널') + '이 지연되어 ' + (altCh ? (altCh.short || altCh.name) : '다른 채널') + ' 소리로 전환했습니다');
   };
   setTimeout(check, 3000);
 }
