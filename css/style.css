@@ -233,20 +233,6 @@ svg { display: block; }
 
 .nav-sep { width: 1px; height: 22px; background: rgba(255, 255, 255, 0.14); margin: 0 6px; }
 
-/* 국내뉴스 9분할 — 다른 분할 버튼과 구분되는 전용 모드(딥 네이비 + 골드 포인트) */
-.layout-btn-kr {
-  border-color: rgba(212, 175, 55, 0.34);
-  background: linear-gradient(180deg, rgba(212, 175, 55, 0.12) 0%, rgba(15, 29, 50, 0.35) 100%);
-  color: #F5E5C0;
-}
-.layout-btn-kr:hover {
-  color: #FFF8E7;
-  border-color: rgba(245, 229, 192, 0.7);
-  background: linear-gradient(180deg, rgba(212, 175, 55, 0.22) 0%, rgba(15, 29, 50, 0.4) 100%);
-}
-.layout-btn-kr .lb-txt { letter-spacing: -0.02em; }
-.layout-btn-kr .lb-dim { color: rgba(245, 229, 192, 0.72); }
-
 /* ─────────── ACTIONS & BUTTONS ─────────── */
 .actions { display: flex; align-items: center; gap: 5px; margin-left: auto; flex: 0 0 auto; }
 .icon-btn {
@@ -1218,7 +1204,6 @@ body.is-full.is-hud .order-ctl { opacity: 1 !important; pointer-events: auto !im
   .grid[data-layout="9"],
   .grid[data-layout="6"],
   .grid[data-layout="4"],
-  .grid[data-layout="kr"],
   .grid[data-layout="all"] {
     box-sizing: border-box !important;
     display: grid !important;
@@ -1235,19 +1220,6 @@ body.is-full.is-hud .order-ctl { opacity: 1 !important; pointer-events: auto !im
   body.is-mobile-quad .grid {
     grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
     gap: 6px !important;
-  }
-
-  /* 국내뉴스 9분할은 세로 화면에서 기본 2열 — 9채널을 3×3으로 짜부리지 않고
-     2열×5행 스크롤로 채널명·LIVE 배지가 읽히는 크기를 유지한다. */
-  .grid[data-layout="kr"] {
-    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-    gap: 8px !important;
-  }
-  body.is-mobile-single .grid[data-layout="kr"] {
-    grid-template-columns: 1fr !important;
-  }
-  @media (max-width: 360px) {
-    .grid[data-layout="kr"] { gap: 6px !important; }
   }
 
   /* 5. 타일 16:9 비율 완벽 유지 & 스마트폰 풀와이드 카드 */
