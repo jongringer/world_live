@@ -2371,44 +2371,6 @@ window.WORLD_LIVE = {
   srcCount: () => srcEntries.length
 };
 
-/* ── 첫 화면 오디오 폴백 ────────────────────────────────────────
-   선택된 음성 채널이 첫 화면에서 8초 안에 재생 상태(playerState=1)에 이르지
-   못하면 — 모바일 정책·임베드 지연·방송측 장애 — 같은 화면의 다른 한국 채널
-   (KBS NEWS 24 → 연합뉴스TV → YTN 순)로 소리를 넘깁니다.
-   · 사용자가 그전에 타일을 눌러 직접 고른 경우에는 건드리지 않습니다.
-   · 정상 재생되면 아무 것도 하지 않습니다. */
-let audioFallbackArmed = false;
-function armAudioFallback() {
-  if (audioFallbackArmed) return;
-  audioFallbackArmed = true;
-  const want = state.audioId;
-  if (!want) return;
-  const picked = state.selSlot;
-  const startedAt = Date.now();
-  const check = () => {
-    if (state.audioId !== want || state.selSlot !== picked) return;   // 사용자가 바꿈
-    const ids = slotIds();
-    const at = ids.indexOf(want);
-    if (at < 0) return;
-    const L = live[at];
-    const ch = L && L.ch;
-    const isYt = ch && (ch.kind === 'youtube' || ch.kind === 'youtube-video');
-    const ok = isYt
-      ? (L.ps === 1)
-      : !!(L && L.video && L.video.readyState >= 2 && !L.video.paused);
-    if (ok) return;                                   // 정상 재생 — 폴백 불필요
-    // 아직 붙는 중일 수 있으므로 넉넉히 기다립니다(스트림 4~9개 동시 로딩).
-    if (Date.now() - startedAt < 18000) { setTimeout(check, 1500); return; }
-    const order = ['kbs24', 'yonhap24', 'ytn24'];
-    const alt = order.map(id => ids.indexOf(id)).filter(i => i >= 0 && ids[i] !== want)[0];
-    if (alt == null || alt < 0) return;
-    const altCh = byId(ids[alt]);
-    selectSlot(alt);
-    toast((ch ? ch.short || ch.name : '선택 채널') + '이 지연되어 ' + (altCh ? (altCh.short || altCh.name) : '다른 채널') + ' 소리로 전환했습니다');
-  };
-  setTimeout(check, 3000);
-}
-
 /* ── boot ──────────────────────────────────────────────────── */
 function boot() {
   /* 캐시된 옛 channels.js가 먼저 도착한 경우 — 저장소에 표시된 빌드가 없으니
@@ -2442,7 +2404,6 @@ function boot() {
   applyLayout(state.layout, false);
   rebuildGrid();
   applyAudio();
-  armAudioFallback();
   tickClocks();
   setInterval(tickClocks, 1000);
 }
