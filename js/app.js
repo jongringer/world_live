@@ -1276,9 +1276,32 @@ function srcCard(c, current) {
   });
   return b;
 }
+/* 채널 찾기에서 다른 칸에 이미 있는 채널을 고를 때, 그 기존 칸에 채울 ‘화면에 없는 첫 채널’.
+   후보 순서 = ① 이 분할의 기본 배치(YTN·연합뉴스TV·KBS → …) ② 지금 정렬(지역·국가순 등) 순서
+   이미 쓰고 있는 채널·없는 채널은 건너뛴다. 후보가 하나도 없으면 null(→ 직전 채널과 자리 교환). */
+function nextUnusedId(layout, used) {
+  const seen = {};
+  let pick = null;
+  const take = function (id) {
+    if (pick || !id || seen[id] || used.indexOf(id) >= 0) return;
+    seen[id] = 1;
+    if (byId(id)) pick = id;
+  };
+  ((DEFAULT_SETS[layout] || [])).forEach(take);
+  if (!pick) sortedIds().forEach(take);
+  return pick;
+}
+/* 한 칸만 다시 만들기 — 기존 재생 자원(hls·오디오 노드)을 정리하고 새 채널로 다시 붙인다 */
+function remountTile(i) {
+  try { unmountSlot(i); } catch (e) {}
+  const el = grid.querySelector('.tile[data-slot="' + i + '"]');
+  if (el) el.replaceWith(buildTile(i));
+  mountSlot(i);
+}
 function assignSource(slot, id) {
   if (state.layout === 'all') {
-    // 전체 스크롤 — 현재 순서에서 그 칸만 교체하고 ‘내 순서’로 고정
+    /* 전체 스크롤 — 그 칸을 고른 채널로 바꾸고 ‘내 순서’로 고정.
+       고른 채널이 이미 다른 칸에 있으면 그 칸과 자리를 맞바꾼다(= 중복 없이 그 칸은 직전 채널이 됨). */
     const order = sortedIds().slice();
     const dup = order.indexOf(id);
     if (dup >= 0 && dup !== slot) { const keep = order[slot]; order[slot] = id; order[dup] = keep; }
@@ -1295,17 +1318,37 @@ function assignSource(slot, id) {
     toast('전체 스크롤 SLOT ' + String(slot + 1).padStart(2, '0') + ' — ' + (ch ? ch.name : id));
     return;
   }
-  state.sets[state.layout][slot] = id;
-  // 듣고 있던 칸의 채널을 바꾸면 새 채널로 청취를 이어간다 (테두리 유지)
+  const set = state.sets[state.layout];
+  const prev = set[slot];
+  const movedTo = [];                       // 같은 채널이 있어 자동으로 다른 채널이 채워진 칸
+  const dups = [];
+  set.forEach(function (v, i) { if (i !== slot && v === id) dups.push(i); });
+  set[slot] = id;
+  /* 화면에 같은 채널이 두 칸 겹치지 않게 — 기존 칸은 비우고 ‘아직 화면에 없는 채널’로 채운다.
+     채울 후보가 없으면(모든 채널이 이미 화면에 있음) 그 칸을 직전 채널로 바꿔 자리만 맞바꾼다. */
+  dups.forEach(function (j) {
+    const used = set.filter(function (v, i) { return i !== j; });
+    set[j] = nextUnusedId(state.layout, used) || prev;
+    movedTo.push(j);
+  });
+  // 듣고 있던 칸이 자동 교체됐으면 그 칸의 새 채널로 청취를 이어간다
+  if (!state.muted && state.selSlot != null && movedTo.indexOf(state.selSlot) >= 0) state.audioId = set[state.selSlot];
+  // 고른 칸의 채널을 바꾸면 새 채널로 청취를 이어간다 (테두리 유지)
   if (state.selSlot === slot) { state.audioId = id; state.muted = false; }
   save();
   closeModal();
   const ch = byId(id);
-  toast(LAYOUTS[state.layout].label + ' SLOT ' + String(slot + 1).padStart(2, '0') + ' — ' + (ch ? ch.name : id));
-  const el = grid.querySelector('.tile[data-slot="' + slot + '"]');
-  if (el) el.replaceWith(buildTile(slot));
-  delete live[slot];
-  mountSlot(slot);
+  const pad = function (i) { return String(i + 1).padStart(2, '0'); };
+  let msg = LAYOUTS[state.layout].label + ' SLOT ' + pad(slot) + ' — ' + (ch ? ch.name : id);
+  if (movedTo.length) {
+    msg += ' · 겹친 ' + movedTo.map(function (j) {
+      const c = byId(set[j]); return 'SLOT ' + pad(j) + (c ? ' → ' + c.name : '');
+    }).join(', ');
+  }
+  toast(msg);
+  remountTile(slot);
+  movedTo.forEach(remountTile);
+  selByChannel();          // 듣던 채널이 다른 칸으로 옮겨 갔으면 테두리도 그 칸으로
   applyAudio();
   refreshStartUI();
 }
