@@ -162,6 +162,7 @@ const state = {
   startedAt: Date.now()
 };
 const live = {};            // slot index -> { node, media, ch, state, iframe, video, hls, ps }
+const YT_RETRY = {};        // slot index -> 빈 유튜브 타일 자동 재시도 횟수
 let gen = 0;
 let io = null;
 
@@ -548,6 +549,7 @@ function idleFace(ch) {
 function mountSlot(i) {
   const el = grid.querySelector('.tile[data-slot="' + i + '"]');
   if (!el) return;
+  const myGen = gen;
   const ch = slotChannel(i);
   const media = el.querySelector('.tile-media');
   if (live[i]) {
@@ -596,6 +598,21 @@ function mountSlot(i) {
     setTimeout(() => {
       if (live[i] && live[i].state === 'loading' && !live[i].err) setTileState(i, live[i].ch.status === 'event' ? 'offline' : 'live');
     }, 11000);
+    /* 방송사 채널 라이브는 뉴스 편성 시간에만 열립니다(24시간 상시가 아닌 곳이 있음).
+       그래서 한 번 비어 버린 타일(offline)은 4분 뒤 스스로 한 번 더 붙여 본다 —
+       편성이 시작되면 새로고침 없이 자동으로 화면이 살아난다(최대 45회 ≈ 3시간). */
+    if (ch.kind === 'youtube') {
+      setTimeout(() => {
+        const L = live[i];
+        if (!L || myGen !== gen || !L.ch || L.ch.id !== ch.id) return;
+        if (L.state !== 'offline') return;
+        const n = (YT_RETRY[i] || 0) + 1;
+        if (n > 45) return;
+        YT_RETRY[i] = n;
+        unmountSlot(i);
+        mountSlot(i);
+      }, 240000);
+    }
 
   } else if (ch.kind === 'hls') {
     const v = document.createElement('video');
