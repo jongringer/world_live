@@ -90,8 +90,9 @@ function resolveTimeChannel(ch) {
    Web Audio 의 createMediaElementSource 는 DOM 요소 참조가 필요하므로 원천적으로 불가능하다.
    바깥에서 할 수 있는 일은 postMessage(YouTube IFrame API)로 setVolume(0~100)·mute/unMute 뿐이고
    100 이 최대치다(100 초과 값은 플레이어가 100으로 자름). 즉 유튜브 소리는 '100% = 원음'이 한계다.
-   대신 유튜브는 자기 플레이어 안에서 라우드니스를 약 -14 LUFS 로 정규화해 재생하므로,
-   한국경제TV는 이미 그 크기로 들린다 — 그것이 이번 평준화의 기준(target)이다.
+   대신 유튜브는 자기 플레이어 안에서 라우드니스를 약 -14 LUFS 로 정규화해 재생한다.
+   처음엔 그 크기를 목표로 삼았으나, YTN·KBS 에서 너무 크고 노이즈가 들린다는 사용자 요청으로
+   목표를 -20 LUFS 로 낮췄다(위 ③). 유튜브 타일은 유튜브가 정한 크기 그대로 둔다.
 
    [HLS 타일은 왜 가능한가]
    hls.js 는 세그먼트를 XHR 로 받아 MediaSource(blob:) 로 재생한다 → <video> 가 같은 출처(blob)로
@@ -268,7 +269,7 @@ function lufsOf(an, buf) {
   return ms > 1e-12 ? (LEVEL_LOUD_OFFSET + 10 * Math.log10(ms)) : -Infinity;
 }
 /* 최근 약 10초 블록을 모아 EBU R128 방식(절대 -70 LUFS · 상대 -10 LU 게이트)으로
-   '통합 라우드니스'를 구한다. 유튜브가 쓰는 -14 LUFS 와 같은 잣대다. */
+   '통합 라우드니스'를 구한다. ffmpeg ebur128·유튜브 정규화가 쓰는 것과 같은 잣대다. */
 function gatedLufs(c) {
   const n = Math.min(c.bn || 0, LEVEL_BLOCKS);
   if (!n) return -Infinity;
