@@ -135,9 +135,9 @@ let levelTarget = LEVEL_TARGET_LUFS;
 const LEVEL_ON = (function () {
   try {
     const q = new URLSearchParams(location.search);
-    const v = q.get('level') != null ? q.get('level') : q.get('gain');   // ?gain=0 은 예전 이름
-    return !(v === '0' || v === 'off' || v === 'false');
-  } catch (e) { return true; }
+    const v = q.get('level') != null ? q.get('level') : q.get('gain');
+    return v === '1' || v === 'on' || v === 'true';   // 기본은 원음(디폴트), ?level=1 로만 평준화 실험
+  } catch (e) { return false; }
 })();
 const AUDIO = { ctx: null, bus: null, failed: false, chains: [], attached: 0, timer: 0 };
 function clampDb(x, lo, hi) { return x < lo ? lo : (x > hi ? hi : x); }
@@ -194,7 +194,7 @@ function attachPendingLevel() {
   });
   try { if (pvVideo && !pvVideo._wlChain) attachLevel(pvVideo, { id: 'preview' }); } catch (e) {}
 }
-/* <video> 하나를 평준화 그래프에 연결. 이미 붙였으면 true, 불가(미지원·실패)면 false */
+/* <video> 하나를 평준화 그래프에 연결 — 디폴트(LEVEL_ON=false)에서는 AudioContext 자체를 열지 않고 순정 원음 그대로 재생 */
 function attachLevel(v, meta) {
   if (!LEVEL_ON || !v) return false;
   if (v._wlChain) return true;
@@ -208,6 +208,10 @@ function attachLevel(v, meta) {
   }
   try {
     const src = ctx.createMediaElementSource(v);
+    const chId = (meta && meta.id) || '';
+    const user = ctx.createGain();
+    user.gain.value = volPct(chId) / 100;
+
     const hpf = ctx.createBiquadFilter();
     hpf.type = 'highpass'; hpf.frequency.value = 30; hpf.Q.value = 0.6;
     const comp = ctx.createDynamicsCompressor();          // 레벨러 — 밀도 만들기
@@ -217,14 +221,9 @@ function attachLevel(v, meta) {
     const lim = ctx.createDynamicsCompressor();           // 리미터 — 클리핑 방지
     lim.threshold.value = -1.5; lim.knee.value = 0; lim.ratio.value = 20;
     lim.attack.value = 0.002; lim.release.value = 0.12;
-    /* 채널별 수동 볼륨(0~200%)은 AGC·리미터 '뒤'에 둔다 — 자동 평준화가 사용자가
-       올려 둔 볼륨을 도로 깎아 버리지 않도록. 그 뒤에 안전 리미터를 하나 더 둔다. */
-    const user = ctx.createGain();
     const lim2 = ctx.createDynamicsCompressor();
     lim2.threshold.value = -1; lim2.knee.value = 0; lim2.ratio.value = 20;
     lim2.attack.value = 0.002; lim2.release.value = 0.10;
-    const chId = (meta && meta.id) || '';
-    user.gain.value = volPct(chId) / 100;
     src.connect(hpf); hpf.connect(comp); comp.connect(gain); gain.connect(lim);
     lim.connect(user); user.connect(lim2); lim2.connect(AUDIO.bus);
     const chain = {
@@ -430,7 +429,7 @@ window.WL_AUDIO = {
    · 값은 채널 ID별로 worldlive.v3 에 저장돼 새로고침·재부팅 뒤에도 유지된다.
      (100%는 저장하지 않는다 = 기본값) */
 function volMaxOf(ch) {
-  return (ch && (ch.kind === 'hls' || ch.kind === 'kbs' || ch.kind === 'mbn')) ? 200 : 100;
+  return (LEVEL_ON && ch && (ch.kind === 'hls' || ch.kind === 'kbs' || ch.kind === 'mbn')) ? 200 : 100;
 }
 function volPct(chId) {
   const v = chId ? state.vol[chId] : undefined;
@@ -447,7 +446,7 @@ function scheduleSave() {
   if (saveTimer) clearTimeout(saveTimer);
   saveTimer = setTimeout(function () { saveTimer = 0; try { save(); } catch (e) {} }, 200);
 }
-/* 채널 하나의 볼륨을 실제 재생에 반영 — HLS는 그래프의 user 게인, YouTube는 setVolume */
+/* 채널 하나의 볼륨을 실제 재생에 반영 — 순정 네이티브 video.volume / YouTube setVolume */
 function applyChannelVolume(chId) {
   const ch = chId ? byId(chId) : null;
   if (!ch) return;
@@ -456,10 +455,17 @@ function applyChannelVolume(chId) {
   AUDIO.chains.forEach(function (c) {
     if (c.id === chId && c.user && ctx) c.user.gain.setTargetAtTime(pct / 100, ctx.currentTime, 0.03);
   });
-  if (ch.kind === 'youtube' || ch.kind === 'youtube-video') {
-    const ids = slotIds();
-    ids.forEach(function (id, i) { if (id === chId) ytCmd(i, 'setVolume', [Math.min(100, pct)]); });
-  }
+  const ids = slotIds();
+  ids.forEach(function (id, i) {
+    if (id !== chId) return;
+    const L = live[i];
+    if (L && L.video) {
+      try { L.video.volume = Math.max(0, Math.min(1, pct / 100)); } catch (e) {}
+    }
+    if (ch.kind === 'youtube' || ch.kind === 'youtube-video') {
+      ytCmd(i, 'setVolume', [Math.min(100, pct)]);
+    }
+  });
 }
 function setChannelVolume(chId, pct) {
   const ch = chId ? byId(chId) : null;
@@ -496,30 +502,30 @@ function buildVolPresets(ch) {
   const wrap = $('#vol-presets');
   if (!wrap) return;
   wrap.innerHTML = '';
-  const list = volMaxOf(ch) > 100 ? [70, 100, 130, 160, 200] : [30, 50, 70, 100];
+  const list = volMaxOf(ch) > 100 ? [30, 70, 100, 120, 150, 200] : [30, 50, 70, 100];
   list.forEach(function (p) {
     const b = document.createElement('button');
-    b.type = 'button'; b.dataset.vol = String(p); b.textContent = p + '%';
+    b.type = 'button';
+    b.dataset.vol = String(p);
+    b.textContent = p === 100 ? '100% (기본)' : p + '%';
     wrap.appendChild(b);
   });
-  const r = document.createElement('button');
-  r.type = 'button'; r.className = 'vol-reset'; r.dataset.vol = '100'; r.textContent = '기본';
-  wrap.appendChild(r);
 }
 function syncVolPop() {
   const pop = volPopEl();
   if (!pop || pop.hidden || volSlot == null) return;
   const ch = slotChannel(volSlot);
   if (!ch) { closeVolPop(); return; }
-  const p = volPct(ch.id);
+  const max = volMaxOf(ch);
+  const p = Math.min(max, volPct(ch.id));
   const r = $('#vol-range');
   if (r && document.activeElement !== r) r.value = String(p);
-  if (r) r.style.setProperty('--vol-fill', Math.round((p / Math.max(1, volMaxOf(ch))) * 100) + '%');
+  if (r) r.style.setProperty('--vol-fill', Math.round((p / max) * 100) + '%');
   $('#vol-pct').textContent = p + '%';
-  $('#vol-db').textContent = (p === 100 ? '0.0' : (20 * Math.log10(p / 100)).toFixed(1)) + ' dB';
-  $('#vol-note').textContent = volMaxOf(ch) > 100
-    ? '공식 HLS 채널 — 자동 평준화에 더해 최대 200%(+6dB)까지 직접 올릴 수 있습니다.'
-    : 'YouTube 채널 — 플레이어 볼륨이라 100%가 원음 최대치입니다.';
+  $('#vol-db').textContent = (p === 0 ? '-∞' : p === 100 ? '0.0' : (20 * Math.log10(p / 100)).toFixed(1)) + ' dB';
+  $('#vol-note').textContent = max > 100
+    ? '평준화 모드(?level=1) — 최대 200%(+6.0 dB)까지 조절할 수 있습니다.'
+    : '원음 그대로 재생됩니다 (0~100% 조절 · 기본 100%).';
   pop.querySelectorAll('#vol-presets [data-vol]').forEach(function (b) {
     b.classList.toggle('is-current', Number(b.dataset.vol) === p);
   });
@@ -1569,7 +1575,7 @@ function selectSlot(i) {
     ytCmd(i, 'setVolume', [Math.min(100, volPct(ch.id))]);
     ytCmd(i, 'playVideo');
   } else if ((ch.kind === 'hls' || ch.kind === 'kbs' || ch.kind === 'mbn') && L.video) {
-    try { L.video.volume = 1; } catch (e) {}
+    try { L.video.volume = Math.max(0, Math.min(1, volPct(ch.id) / 100)); } catch (e) {}
     if (L.video.paused) L.video.play().catch(() => {});
   }
 }
@@ -1616,7 +1622,7 @@ function applyAudio() {
     if (L.video != null) {
       L.video.muted = muted;
       if (!muted) {
-        try { L.video.volume = 1; } catch (e) {}
+        try { L.video.volume = Math.max(0, Math.min(1, volPct(L.ch.id) / 100)); } catch (e) {}
         playWithSound(L.video);
       }
     }

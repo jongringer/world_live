@@ -1,474 +1,619 @@
 <!DOCTYPE html>
 <html lang="ko" data-theme="newsroom">
+
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<meta name="color-scheme" content="dark" />
-<title>WORLD LIVE // GLOBAL NEWSROOM MONITOR</title>
-<meta name="description" content="전 세계 뉴스 채널 24시간 라이브 멀티뷰 — NHK·BBC·CNN FAST·CGTN·France 24·DW·ABC News Live·Al Jazeera HLS(백업 자동 전환)와 KBS NEWS 24·YTN·연합뉴스TV. 9분할·4분할 채널 직접 선택, 국내뉴스 9분할(YTN·연합뉴스TV·KBS·MBC·SBS·JTBC·TV조선·MBN·채널A), 경제뉴스 9분할(한국경제TV·매일경제TV·삼프로TV·오선의 미증시·Bloomberg·CNBC·Yahoo Finance·Fox Business·Euronews Business), 클린 전체화면, 전체 스크롤 모드." />
-<meta name="theme-color" content="#0F1D32" />
-<meta name="mobile-web-app-capable" content="yes" />
-<meta name="apple-mobile-web-app-capable" content="yes" />
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-<meta name="apple-mobile-web-app-title" content="WORLD LIVE" />
-<meta name="application-name" content="WORLD LIVE" />
-<meta name="msapplication-TileColor" content="#0F1D32" />
-<meta name="pwa-build" content="2026-11-24.pwa3" />
-<link rel="manifest" href="manifest.webmanifest?v=pwa1" />
-<link rel="icon" href="icons/icon-192.png" sizes="192x192" type="image/png" />
-<link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
-<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css" />
-<link rel="stylesheet" href="css/style.css?v=100" />
-<link rel="stylesheet" href="css/pwa.css?v=4" />
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="color-scheme" content="dark" />
+  <title>WORLD LIVE // GLOBAL NEWSROOM MONITOR</title>
+  <meta name="description"
+    content="전 세계 뉴스 채널 24시간 라이브 멀티뷰 — NHK·BBC·CNN FAST·CGTN·France 24·DW·ABC News Live·Al Jazeera HLS(백업 자동 전환)와 KBS NEWS 24·YTN·연합뉴스TV. 9분할·4분할 채널 직접 선택, 국내뉴스 9분할(YTN·연합뉴스TV·KBS·MBC·SBS·JTBC·TV조선·MBN·채널A), 경제뉴스 9분할(한국경제TV·매일경제TV·삼프로TV·오선의 미증시·Bloomberg·CNBC·Yahoo Finance·Fox Business·Euronews Business), 클린 전체화면, 전체 스크롤 모드." />
+  <meta name="theme-color" content="#0F1D32" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="WORLD LIVE" />
+  <meta name="application-name" content="WORLD LIVE" />
+  <meta name="msapplication-TileColor" content="#0F1D32" />
+  <meta name="pwa-build" content="2026-11-24.pwa3" />
+  <link rel="manifest" href="manifest.webmanifest?v=pwa1" />
+  <link rel="icon" href="icons/icon-192.png" sizes="192x192" type="image/png" />
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
+  <link rel="stylesheet"
+    href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css" />
+  <link rel="stylesheet" href="css/style.css?v=102" />
+  <link rel="stylesheet" href="css/pwa.css?v=4" />
 </head>
+
 <body>
-<div id="app" class="app">
+  <div id="app" class="app">
 
-  <!-- ══════════════ TOP CONTROL BAR ══════════════ -->
-  <header class="topbar" id="topbar">
-    <div class="brand">
-      <svg class="brand-mark globe-mark" viewBox="0 0 60 60" aria-hidden="true">
-        <defs>
-          <!-- 바다: 표층 하이라이트 → 심해 -->
-          <radialGradient id="gOcean" cx="30%" cy="22%" r="88%">
-            <stop offset="0%" stop-color="#67E8F9"/>
-            <stop offset="18%" stop-color="#38BDF8"/>
-            <stop offset="42%" stop-color="#0284C7"/>
-            <stop offset="68%" stop-color="#0369A1"/>
-            <stop offset="88%" stop-color="#0C4A6E"/>
-            <stop offset="100%" stop-color="#082F49"/>
-          </radialGradient>
-          <!-- 대륙: 금빛 지형 -->
-          <linearGradient id="gLand" x1="15%" y1="0%" x2="85%" y2="100%">
-            <stop offset="0%" stop-color="#FEF08A"/>
-            <stop offset="35%" stop-color="#FACC15"/>
-            <stop offset="70%" stop-color="#CA8A04"/>
-            <stop offset="100%" stop-color="#713F12"/>
-          </linearGradient>
-          <!-- 구체 명암: 우하단 음영 -->
-          <radialGradient id="gShade" cx="28%" cy="22%" r="92%">
-            <stop offset="0%" stop-color="rgba(255,255,255,0)"/>
-            <stop offset="48%" stop-color="rgba(2,6,12,0.06)"/>
-            <stop offset="72%" stop-color="rgba(2,6,12,0.42)"/>
-            <stop offset="88%" stop-color="rgba(2,6,12,0.78)"/>
-            <stop offset="100%" stop-color="rgba(1,4,9,0.94)"/>
-          </radialGradient>
-          <!-- 대기권 글로우 -->
-          <radialGradient id="gAtmo" cx="50%" cy="50%" r="50%">
-            <stop offset="70%" stop-color="rgba(56,189,248,0)"/>
-            <stop offset="88%" stop-color="rgba(56,189,248,0.22)"/>
-            <stop offset="98%" stop-color="rgba(186,230,253,0.14)"/>
-            <stop offset="100%" stop-color="rgba(186,230,253,0)"/>
-          </radialGradient>
-          <!-- 림 라이트 -->
-          <linearGradient id="gRim" x1="10%" y1="5%" x2="90%" y2="95%">
-            <stop offset="0%" stop-color="rgba(224,242,254,0.95)"/>
-            <stop offset="35%" stop-color="rgba(56,189,248,0.6)"/>
-            <stop offset="70%" stop-color="rgba(14,116,144,0.2)"/>
-            <stop offset="100%" stop-color="rgba(186,230,253,0.65)"/>
-          </linearGradient>
-          <!-- 스페큘러 하이라이트 -->
-          <radialGradient id="gSpec" cx="50%" cy="50%" r="50%">
-            <stop offset="0%" stop-color="rgba(255,255,255,0.7)"/>
-            <stop offset="55%" stop-color="rgba(224,242,254,0.2)"/>
-            <stop offset="100%" stop-color="rgba(255,255,255,0)"/>
-          </radialGradient>
-          <!-- 위성 본체 골드 그라데이션 -->
-          <linearGradient id="satBody" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stop-color="#FFFBEB"/>
-            <stop offset="40%" stop-color="#FDE68A"/>
-            <stop offset="75%" stop-color="#D97706"/>
-            <stop offset="100%" stop-color="#78350F"/>
-          </linearGradient>
-          <!-- 태양광 패널 그라데이션 -->
-          <linearGradient id="satSolar" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stop-color="#1E3A8A"/>
-            <stop offset="50%" stop-color="#172554"/>
-            <stop offset="100%" stop-color="#0F172A"/>
-          </linearGradient>
+    <!-- ══════════════ TOP CONTROL BAR ══════════════ -->
+    <header class="topbar" id="topbar">
+      <div class="brand">
+        <svg class="brand-mark globe-mark" viewBox="0 0 60 60" aria-hidden="true">
+          <defs>
+            <!-- 바다: 표층 하이라이트 → 심해 -->
+            <radialGradient id="gOcean" cx="30%" cy="22%" r="88%">
+              <stop offset="0%" stop-color="#67E8F9" />
+              <stop offset="18%" stop-color="#38BDF8" />
+              <stop offset="42%" stop-color="#0284C7" />
+              <stop offset="68%" stop-color="#0369A1" />
+              <stop offset="88%" stop-color="#0C4A6E" />
+              <stop offset="100%" stop-color="#082F49" />
+            </radialGradient>
+            <!-- 대륙: 금빛 지형 -->
+            <linearGradient id="gLand" x1="15%" y1="0%" x2="85%" y2="100%">
+              <stop offset="0%" stop-color="#FEF08A" />
+              <stop offset="35%" stop-color="#FACC15" />
+              <stop offset="70%" stop-color="#CA8A04" />
+              <stop offset="100%" stop-color="#713F12" />
+            </linearGradient>
+            <!-- 구체 명암: 우하단 음영 -->
+            <radialGradient id="gShade" cx="28%" cy="22%" r="92%">
+              <stop offset="0%" stop-color="rgba(255,255,255,0)" />
+              <stop offset="48%" stop-color="rgba(2,6,12,0.06)" />
+              <stop offset="72%" stop-color="rgba(2,6,12,0.42)" />
+              <stop offset="88%" stop-color="rgba(2,6,12,0.78)" />
+              <stop offset="100%" stop-color="rgba(1,4,9,0.94)" />
+            </radialGradient>
+            <!-- 대기권 글로우 -->
+            <radialGradient id="gAtmo" cx="50%" cy="50%" r="50%">
+              <stop offset="70%" stop-color="rgba(56,189,248,0)" />
+              <stop offset="88%" stop-color="rgba(56,189,248,0.22)" />
+              <stop offset="98%" stop-color="rgba(186,230,253,0.14)" />
+              <stop offset="100%" stop-color="rgba(186,230,253,0)" />
+            </radialGradient>
+            <!-- 림 라이트 -->
+            <linearGradient id="gRim" x1="10%" y1="5%" x2="90%" y2="95%">
+              <stop offset="0%" stop-color="rgba(224,242,254,0.95)" />
+              <stop offset="35%" stop-color="rgba(56,189,248,0.6)" />
+              <stop offset="70%" stop-color="rgba(14,116,144,0.2)" />
+              <stop offset="100%" stop-color="rgba(186,230,253,0.65)" />
+            </linearGradient>
+            <!-- 스페큘러 하이라이트 -->
+            <radialGradient id="gSpec" cx="50%" cy="50%" r="50%">
+              <stop offset="0%" stop-color="rgba(255,255,255,0.7)" />
+              <stop offset="55%" stop-color="rgba(224,242,254,0.2)" />
+              <stop offset="100%" stop-color="rgba(255,255,255,0)" />
+            </radialGradient>
+            <!-- 위성 본체 골드 그라데이션 -->
+            <linearGradient id="satBody" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#FFFBEB" />
+              <stop offset="40%" stop-color="#FDE68A" />
+              <stop offset="75%" stop-color="#D97706" />
+              <stop offset="100%" stop-color="#78350F" />
+            </linearGradient>
+            <!-- 태양광 패널 그라데이션 -->
+            <linearGradient id="satSolar" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#1E3A8A" />
+              <stop offset="50%" stop-color="#172554" />
+              <stop offset="100%" stop-color="#0F172A" />
+            </linearGradient>
 
-          <clipPath id="gClip"><circle cx="30" cy="30" r="14"/></clipPath>
-          <filter id="gSoft" x="-70%" y="-70%" width="240%" height="240%">
-            <feGaussianBlur stdDeviation="1.6"/>
-          </filter>
+            <clipPath id="gClip">
+              <circle cx="30" cy="30" r="14" />
+            </clipPath>
+            <filter id="gSoft" x="-70%" y="-70%" width="240%" height="240%">
+              <feGaussianBlur stdDeviation="1.6" />
+            </filter>
 
-          <!-- 시원하게 거리를 둔 와이드 우주 궤도 경로 (중심 30,30 / rx=26.5, ry=11.5) -->
-          <path id="orbitPath" d="M 56.5 30 a 26.5 11.5 0 1 0 -53 0 a 26.5 11.5 0 1 0 53 0 z"/>
+            <!-- 시원하게 거리를 둔 와이드 우주 궤도 경로 (중심 30,30 / rx=26.5, ry=11.5) -->
+            <path id="orbitPath" d="M 56.5 30 a 26.5 11.5 0 1 0 -53 0 a 26.5 11.5 0 1 0 53 0 z" />
 
-          <!-- 대륙 세트 -->
-          <g id="landSet" fill="url(#gLand)" stroke="rgba(66,46,20,0.34)" stroke-width="0.16" stroke-linejoin="round">
-            <path d="M19.4 20.4c1-1.6 2.7-2.2 4.1-1.5 1 .5 2.1.5 3-.1 1.4-.9 3.2-.3 3.9 1.2.6 1.2 0 2.6-1.2 3.1-1 .4-1.6 1.4-1.4 2.4.2 1.1-.6 2.1-1.7 2.3-1.2.2-2.1-.6-3-1-1-.4-2.4 0-3.1-.9-.6-.8-.2-1.9-.8-2.7-.7-1-.8-2.3.2-2.8z"/>
-            <path d="M29.3 27.2c1.7-.5 3.2.6 3.3 2.1.2 1.6-.8 2.8-1.8 3.7-.9.8-1.2 2-2.5 2.2-1.4.2-2.5-1-2.4-2.3.1-1.5.6-2.7 1.6-3.7.6-.8 1.1-1.7 1.8-2z"/>
-            <path d="M20.9 32.6c1.2-.6 2.5-.2 3 .8.5 1.1 0 2.3-1 2.8-.8.5-1 1.5-2 1.7-1.2.2-2.2-.5-2.3-1.6-.1-1.1.5-2.1 1.4-2.8.3-.3.6-.6.9-.9z"/>
-            <path d="M34.4 34.8c1.2-.4 2.3.2 2.5 1.4.2 1.1-.6 2.1-1.7 2.3-1.1.2-2-.5-2.1-1.5-.1-1 .5-1.9 1.3-2.2z"/>
-            <path d="M36 23.6c1.1-.5 2.2-.2 2.5.8.3 1-.3 1.9-1.3 2.1-.9.2-1.8-.3-2-1.1-.2-.8.2-1.5.8-1.8z"/>
+            <!-- 대륙 세트 -->
+            <g id="landSet" fill="url(#gLand)" stroke="rgba(66,46,20,0.34)" stroke-width="0.16" stroke-linejoin="round">
+              <path
+                d="M19.4 20.4c1-1.6 2.7-2.2 4.1-1.5 1 .5 2.1.5 3-.1 1.4-.9 3.2-.3 3.9 1.2.6 1.2 0 2.6-1.2 3.1-1 .4-1.6 1.4-1.4 2.4.2 1.1-.6 2.1-1.7 2.3-1.2.2-2.1-.6-3-1-1-.4-2.4 0-3.1-.9-.6-.8-.2-1.9-.8-2.7-.7-1-.8-2.3.2-2.8z" />
+              <path
+                d="M29.3 27.2c1.7-.5 3.2.6 3.3 2.1.2 1.6-.8 2.8-1.8 3.7-.9.8-1.2 2-2.5 2.2-1.4.2-2.5-1-2.4-2.3.1-1.5.6-2.7 1.6-3.7.6-.8 1.1-1.7 1.8-2z" />
+              <path
+                d="M20.9 32.6c1.2-.6 2.5-.2 3 .8.5 1.1 0 2.3-1 2.8-.8.5-1 1.5-2 1.7-1.2.2-2.2-.5-2.3-1.6-.1-1.1.5-2.1 1.4-2.8.3-.3.6-.6.9-.9z" />
+              <path d="M34.4 34.8c1.2-.4 2.3.2 2.5 1.4.2 1.1-.6 2.1-1.7 2.3-1.1.2-2-.5-2.1-1.5-.1-1 .5-1.9 1.3-2.2z" />
+              <path d="M36 23.6c1.1-.5 2.2-.2 2.5.8.3 1-.3 1.9-1.3 2.1-.9.2-1.8-.3-2-1.1-.2-.8.2-1.5.8-1.8z" />
+            </g>
+          </defs>
+
+          <!-- 대기권 헤일로 -->
+          <circle cx="30" cy="30" r="15.8" fill="none" stroke="rgba(56,189,248,0.18)" stroke-width="1.8"
+            filter="url(#gSoft)" />
+          <circle cx="30" cy="30" r="15.8" fill="url(#gAtmo)" />
+
+          <!-- 지구 본체 -->
+          <circle cx="30" cy="30" r="14" fill="url(#gOcean)" />
+
+          <!-- 극지 빙하 · 대륙 (자전) -->
+          <g clip-path="url(#gClip)">
+            <ellipse cx="30" cy="17.4" rx="6" ry="2.2" fill="rgba(240,252,255,0.3)" />
+            <ellipse cx="30" cy="42.5" rx="5" ry="1.8" fill="rgba(240,252,255,0.22)" />
+            <g class="globe-land">
+              <use href="#landSet" />
+              <use href="#landSet" transform="translate(-31 0)" />
+            </g>
           </g>
-        </defs>
 
-        <!-- 대기권 헤일로 -->
-        <circle cx="30" cy="30" r="15.8" fill="none" stroke="rgba(56,189,248,0.18)" stroke-width="1.8" filter="url(#gSoft)"/>
-        <circle cx="30" cy="30" r="15.8" fill="url(#gAtmo)"/>
-
-        <!-- 지구 본체 -->
-        <circle cx="30" cy="30" r="14" fill="url(#gOcean)"/>
-
-        <!-- 극지 빙하 · 대륙 (자전) -->
-        <g clip-path="url(#gClip)">
-          <ellipse cx="30" cy="17.4" rx="6" ry="2.2" fill="rgba(240,252,255,0.3)"/>
-          <ellipse cx="30" cy="42.5" rx="5" ry="1.8" fill="rgba(240,252,255,0.22)"/>
-          <g class="globe-land">
-            <use href="#landSet"/>
-            <use href="#landSet" transform="translate(-31 0)"/>
+          <!-- 경선·위선 그리드 -->
+          <g class="globe-grid" clip-path="url(#gClip)" fill="none" stroke="rgba(186,230,253,0.32)" stroke-width="0.35">
+            <ellipse cx="30" cy="30" rx="3.6" ry="14" />
+            <ellipse cx="30" cy="30" rx="7.8" ry="14" />
+            <ellipse cx="30" cy="30" rx="11.4" ry="14" />
+            <path d="M16 30h28" opacity="0.75" />
+            <ellipse cx="30" cy="23.8" rx="12.5" ry="1.8" opacity="0.85" />
+            <ellipse cx="30" cy="30" rx="14" ry="2.4" />
+            <ellipse cx="30" cy="36.2" rx="12.5" ry="1.8" opacity="0.85" />
           </g>
-        </g>
 
-        <!-- 경선·위선 그리드 -->
-        <g class="globe-grid" clip-path="url(#gClip)" fill="none" stroke="rgba(186,230,253,0.32)" stroke-width="0.35">
-          <ellipse cx="30" cy="30" rx="3.6" ry="14"/>
-          <ellipse cx="30" cy="30" rx="7.8" ry="14"/>
-          <ellipse cx="30" cy="30" rx="11.4" ry="14"/>
-          <path d="M16 30h28" opacity="0.75"/>
-          <ellipse cx="30" cy="23.8" rx="12.5" ry="1.8" opacity="0.85"/>
-          <ellipse cx="30" cy="30" rx="14" ry="2.4"/>
-          <ellipse cx="30" cy="36.2" rx="12.5" ry="1.8" opacity="0.85"/>
-        </g>
+          <!-- 입체 명암 · 하이라이트 · 림 -->
+          <circle cx="30" cy="30" r="14" fill="url(#gShade)" />
+          <ellipse cx="25.2" cy="24.4" rx="4.8" ry="3" fill="url(#gSpec)" transform="rotate(-26 25.2 24.4)"
+            opacity="0.65" />
+          <circle class="globe-rim-pulse" cx="30" cy="30" r="13.8" fill="none" stroke="url(#gRim)" stroke-width="0.9" />
 
-        <!-- 입체 명암 · 하이라이트 · 림 -->
-        <circle cx="30" cy="30" r="14" fill="url(#gShade)"/>
-        <ellipse cx="25.2" cy="24.4" rx="4.8" ry="3" fill="url(#gSpec)" transform="rotate(-26 25.2 24.4)" opacity="0.65"/>
-        <circle class="globe-rim-pulse" cx="30" cy="30" r="13.8" fill="none" stroke="url(#gRim)" stroke-width="0.9"/>
+          <!-- 거리를 두고 지구를 공전하는 정밀 인공위성 (3D 회전 궤도) -->
+          <g transform="rotate(-20 30 30)">
+            <!-- 우주 궤도 점선 -->
+            <use href="#orbitPath" class="orbit-line" fill="none" stroke="rgba(245,229,192,0.4)" stroke-width="0.6"
+              stroke-dasharray="4.5 4" />
 
-        <!-- 거리를 두고 지구를 공전하는 정밀 인공위성 (3D 회전 궤도) -->
-        <g transform="rotate(-20 30 30)">
-          <!-- 우주 궤도 점선 -->
-          <use href="#orbitPath" class="orbit-line" fill="none" stroke="rgba(245,229,192,0.4)" stroke-width="0.6" stroke-dasharray="4.5 4"/>
+            <!-- 궤도를 도는 인공위성 -->
+            <g class="sat">
+              <animateMotion dur="12s" repeatCount="indefinite" rotate="auto">
+                <mpath href="#orbitPath" />
+              </animateMotion>
 
-          <!-- 궤도를 도는 인공위성 -->
-          <g class="sat">
-            <animateMotion dur="12s" repeatCount="indefinite" rotate="auto">
-              <mpath href="#orbitPath"/>
-            </animateMotion>
+              <!-- 지구를 향한 통신 펄스 전파 (WiFi Waves) -->
+              <path class="wv wv1" d="M-3.6 -3.2 A 5 5 0 0 1 3.6 -3.2" opacity="0">
+                <animate attributeName="opacity" values="0;0.95;0.6;0" keyTimes="0;0.3;0.65;1" dur="2.2s" begin="0s"
+                  repeatCount="indefinite" />
+                <animateTransform attributeName="transform" type="scale" values="0.8;1.25" dur="2.2s" begin="0s"
+                  repeatCount="indefinite" />
+              </path>
+              <path class="wv wv2" d="M-5.4 -4.6 A 7.2 7.2 0 0 1 5.4 -4.6" opacity="0">
+                <animate attributeName="opacity" values="0;0.9;0.5;0" keyTimes="0;0.3;0.65;1" dur="2.2s" begin="0.7s"
+                  repeatCount="indefinite" />
+                <animateTransform attributeName="transform" type="scale" values="0.8;1.25" dur="2.2s" begin="0.7s"
+                  repeatCount="indefinite" />
+              </path>
+              <path class="wv wv3" d="M-7.2 -6 A 9.5 9.5 0 0 1 7.2 -6" opacity="0">
+                <animate attributeName="opacity" values="0;0.8;0.4;0" keyTimes="0;0.3;0.65;1" dur="2.2s" begin="1.4s"
+                  repeatCount="indefinite" />
+                <animateTransform attributeName="transform" type="scale" values="0.8;1.25" dur="2.2s" begin="1.4s"
+                  repeatCount="indefinite" />
+              </path>
 
-            <!-- 지구를 향한 통신 펄스 전파 (WiFi Waves) -->
-            <path class="wv wv1" d="M-3.6 -3.2 A 5 5 0 0 1 3.6 -3.2" opacity="0">
-              <animate attributeName="opacity" values="0;0.95;0.6;0" keyTimes="0;0.3;0.65;1" dur="2.2s" begin="0s" repeatCount="indefinite"/>
-              <animateTransform attributeName="transform" type="scale" values="0.8;1.25" dur="2.2s" begin="0s" repeatCount="indefinite"/>
-            </path>
-            <path class="wv wv2" d="M-5.4 -4.6 A 7.2 7.2 0 0 1 5.4 -4.6" opacity="0">
-              <animate attributeName="opacity" values="0;0.9;0.5;0" keyTimes="0;0.3;0.65;1" dur="2.2s" begin="0.7s" repeatCount="indefinite"/>
-              <animateTransform attributeName="transform" type="scale" values="0.8;1.25" dur="2.2s" begin="0.7s" repeatCount="indefinite"/>
-            </path>
-            <path class="wv wv3" d="M-7.2 -6 A 9.5 9.5 0 0 1 7.2 -6" opacity="0">
-              <animate attributeName="opacity" values="0;0.8;0.4;0" keyTimes="0;0.3;0.65;1" dur="2.2s" begin="1.4s" repeatCount="indefinite"/>
-              <animateTransform attributeName="transform" type="scale" values="0.8;1.25" dur="2.2s" begin="1.4s" repeatCount="indefinite"/>
-            </path>
+              <!-- 지구 방향 파라볼릭 접시 안테나 (Parabolic Dish) -->
+              <path d="M-2.8 -2.4 Q 0 -0.8 2.8 -2.4" fill="none" stroke="#67E8F9" stroke-width="0.75"
+                stroke-linecap="round" />
+              <path d="M0 -1.6 V -3.2" stroke="#FDE68A" stroke-width="0.6" />
+              <!-- 안테나 피드 비콘 (깜빡이는 레드 펄스 LED) -->
+              <circle cx="0" cy="-3.5" r="0.65" fill="#FF2E44">
+                <animate attributeName="opacity" values="0.4;1;0.4" dur="1s" repeatCount="indefinite" />
+              </circle>
 
-            <!-- 지구 방향 파라볼릭 접시 안테나 (Parabolic Dish) -->
-            <path d="M-2.8 -2.4 Q 0 -0.8 2.8 -2.4" fill="none" stroke="#67E8F9" stroke-width="0.75" stroke-linecap="round"/>
-            <path d="M0 -1.6 V -3.2" stroke="#FDE68A" stroke-width="0.6"/>
-            <!-- 안테나 피드 비콘 (깜빡이는 레드 펄스 LED) -->
-            <circle cx="0" cy="-3.5" r="0.65" fill="#FF2E44">
-              <animate attributeName="opacity" values="0.4;1;0.4" dur="1s" repeatCount="indefinite"/>
-            </circle>
+              <!-- 좌측 대형 태양광 패널 날개 (Solar Wing Left) -->
+              <path d="M-2.2 0 H-3.6" stroke="#FDE68A" stroke-width="0.8" stroke-linecap="round" />
+              <rect x="-9.4" y="-2.8" width="5.8" height="5.6" rx="0.6" fill="url(#satSolar)" stroke="#60A5FA"
+                stroke-width="0.55" />
+              <!-- 솔라 패널 격자 라인 -->
+              <path d="M-6.5 -2.8 V 2.8 M-9.4 0 H-3.6" stroke="rgba(147,197,253,0.55)" stroke-width="0.35" />
+              <!-- 태양광 패널 빛 반사 스페큘러 글린트 (빛을 받아 번쩍이는 반사광) -->
+              <polygon class="sat-glint" points="-9.4,-2.8 -6.5,-2.8 -4.5,2.8 -7.4,2.8" fill="rgba(255,255,255,0.75)">
+                <animate attributeName="opacity" values="0.1;0.95;0.1" dur="2.4s" repeatCount="indefinite" />
+              </polygon>
 
-            <!-- 좌측 대형 태양광 패널 날개 (Solar Wing Left) -->
-            <path d="M-2.2 0 H-3.6" stroke="#FDE68A" stroke-width="0.8" stroke-linecap="round"/>
-            <rect x="-9.4" y="-2.8" width="5.8" height="5.6" rx="0.6" fill="url(#satSolar)" stroke="#60A5FA" stroke-width="0.55"/>
-            <!-- 솔라 패널 격자 라인 -->
-            <path d="M-6.5 -2.8 V 2.8 M-9.4 0 H-3.6" stroke="rgba(147,197,253,0.55)" stroke-width="0.35"/>
-            <!-- 태양광 패널 빛 반사 스페큘러 글린트 (빛을 받아 번쩍이는 반사광) -->
-            <polygon class="sat-glint" points="-9.4,-2.8 -6.5,-2.8 -4.5,2.8 -7.4,2.8" fill="rgba(255,255,255,0.75)">
-              <animate attributeName="opacity" values="0.1;0.95;0.1" dur="2.4s" repeatCount="indefinite"/>
-            </polygon>
+              <!-- 우측 대형 태양광 패널 날개 (Solar Wing Right) -->
+              <path d="M2.2 0 H3.6" stroke="#FDE68A" stroke-width="0.8" stroke-linecap="round" />
+              <rect x="3.6" y="-2.8" width="5.8" height="5.6" rx="0.6" fill="url(#satSolar)" stroke="#60A5FA"
+                stroke-width="0.55" />
+              <!-- 솔라 패널 격자 라인 -->
+              <path d="M6.5 -2.8 V 2.8 M3.6 0 H9.4" stroke="rgba(147,197,253,0.55)" stroke-width="0.35" />
+              <!-- 태양광 패널 빛 반사 스페큘러 글린트 -->
+              <polygon class="sat-glint" points="3.6,-2.8 6.5,-2.8 8.5,2.8 5.6,2.8" fill="rgba(255,255,255,0.75)">
+                <animate attributeName="opacity" values="0.1;0.95;0.1" dur="2.4s" begin="0.6s"
+                  repeatCount="indefinite" />
+              </polygon>
 
-            <!-- 우측 대형 태양광 패널 날개 (Solar Wing Right) -->
-            <path d="M2.2 0 H3.6" stroke="#FDE68A" stroke-width="0.8" stroke-linecap="round"/>
-            <rect x="3.6" y="-2.8" width="5.8" height="5.6" rx="0.6" fill="url(#satSolar)" stroke="#60A5FA" stroke-width="0.55"/>
-            <!-- 솔라 패널 격자 라인 -->
-            <path d="M6.5 -2.8 V 2.8 M3.6 0 H9.4" stroke="rgba(147,197,253,0.55)" stroke-width="0.35"/>
-            <!-- 태양광 패널 빛 반사 스페큘러 글린트 -->
-            <polygon class="sat-glint" points="3.6,-2.8 6.5,-2.8 8.5,2.8 5.6,2.8" fill="rgba(255,255,255,0.75)">
-              <animate attributeName="opacity" values="0.1;0.95;0.1" dur="2.4s" begin="0.6s" repeatCount="indefinite"/>
-            </polygon>
-
-            <!-- 중앙 메인 바디 (골드 티타늄 큐브 코어) -->
-            <rect x="-2.2" y="-2.5" width="4.4" height="5" rx="0.7" fill="url(#satBody)" stroke="#FDE68A" stroke-width="0.6"/>
-            <!-- 코어 정밀 센서 창 & 빛 반사 -->
-            <rect x="-1.3" y="-1.4" width="2.6" height="2.8" rx="0.4" fill="#0F172A" stroke="#38BDF8" stroke-width="0.35"/>
-            <circle cx="0" cy="0" r="0.75" fill="#67E8F9">
-              <animate attributeName="fill" values="#67E8F9;#FFFFFF;#67E8F9" dur="1.8s" repeatCount="indefinite"/>
-            </circle>
+              <!-- 중앙 메인 바디 (골드 티타늄 큐브 코어) -->
+              <rect x="-2.2" y="-2.5" width="4.4" height="5" rx="0.7" fill="url(#satBody)" stroke="#FDE68A"
+                stroke-width="0.6" />
+              <!-- 코어 정밀 센서 창 & 빛 반사 -->
+              <rect x="-1.3" y="-1.4" width="2.6" height="2.8" rx="0.4" fill="#0F172A" stroke="#38BDF8"
+                stroke-width="0.35" />
+              <circle cx="0" cy="0" r="0.75" fill="#67E8F9">
+                <animate attributeName="fill" values="#67E8F9;#FFFFFF;#67E8F9" dur="1.8s" repeatCount="indefinite" />
+              </circle>
+            </g>
           </g>
-        </g>
-      </svg>
-      <div class="brand-text">
-        <div class="brand-line">
-          <span class="brand-name">WORLD LIVE</span>
-        </div>
-        <div class="brand-sub">GLOBAL NEWSROOM MONITOR</div>
-      </div>
-    </div>
-
-    <nav class="layouts" id="layouts" aria-label="레이아웃">
-      <button class="layout-btn" data-layout="9" title="9분할 (3×3)  ·  키 1">
-        <svg viewBox="0 0 20 20" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="1.2"><rect x="1.5" y="1.5" width="17" height="17" rx="1.6"/><path d="M7.2 2v16M12.8 2v16M2 7.2h16M2 12.8h16"/></g></svg>
-        <span class="lb-txt">9분할</span><span class="lb-dim">3×3</span>
-      </button>
-      <button class="layout-btn" data-layout="6" title="6분할 (3×2)  ·  키 2">
-        <svg viewBox="0 0 20 20" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="1.2"><rect x="1.5" y="1.5" width="17" height="17" rx="1.6"/><path d="M7.2 2v16M12.8 2v16M2 10h16"/></g></svg>
-        <span class="lb-txt">6분할</span><span class="lb-dim">3×2</span>
-      </button>
-      <button class="layout-btn" data-layout="4" title="4분할 (2×2)  ·  키 3">
-        <svg viewBox="0 0 20 20" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="1.2"><rect x="1.5" y="1.5" width="17" height="17" rx="1.6"/><path d="M10 2v16M2 10h16"/></g></svg>
-        <span class="lb-txt">4분할</span><span class="lb-dim">2×2</span>
-      </button>
-      <button class="layout-btn layout-btn-clean" data-layout="1" title="전체화면 — 선택 채널 클린 FULL (ESC → 이전 화면)  ·  키 4">
-        <svg viewBox="0 0 20 20" aria-hidden="true"><rect x="1.8" y="2.6" width="16.4" height="14.8" rx="1.8" fill="currentColor" opacity=".9"/></svg>
-        <span class="lb-txt">전체화면</span><span class="lb-dim">1×1</span>
-      </button>
-      <button class="layout-btn layout-btn-all" data-layout="all" title="전 세계 LIVE 전체 스크롤  ·  키 5">
-        <svg viewBox="0 0 20 20" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="1.2"><rect x="1.5" y="1.5" width="17" height="17" rx="1.6"/><path d="M1.5 6.6h17M1.5 11.5h17M1.5 16.4h17"/></g></svg>
-        <span class="lb-txt">전체 스크롤</span><span class="lb-dim">ALL LIVE</span>
-      </button>
-      <button class="layout-btn layout-btn-kr" data-layout="kr" title="국내뉴스 9분할 — YTN·연합뉴스TV·KBS·MBC·SBS·JTBC·TV조선·MBN·채널A  ·  키 K">
-        <svg viewBox="0 0 20 20" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="1.2"><rect x="1.5" y="1.5" width="17" height="17" rx="1.6"/><path d="M7.2 2v16M12.8 2v16M2 7.2h16M2 12.8h16"/></g><circle cx="10" cy="10" r="1.9" fill="currentColor"/></svg>
-        <span class="lb-txt">국내뉴스</span><span class="lb-dim">KR 9</span>
-      </button>
-      <button class="layout-btn layout-btn-econ" data-layout="econ" title="경제뉴스 9분할 — 한국경제TV·매일경제TV·삼프로TV·오선의 미증시 / Bloomberg·CNBC·Yahoo Finance·Fox Business / Euronews Business  ·  키 E">
-        <svg viewBox="0 0 20 20" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="1.2"><rect x="1.5" y="1.5" width="17" height="17" rx="1.6"/><path d="M7.2 2v16M12.8 2v16M2 7.2h16M2 12.8h16"/></g><path d="M4.2 14.2l3-3.4 2.2 2.2 3.2-4.2 3 3.4" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        <span class="lb-txt">경제뉴스</span><span class="lb-dim">ECON 9</span>
-      </button>
-      <span class="nav-sep"></span>
-      <div class="sort-wrap">
-        <button class="icon-btn wide sort-btn" id="btn-sort" title="채널 정렬 — 전체 스크롤·소스 목록 순서">
-          <svg viewBox="0 0 20 20" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><path d="M3 5h10M3 10h7M3 15h4"/><path d="M14.2 4.4v11M14.2 15.4l2.6-2.6M14.2 15.4l-2.6-2.6"/></g></svg>
-          <span class="lb-txt">정렬</span><span class="sort-label" id="sort-label">지역·국가순</span>
-          <span class="cs-caret">▾</span>
-        </button>
-        <div class="start-menu sort-menu" id="sort-menu" hidden>
-          <div class="sm-head">CHANNEL SORT</div>
-          <button data-sort="zone"><span>지역·국가순</span><small>일본·중국 → 미국 → 유럽 → 중동 → 한국</small></button>
-          <button data-sort="custom"><span>내 순서</span><small>전체 스크롤에서 ◀ ▶ 로 직접 정렬</small></button>
-          <button data-sort="name"><span>이름순 (A-Z)</span><small>채널명 가나다·알파벳</small></button>
-          <button data-sort="kr"><span>한국 우선</span><small>국내 뉴스를 맨 앞으로</small></button>
-          <div class="sm-note">전체 스크롤 화면과 소스 목록 순서에 적용됩니다.</div>
-        </div>
-      </div>
-    </nav>
-
-    <div class="clocks" id="clocks" aria-label="세계 시각"></div>
-
-    <div class="actions">
-      <button class="find-btn" id="btn-find" title="채널 찾기 — 소스 라이브러리 열기 (키 S)">
-        <svg viewBox="0 0 20 20" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8.8" cy="8.8" r="5.6"/><path d="M13 13l4.4 4.4" stroke-linecap="round"/></g></svg>
-        <span>채널 찾기</span>
-      </button>
-      <div class="start-wrap">
-        <button class="icon-btn wide start-btn" id="btn-start" title="첫 화면(기본 시작 레이아웃) 설정">
-          <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 2.6l2.2 4.6 5 .7-3.6 3.5.9 5-4.5-2.4-4.5 2.4.9-5L2.8 7.9l5-.7z" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linejoin="round"/></svg>
-          <span class="lb-txt">첫 화면</span><span class="start-label" id="start-label">마지막 화면</span>
-          <span class="cs-caret">▾</span>
-        </button>
-        <div class="start-menu" id="start-menu" hidden>
-          <div class="sm-head">시작 화면 고정</div>
-          <button data-start="auto"><span>마지막 화면</span><small>마지막으로 보던 화면</small></button>
-          <button data-start="9"><span>9분할</span><small>3×3 · 9채널</small></button>
-          <button data-start="6"><span>6분할</span><small>3×2 · 6채널</small></button>
-          <button data-start="4"><span>4분할</span><small>2×2 · 4채널</small></button>
-          <button data-start="kr"><span>국내뉴스</span><small>YTN·연합·KBS·MBC·SBS·JTBC·TV조선·MBN·채널A 9분할</small></button>
-          <button data-start="econ"><span>경제뉴스</span><small>한경TV·매경TV·삼프로TV·오선의 미증시 / Bloomberg·CNBC·Yahoo·Fox Business / Euronews 9분할</small></button>
-          <button data-start="1"><span>전체화면</span><small>1×1 · 한 채널</small></button>
-          <button data-start="all"><span>전체 스크롤</span><small>전 세계 LIVE</small></button>
-          <button data-start="krreset" class="sm-reset"><span>국내뉴스 순서 초기화</span><small>YTN → 연합 → KBS → MBC → SBS → JTBC → TV조선 → MBN → 채널A</small></button>
-          <button data-start="econreset" class="sm-reset"><span>경제뉴스 순서 초기화</span><small>한경TV → 매경TV → 삼프로TV → 오선 → Bloomberg → CNBC → Yahoo → Fox → Euronews</small></button>
-          <button data-start="reset" class="sm-reset"><span>기본 배치로 초기화</span><small>4분할 · YTN / 연합 / KBS / CNN (연합 소리)</small></button>
-          <div class="sm-note">‘마지막 화면’은 마지막으로 보던 배치 그대로 시작합니다.</div>
-        </div>
-      </div>
-      <button class="icon-btn mobile-only-btn" id="btn-mobile-view" title="모바일 뷰 모드 전환 (1열 한 화면씩 / 2열)">
-        <svg class="ic-grid-2" viewBox="0 0 20 20" aria-hidden="true" fill="currentColor" style="width:16px;height:16px;display:none;"><rect x="2" y="2" width="7" height="7" rx="1.5"/><rect x="11" y="2" width="7" height="7" rx="1.5"/><rect x="2" y="11" width="7" height="7" rx="1.5"/><rect x="11" y="11" width="7" height="7" rx="1.5"/></svg>
-        <svg class="ic-grid-1" viewBox="0 0 20 20" aria-hidden="true" fill="currentColor" style="width:16px;height:16px;"><rect x="2" y="3" width="16" height="6.5" rx="1.5"/><rect x="2" y="11" width="16" height="6.5" rx="1.5"/></svg>
-      </button>
-      <button class="icon-btn wide install-btn" id="btn-install" hidden title="앱 설치 — 홈 화면에 추가 (크롬)">
-        <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M12 3.2v10.4"/><path d="M8.2 10.1 12 13.9l3.8-3.8"/><path d="M5 16.4v2.4a1.8 1.8 0 0 0 1.8 1.8h10.4a1.8 1.8 0 0 0 1.8-1.8v-2.4"/>
         </svg>
-        <span class="lb-txt">앱 설치</span>
-      </button>
-      <button class="icon-btn" id="btn-apk" title="Android APK 앱 다운로드 (QR)">
-        <svg viewBox="0 0 24 24" aria-hidden="true" fill="currentColor" style="width:16px;height:16px;"><path d="M17.523 15.3414c-.5511 0-.9993-.4486-.9993-.9997s.4482-.9993.9993-.9993c.551 0 .9993.4482.9993.9993.0001.5511-.4482.9997-.9993.9997m-11.046 0c-.5511 0-.9993-.4486-.9993-.9997s.4482-.9993.9993-.9993c.5511 0 .9993.4482.9993.9993 0 .5511-.4482.9997-.9993.9997m11.4045-6.02l1.9973-3.4592a.416.416 0 0 0-.1521-.5676.416.416 0 0 0-.5676.1521l-2.0223 3.503C15.5902 8.4116 13.8533 8.125 12 8.125s-3.5902.2866-5.1368.8247L4.8409 5.4467a.4161.4161 0 0 0-.5677-.1521.4157.4157 0 0 0-.1521.5676l1.9973 3.4592C2.6889 11.1867.3432 14.6589 0 18.75h24c-.3432-4.0911-2.6889-7.5633-6.1185-9.4286"/></svg>
-      </button>
-      <button class="icon-btn" id="btn-mute" title="전체 음소거  ·  키 M">
-        <svg viewBox="0 0 20 20" aria-hidden="true"><path class="ic-spk" d="M3 7.4h3L10 4v12L6 12.6H3z" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/><g class="ic-waves" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><path d="M12.6 7.4a3.6 3.6 0 0 1 0 5.2M15 5a7 7 0 0 1 0 10"/></g><g class="ic-x" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><path d="M13 7.8l4.4 4.4M17.4 7.8L13 12.2"/></g></svg>
-      </button>
-      <button class="icon-btn" id="btn-sources" title="소스 관리 / 커스텀 추가">
-        <svg viewBox="0 0 20 20" aria-hidden="true"><g stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><path d="M3 5.4h14M3 10h14M3 14.6h14"/><circle cx="7.4" cy="5.4" r="1.7" fill="#080B10"/><circle cx="13" cy="10" r="1.7" fill="#080B10"/><circle cx="8.6" cy="14.6" r="1.7" fill="#080B10"/></g></svg>
-      </button>
-    </div>
-  </header>
-
-  <!-- ══════════════ STAGE / MULTIVIEW GRID ══════════════ -->
-  <main class="stage" id="stage">
-    <div class="grid" id="grid" data-layout="9"></div>
-  </main>
-
-  <!-- ══════════════ SIGNAL STRIP ══════════════ -->
-  <footer class="signal-strip">
-    <div class="ss-left">
-      <span class="ss-led" id="ss-led"></span>
-      <span id="ss-status">MASTER CONTROL — STANDBY</span>
-    </div>
-    <div class="ss-mid" id="ss-audio">AUDIO — ALL MUTED</div>
-    <div class="ss-right">
-      <span id="ss-version" class="ss-version">SRC BUILD —</span>
-      <span class="ss-div">/</span>
-      <span id="ss-clock">--:--:--</span>
-      <span class="ss-div">/</span>
-      <span id="ss-uptime">00:00</span>
-    </div>
-  </footer>
-</div>
-
-<!-- ══════════════ SOURCE BAY MODAL ══════════════ -->
-<div class="modal-root" id="modal-root" hidden>
-  <div class="modal-scrim" data-close="1"></div>
-  <section class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
-    <header class="modal-head">
-      <div>
-        <div class="modal-kicker" id="modal-kicker">SOURCE PATCH BAY</div>
-        <h2 id="modal-title">소스 선택</h2>
-      </div>
-      <button class="icon-btn ghost" data-close="1" title="닫기">
-        <svg viewBox="0 0 20 20" aria-hidden="true"><g stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M5 5l10 10M15 5L5 15"/></g></svg>
-      </button>
-    </header>
-
-    <div class="modal-search">
-      <svg viewBox="0 0 20 20" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="8.6" cy="8.6" r="5.4"/><path d="M12.6 12.6L17 17" stroke-linecap="round"/></g></svg>
-      <input id="src-search" type="search" placeholder="채널 검색 — CNN, NHK, Al Jazeera, DW…" autocomplete="off" spellcheck="false" />
-    </div>
-    <div class="modal-hint" id="modal-hint" hidden>채널을 누르면 <b>먼저 크게 미리 보여 드리고</b>, 그 화면에서 칸을 골라 추가합니다.</div>
-
-    <div class="modal-body">
-      <div class="src-grid" id="src-grid"></div>
-    </div>
-
-    <div class="custom-panel">
-      <div class="cp-head">
-        <span class="cp-title">CUSTOM SOURCE</span>
-        <span class="cp-hint">YouTube 링크 · 채널 ID · HLS(.m3u8) · 웹 주소</span>
-      </div>
-      <form class="cp-form" id="custom-form" autocomplete="off">
-        <input id="custom-url" type="text" placeholder="https://www.youtube.com/watch?v=…  ·  https://…/index.m3u8" spellcheck="false" />
-        <input id="custom-name" type="text" placeholder="이름 (선택)" spellcheck="false" />
-        <button type="submit" class="btn-gold">추가</button>
-      </form>
-      <div class="cp-error" id="custom-error" hidden></div>
-    </div>
-  </section>
-</div>
-
-<!-- ══════════════ MOBILE CINEMA HUD (더블 터치 16:9 클린 풀화면) ══════════════ -->
-<div class="cinema-hud" id="cinema-hud" aria-hidden="true">
-  <div class="chud-top">
-    <div class="chud-ident">
-      <span class="chud-live"><i></i>LIVE</span>
-      <span class="chud-name" id="cinema-name">채널</span>
-    </div>
-    <button class="chud-close" id="cinema-close" data-cinema-close="1" title="닫기 · 분할 화면 복귀 (ESC)" aria-label="닫기">
-      <svg viewBox="0 0 20 20" aria-hidden="true"><g stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M5 5l10 10M15 5L5 15"/></g></svg>
-    </button>
-  </div>
-  <div class="chud-hint" id="cinema-hint"><span class="hint-portrait">가로로 돌리면 정방향 · 두 번 터치 = 복귀</span><span class="hint-landscape">한 번 터치 — 메뉴 · 두 번 터치·뒤로가기 — 분할 화면</span></div>
-</div>
-
-<div class="toast-wrap" id="toast-wrap"></div>
-
-<!-- ══════════════ APK QR DOWNLOAD MODAL ══════════════ -->
-<div class="modal-root" id="apk-modal-root" hidden>
-  <div class="modal-scrim" data-apk-close="1"></div>
-  <section class="modal apk-modal" role="dialog" aria-modal="true" style="max-width:380px;text-align:center;">
-    <header class="modal-head" style="justify-content:center;position:relative;">
-      <div>
-        <div class="modal-kicker">ANDROID APP (APK)</div>
-        <h2 style="font-size:16px;margin-top:2px;">모바일 APK 다운로드</h2>
-      </div>
-      <button class="icon-btn ghost" data-apk-close="1" title="닫기" style="position:absolute;right:14px;top:14px;">
-        <svg viewBox="0 0 20 20" aria-hidden="true"><g stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M5 5l10 10M15 5L5 15"/></g></svg>
-      </button>
-    </header>
-    <div style="padding:22px 20px 20px;display:flex;flex-direction:column;align-items:center;gap:14px;">
-      <div style="background:#FFF;padding:12px;border-radius:8px;box-shadow:0 12px 32px rgba(0,0,0,0.7);">
-        <img id="apk-qr-img" src="https://api.qrserver.com/v1/create-qr-code/?size=220x220&amp;data=https%3A%2F%2Fjongringer.github.io%2Fworld_live%2Fapk%2Fworldnews.apk" alt="APK QR Code" width="220" height="220" style="display:block;" />
-      </div>
-      <div style="font-size:12px;color:#CBD5E1;line-height:1.6;">
-        스마트폰 카메라로 QR 코드를 스캔하면<br><b style="color:#F5E5C0;">worldnews 모바일 앱</b>을 즉시 다운로드합니다.
-      </div>
-      <a href="https://jongringer.github.io/world_live/apk/worldnews.apk" target="_blank" download="worldnews.apk" class="btn-gold" style="display:inline-flex;align-items:center;justify-content:center;text-decoration:none;width:100%;height:38px;border-radius:6px;font-size:12.5px;font-weight:600;box-shadow:0 4px 16px rgba(212,160,23,0.3);">
-        직접 다운로드 (worldnews.apk)
-      </a>
-    </div>
-  </section>
-</div>
-
-<!-- ══════════════ CHANNEL PREVIEW — 크게 보고 추가 여부 결정 ══════════════ -->
-<div class="preview-root" id="preview-root" hidden>
-  <div class="pv-scrim" data-pv-close="1"></div>
-  <section class="pv-panel" role="dialog" aria-modal="true" aria-labelledby="pv-title">
-    <header class="pv-head">
-      <div class="pv-ident">
-        <span class="pv-badge is-preview" id="pv-badge"><span class="pv-dot"></span><span id="pv-badge-txt">PREVIEW</span></span>
-        <div class="pv-names">
-          <h2 class="pv-title" id="pv-title">채널</h2>
-          <span class="pv-meta" id="pv-meta"></span>
+        <div class="brand-text">
+          <div class="brand-line">
+            <span class="brand-name">WORLD LIVE</span>
+          </div>
+          <div class="brand-sub">GLOBAL NEWSROOM MONITOR</div>
         </div>
       </div>
-      <div class="pv-head-actions">
-        <button class="pv-btn pv-btn-ghost pv-audio" id="pv-audio" title="미리보기 소리 켜기 / 끄기">
-          <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2.6 6h2.2L7.6 3.6v8.8L4.8 10H2.6z" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linejoin="round"/><path d="M9.6 6a2.9 2.9 0 0 1 0 4M11.6 4.2a5.4 5.4 0 0 1 0 7.6" class="pv-wave" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round"/></svg>
-          <span id="pv-audio-txt">소리 켜기</span>
+
+      <nav class="layouts" id="layouts" aria-label="레이아웃">
+        <button class="layout-btn" data-layout="9" title="9분할 (3×3)  ·  키 1">
+          <svg viewBox="0 0 20 20" aria-hidden="true">
+            <g fill="none" stroke="currentColor" stroke-width="1.2">
+              <rect x="1.5" y="1.5" width="17" height="17" rx="1.6" />
+              <path d="M7.2 2v16M12.8 2v16M2 7.2h16M2 12.8h16" />
+            </g>
+          </svg>
+          <span class="lb-txt">9분할</span><span class="lb-dim">3×3</span>
         </button>
-        <a class="pv-btn pv-btn-ghost" id="pv-pop" target="_blank" rel="noopener">새 창에서 열기</a>
-        <button class="icon-btn ghost" data-pv-close="1" title="닫기 (Esc)">
-          <svg viewBox="0 0 20 20" aria-hidden="true"><g stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M5 5l10 10M15 5L5 15"/></g></svg>
+        <button class="layout-btn" data-layout="6" title="6분할 (3×2)  ·  키 2">
+          <svg viewBox="0 0 20 20" aria-hidden="true">
+            <g fill="none" stroke="currentColor" stroke-width="1.2">
+              <rect x="1.5" y="1.5" width="17" height="17" rx="1.6" />
+              <path d="M7.2 2v16M12.8 2v16M2 10h16" />
+            </g>
+          </svg>
+          <span class="lb-txt">6분할</span><span class="lb-dim">3×2</span>
+        </button>
+        <button class="layout-btn" data-layout="4" title="4분할 (2×2)  ·  키 3">
+          <svg viewBox="0 0 20 20" aria-hidden="true">
+            <g fill="none" stroke="currentColor" stroke-width="1.2">
+              <rect x="1.5" y="1.5" width="17" height="17" rx="1.6" />
+              <path d="M10 2v16M2 10h16" />
+            </g>
+          </svg>
+          <span class="lb-txt">4분할</span><span class="lb-dim">2×2</span>
+        </button>
+        <button class="layout-btn layout-btn-clean" data-layout="1" title="전체화면 — 선택 채널 클린 FULL (ESC → 이전 화면)  ·  키 4">
+          <svg viewBox="0 0 20 20" aria-hidden="true">
+            <rect x="1.8" y="2.6" width="16.4" height="14.8" rx="1.8" fill="currentColor" opacity=".9" />
+          </svg>
+          <span class="lb-txt">전체화면</span><span class="lb-dim">1×1</span>
+        </button>
+        <button class="layout-btn layout-btn-all" data-layout="all" title="전 세계 LIVE 전체 스크롤  ·  키 5">
+          <svg viewBox="0 0 20 20" aria-hidden="true">
+            <g fill="none" stroke="currentColor" stroke-width="1.2">
+              <rect x="1.5" y="1.5" width="17" height="17" rx="1.6" />
+              <path d="M1.5 6.6h17M1.5 11.5h17M1.5 16.4h17" />
+            </g>
+          </svg>
+          <span class="lb-txt">전체 스크롤</span><span class="lb-dim">ALL LIVE</span>
+        </button>
+        <button class="layout-btn layout-btn-kr" data-layout="kr"
+          title="국내뉴스 9분할 — YTN·연합뉴스TV·KBS·MBC·SBS·JTBC·TV조선·MBN·채널A  ·  키 K">
+          <svg viewBox="0 0 20 20" aria-hidden="true">
+            <g fill="none" stroke="currentColor" stroke-width="1.2">
+              <rect x="1.5" y="1.5" width="17" height="17" rx="1.6" />
+              <path d="M7.2 2v16M12.8 2v16M2 7.2h16M2 12.8h16" />
+            </g>
+            <circle cx="10" cy="10" r="1.9" fill="currentColor" />
+          </svg>
+          <span class="lb-txt">국내뉴스</span><span class="lb-dim">KR 9</span>
+        </button>
+        <button class="layout-btn layout-btn-econ" data-layout="econ"
+          title="경제뉴스 9분할 — 한국경제TV·매일경제TV·삼프로TV·오선의 미증시 / Bloomberg·CNBC·Yahoo Finance·Fox Business / Euronews Business  ·  키 E">
+          <svg viewBox="0 0 20 20" aria-hidden="true">
+            <g fill="none" stroke="currentColor" stroke-width="1.2">
+              <rect x="1.5" y="1.5" width="17" height="17" rx="1.6" />
+              <path d="M7.2 2v16M12.8 2v16M2 7.2h16M2 12.8h16" />
+            </g>
+            <path d="M4.2 14.2l3-3.4 2.2 2.2 3.2-4.2 3 3.4" fill="none" stroke="currentColor" stroke-width="1.5"
+              stroke-linecap="round" stroke-linejoin="round" />
+          </svg>
+          <span class="lb-txt">경제뉴스</span><span class="lb-dim">ECON 9</span>
+        </button>
+        <span class="nav-sep"></span>
+        <div class="sort-wrap">
+          <button class="icon-btn wide sort-btn" id="btn-sort" title="채널 정렬 — 전체 스크롤·소스 목록 순서">
+            <svg viewBox="0 0 20 20" aria-hidden="true">
+              <g fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round">
+                <path d="M3 5h10M3 10h7M3 15h4" />
+                <path d="M14.2 4.4v11M14.2 15.4l2.6-2.6M14.2 15.4l-2.6-2.6" />
+              </g>
+            </svg>
+            <span class="lb-txt">정렬</span><span class="sort-label" id="sort-label">지역·국가순</span>
+            <span class="cs-caret">▾</span>
+          </button>
+          <div class="start-menu sort-menu" id="sort-menu" hidden>
+            <div class="sm-head">CHANNEL SORT</div>
+            <button data-sort="zone"><span>지역·국가순</span><small>일본·중국 → 미국 → 유럽 → 중동 → 한국</small></button>
+            <button data-sort="custom"><span>내 순서</span><small>전체 스크롤에서 ◀ ▶ 로 직접 정렬</small></button>
+            <button data-sort="name"><span>이름순 (A-Z)</span><small>채널명 가나다·알파벳</small></button>
+            <button data-sort="kr"><span>한국 우선</span><small>국내 뉴스를 맨 앞으로</small></button>
+            <div class="sm-note">전체 스크롤 화면과 소스 목록 순서에 적용됩니다.</div>
+          </div>
+        </div>
+      </nav>
+
+      <div class="clocks" id="clocks" aria-label="세계 시각"></div>
+
+      <div class="actions">
+        <button class="find-btn" id="btn-find" title="채널 찾기 — 소스 라이브러리 열기 (키 S)">
+          <svg viewBox="0 0 20 20" aria-hidden="true">
+            <g fill="none" stroke="currentColor" stroke-width="1.5">
+              <circle cx="8.8" cy="8.8" r="5.6" />
+              <path d="M13 13l4.4 4.4" stroke-linecap="round" />
+            </g>
+          </svg>
+          <span>채널 찾기</span>
+        </button>
+        <div class="start-wrap">
+          <button class="icon-btn wide start-btn" id="btn-start" title="첫 화면(기본 시작 레이아웃) 설정">
+            <svg viewBox="0 0 20 20" aria-hidden="true">
+              <path d="M10 2.6l2.2 4.6 5 .7-3.6 3.5.9 5-4.5-2.4-4.5 2.4.9-5L2.8 7.9l5-.7z" fill="none"
+                stroke="currentColor" stroke-width="1.25" stroke-linejoin="round" />
+            </svg>
+            <span class="lb-txt">첫 화면</span><span class="start-label" id="start-label">마지막 화면</span>
+            <span class="cs-caret">▾</span>
+          </button>
+          <div class="start-menu" id="start-menu" hidden>
+            <div class="sm-head">시작 화면 고정</div>
+            <button data-start="auto"><span>마지막 화면</span><small>마지막으로 보던 화면</small></button>
+            <button data-start="9"><span>9분할</span><small>3×3 · 9채널</small></button>
+            <button data-start="6"><span>6분할</span><small>3×2 · 6채널</small></button>
+            <button data-start="4"><span>4분할</span><small>2×2 · 4채널</small></button>
+            <button data-start="kr"><span>국내뉴스</span><small>YTN·연합·KBS·MBC·SBS·JTBC·TV조선·MBN·채널A 9분할</small></button>
+            <button data-start="econ"><span>경제뉴스</span><small>한경TV·매경TV·삼프로TV·오선의 미증시 / Bloomberg·CNBC·Yahoo·Fox
+                Business / Euronews 9분할</small></button>
+            <button data-start="1"><span>전체화면</span><small>1×1 · 한 채널</small></button>
+            <button data-start="all"><span>전체 스크롤</span><small>전 세계 LIVE</small></button>
+            <button data-start="krreset" class="sm-reset"><span>국내뉴스 순서 초기화</span><small>YTN → 연합 → KBS → MBC → SBS →
+                JTBC → TV조선 → MBN → 채널A</small></button>
+            <button data-start="econreset" class="sm-reset"><span>경제뉴스 순서 초기화</span><small>한경TV → 매경TV → 삼프로TV → 오선 →
+                Bloomberg → CNBC → Yahoo → Fox → Euronews</small></button>
+            <button data-start="reset" class="sm-reset"><span>기본 배치로 초기화</span><small>4분할 · YTN / 연합 / KBS / CNN (연합
+                소리)</small></button>
+            <div class="sm-note">‘마지막 화면’은 마지막으로 보던 배치 그대로 시작합니다.</div>
+          </div>
+        </div>
+        <button class="icon-btn mobile-only-btn" id="btn-mobile-view" title="모바일 뷰 모드 전환 (1열 한 화면씩 / 2열)">
+          <svg class="ic-grid-2" viewBox="0 0 20 20" aria-hidden="true" fill="currentColor"
+            style="width:16px;height:16px;display:none;">
+            <rect x="2" y="2" width="7" height="7" rx="1.5" />
+            <rect x="11" y="2" width="7" height="7" rx="1.5" />
+            <rect x="2" y="11" width="7" height="7" rx="1.5" />
+            <rect x="11" y="11" width="7" height="7" rx="1.5" />
+          </svg>
+          <svg class="ic-grid-1" viewBox="0 0 20 20" aria-hidden="true" fill="currentColor"
+            style="width:16px;height:16px;">
+            <rect x="2" y="3" width="16" height="6.5" rx="1.5" />
+            <rect x="2" y="11" width="16" height="6.5" rx="1.5" />
+          </svg>
+        </button>
+        <button class="icon-btn wide install-btn" id="btn-install" hidden title="앱 설치 — 홈 화면에 추가 (크롬)">
+          <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 3.2v10.4" />
+            <path d="M8.2 10.1 12 13.9l3.8-3.8" />
+            <path d="M5 16.4v2.4a1.8 1.8 0 0 0 1.8 1.8h10.4a1.8 1.8 0 0 0 1.8-1.8v-2.4" />
+          </svg>
+          <span class="lb-txt">앱 설치</span>
+        </button>
+        <button class="icon-btn" id="btn-apk" title="Android APK 앱 다운로드 (QR)">
+          <svg viewBox="0 0 24 24" aria-hidden="true" fill="currentColor" style="width:16px;height:16px;">
+            <path
+              d="M17.523 15.3414c-.5511 0-.9993-.4486-.9993-.9997s.4482-.9993.9993-.9993c.551 0 .9993.4482.9993.9993.0001.5511-.4482.9997-.9993.9997m-11.046 0c-.5511 0-.9993-.4486-.9993-.9997s.4482-.9993.9993-.9993c.5511 0 .9993.4482.9993.9993 0 .5511-.4482.9997-.9993.9997m11.4045-6.02l1.9973-3.4592a.416.416 0 0 0-.1521-.5676.416.416 0 0 0-.5676.1521l-2.0223 3.503C15.5902 8.4116 13.8533 8.125 12 8.125s-3.5902.2866-5.1368.8247L4.8409 5.4467a.4161.4161 0 0 0-.5677-.1521.4157.4157 0 0 0-.1521.5676l1.9973 3.4592C2.6889 11.1867.3432 14.6589 0 18.75h24c-.3432-4.0911-2.6889-7.5633-6.1185-9.4286" />
+          </svg>
+        </button>
+        <button class="icon-btn" id="btn-mute" title="전체 음소거  ·  키 M">
+          <svg viewBox="0 0 20 20" aria-hidden="true">
+            <path class="ic-spk" d="M3 7.4h3L10 4v12L6 12.6H3z" fill="none" stroke="currentColor" stroke-width="1.3"
+              stroke-linejoin="round" />
+            <g class="ic-waves" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round">
+              <path d="M12.6 7.4a3.6 3.6 0 0 1 0 5.2M15 5a7 7 0 0 1 0 10" />
+            </g>
+            <g class="ic-x" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round">
+              <path d="M13 7.8l4.4 4.4M17.4 7.8L13 12.2" />
+            </g>
+          </svg>
+        </button>
+        <button class="icon-btn" id="btn-sources" title="소스 관리 / 커스텀 추가">
+          <svg viewBox="0 0 20 20" aria-hidden="true">
+            <g stroke="currentColor" stroke-width="1.4" stroke-linecap="round">
+              <path d="M3 5.4h14M3 10h14M3 14.6h14" />
+              <circle cx="7.4" cy="5.4" r="1.7" fill="#080B10" />
+              <circle cx="13" cy="10" r="1.7" fill="#080B10" />
+              <circle cx="8.6" cy="14.6" r="1.7" fill="#080B10" />
+            </g>
+          </svg>
         </button>
       </div>
     </header>
 
-    <div class="pv-stage" id="pv-stage"></div>
+    <!-- ══════════════ STAGE / MULTIVIEW GRID ══════════════ -->
+    <main class="stage" id="stage">
+      <div class="grid" id="grid" data-layout="9"></div>
+    </main>
 
-    <footer class="pv-foot">
-      <div class="pv-slot-group" id="pv-slot-group">
-        <span class="pv-label" id="pv-slot-label">현재 화면 슬롯에 추가</span>
-        <div class="pv-slots" id="pv-slots"></div>
+    <!-- ══════════════ SIGNAL STRIP ══════════════ -->
+    <footer class="signal-strip">
+      <div class="ss-left">
+        <span class="ss-led" id="ss-led"></span>
+        <span id="ss-status">MASTER CONTROL — STANDBY</span>
       </div>
-      <div class="pv-actions">
-        <button class="pv-btn pv-btn-gold" id="pv-add-all">전체 스크롤 맨 앞에 추가</button>
-        <button class="pv-btn pv-btn-quiet" data-pv-close="1">닫기 · 목록으로</button>
+      <div class="ss-mid" id="ss-audio">AUDIO — ALL MUTED</div>
+      <div class="ss-right">
+        <span id="ss-version" class="ss-version">SRC BUILD —</span>
+        <span class="ss-div">/</span>
+        <span id="ss-clock">--:--:--</span>
+        <span class="ss-div">/</span>
+        <span id="ss-uptime">00:00</span>
       </div>
     </footer>
-  </section>
-</div>
-
-<div id="install-tip" hidden role="dialog" aria-live="polite"></div>
-
-<!-- 채널별 볼륨 팝오버 (2026-11-25) — 타일 하단 VOL 버튼으로 연다 -->
-<div class="vol-pop" id="vol-pop" role="dialog" aria-label="채널 볼륨" hidden>
-  <div class="vol-top">
-    <span class="vol-name" id="vol-name">채널</span>
-    <button class="vol-x" id="vol-x" type="button" aria-label="볼륨 창 닫기">✕</button>
   </div>
-  <div class="vol-bar">
-    <input type="range" id="vol-range" min="0" max="200" step="5" value="100" aria-label="채널 볼륨">
-  </div>
-  <div class="vol-num"><b id="vol-pct">100%</b><span id="vol-db">0.0 dB</span></div>
-  <div class="vol-presets" id="vol-presets"></div>
-  <div class="vol-note" id="vol-note">공식 HLS 채널은 최대 200%까지 직접 올릴 수 있습니다.</div>
-</div>
 
-<script src="js/channels.js?v=50"></script>
-<script src="js/app.js?v=119"></script>
-<script src="js/pwa.js?v=4"></script>
+  <!-- ══════════════ SOURCE BAY MODAL ══════════════ -->
+  <div class="modal-root" id="modal-root" hidden>
+    <div class="modal-scrim" data-close="1"></div>
+    <section class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+      <header class="modal-head">
+        <div>
+          <div class="modal-kicker" id="modal-kicker">SOURCE PATCH BAY</div>
+          <h2 id="modal-title">소스 선택</h2>
+        </div>
+        <button class="icon-btn ghost" data-close="1" title="닫기">
+          <svg viewBox="0 0 20 20" aria-hidden="true">
+            <g stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+              <path d="M5 5l10 10M15 5L5 15" />
+            </g>
+          </svg>
+        </button>
+      </header>
+
+      <div class="modal-search">
+        <svg viewBox="0 0 20 20" aria-hidden="true">
+          <g fill="none" stroke="currentColor" stroke-width="1.4">
+            <circle cx="8.6" cy="8.6" r="5.4" />
+            <path d="M12.6 12.6L17 17" stroke-linecap="round" />
+          </g>
+        </svg>
+        <input id="src-search" type="search" placeholder="채널 검색 — CNN, NHK, Al Jazeera, DW…" autocomplete="off"
+          spellcheck="false" />
+      </div>
+      <div class="modal-hint" id="modal-hint" hidden>채널을 누르면 <b>먼저 크게 미리 보여 드리고</b>, 그 화면에서 칸을 골라 추가합니다.</div>
+
+      <div class="modal-body">
+        <div class="src-grid" id="src-grid"></div>
+      </div>
+
+      <div class="custom-panel">
+        <div class="cp-head">
+          <span class="cp-title">CUSTOM SOURCE</span>
+          <span class="cp-hint">YouTube 링크 · 채널 ID · HLS(.m3u8) · 웹 주소</span>
+        </div>
+        <form class="cp-form" id="custom-form" autocomplete="off">
+          <input id="custom-url" type="text" placeholder="https://www.youtube.com/watch?v=…  ·  https://…/index.m3u8"
+            spellcheck="false" />
+          <input id="custom-name" type="text" placeholder="이름 (선택)" spellcheck="false" />
+          <button type="submit" class="btn-gold">추가</button>
+        </form>
+        <div class="cp-error" id="custom-error" hidden></div>
+      </div>
+    </section>
+  </div>
+
+  <!-- ══════════════ MOBILE CINEMA HUD (더블 터치 16:9 클린 풀화면) ══════════════ -->
+  <div class="cinema-hud" id="cinema-hud" aria-hidden="true">
+    <div class="chud-top">
+      <div class="chud-ident">
+        <span class="chud-live"><i></i>LIVE</span>
+        <span class="chud-name" id="cinema-name">채널</span>
+      </div>
+      <button class="chud-close" id="cinema-close" data-cinema-close="1" title="닫기 · 분할 화면 복귀 (ESC)" aria-label="닫기">
+        <svg viewBox="0 0 20 20" aria-hidden="true">
+          <g stroke="currentColor" stroke-width="1.7" stroke-linecap="round">
+            <path d="M5 5l10 10M15 5L5 15" />
+          </g>
+        </svg>
+      </button>
+    </div>
+    <div class="chud-hint" id="cinema-hint"><span class="hint-portrait">가로로 돌리면 정방향 · 두 번 터치 = 복귀</span><span
+        class="hint-landscape">한 번 터치 — 메뉴 · 두 번 터치·뒤로가기 — 분할 화면</span></div>
+  </div>
+
+  <div class="toast-wrap" id="toast-wrap"></div>
+
+  <!-- ══════════════ APK QR DOWNLOAD MODAL ══════════════ -->
+  <div class="modal-root" id="apk-modal-root" hidden>
+    <div class="modal-scrim" data-apk-close="1"></div>
+    <section class="modal apk-modal" role="dialog" aria-modal="true" style="max-width:380px;text-align:center;">
+      <header class="modal-head" style="justify-content:center;position:relative;">
+        <div>
+          <div class="modal-kicker">ANDROID APP (APK)</div>
+          <h2 style="font-size:16px;margin-top:2px;">모바일 APK 다운로드</h2>
+        </div>
+        <button class="icon-btn ghost" data-apk-close="1" title="닫기" style="position:absolute;right:14px;top:14px;">
+          <svg viewBox="0 0 20 20" aria-hidden="true">
+            <g stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+              <path d="M5 5l10 10M15 5L5 15" />
+            </g>
+          </svg>
+        </button>
+      </header>
+      <div style="padding:22px 20px 20px;display:flex;flex-direction:column;align-items:center;gap:14px;">
+        <div style="background:#FFF;padding:12px;border-radius:8px;box-shadow:0 12px 32px rgba(0,0,0,0.7);">
+          <img id="apk-qr-img"
+            src="https://api.qrserver.com/v1/create-qr-code/?size=220x220&amp;data=https%3A%2F%2Fjongringer.github.io%2Fworld_live%2Fapk%2Fworldnews.apk"
+            alt="APK QR Code" width="220" height="220" style="display:block;" />
+        </div>
+        <div style="font-size:12px;color:#CBD5E1;line-height:1.6;">
+          스마트폰 카메라로 QR 코드를 스캔하면<br><b style="color:#F5E5C0;">worldnews 모바일 앱</b>을 즉시 다운로드합니다.
+        </div>
+        <a href="https://jongringer.github.io/world_live/apk/worldnews.apk" target="_blank" download="worldnews.apk"
+          class="btn-gold"
+          style="display:inline-flex;align-items:center;justify-content:center;text-decoration:none;width:100%;height:38px;border-radius:6px;font-size:12.5px;font-weight:600;box-shadow:0 4px 16px rgba(212,160,23,0.3);">
+          직접 다운로드 (worldnews.apk)
+        </a>
+      </div>
+    </section>
+  </div>
+
+  <!-- ══════════════ CHANNEL PREVIEW — 크게 보고 추가 여부 결정 ══════════════ -->
+  <div class="preview-root" id="preview-root" hidden>
+    <div class="pv-scrim" data-pv-close="1"></div>
+    <section class="pv-panel" role="dialog" aria-modal="true" aria-labelledby="pv-title">
+      <header class="pv-head">
+        <div class="pv-ident">
+          <span class="pv-badge is-preview" id="pv-badge"><span class="pv-dot"></span><span
+              id="pv-badge-txt">PREVIEW</span></span>
+          <div class="pv-names">
+            <h2 class="pv-title" id="pv-title">채널</h2>
+            <span class="pv-meta" id="pv-meta"></span>
+          </div>
+        </div>
+        <div class="pv-head-actions">
+          <button class="pv-btn pv-btn-ghost pv-audio" id="pv-audio" title="미리보기 소리 켜기 / 끄기">
+            <svg viewBox="0 0 16 16" aria-hidden="true">
+              <path d="M2.6 6h2.2L7.6 3.6v8.8L4.8 10H2.6z" fill="none" stroke="currentColor" stroke-width="1.25"
+                stroke-linejoin="round" />
+              <path d="M9.6 6a2.9 2.9 0 0 1 0 4M11.6 4.2a5.4 5.4 0 0 1 0 7.6" class="pv-wave" fill="none"
+                stroke="currentColor" stroke-width="1.25" stroke-linecap="round" />
+            </svg>
+            <span id="pv-audio-txt">소리 켜기</span>
+          </button>
+          <a class="pv-btn pv-btn-ghost" id="pv-pop" target="_blank" rel="noopener">새 창에서 열기</a>
+          <button class="icon-btn ghost" data-pv-close="1" title="닫기 (Esc)">
+            <svg viewBox="0 0 20 20" aria-hidden="true">
+              <g stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+                <path d="M5 5l10 10M15 5L5 15" />
+              </g>
+            </svg>
+          </button>
+        </div>
+      </header>
+
+      <div class="pv-stage" id="pv-stage"></div>
+
+      <footer class="pv-foot">
+        <div class="pv-slot-group" id="pv-slot-group">
+          <span class="pv-label" id="pv-slot-label">현재 화면 슬롯에 추가</span>
+          <div class="pv-slots" id="pv-slots"></div>
+        </div>
+        <div class="pv-actions">
+          <button class="pv-btn pv-btn-gold" id="pv-add-all">전체 스크롤 맨 앞에 추가</button>
+          <button class="pv-btn pv-btn-quiet" data-pv-close="1">닫기 · 목록으로</button>
+        </div>
+      </footer>
+    </section>
+  </div>
+
+  <div id="install-tip" hidden role="dialog" aria-live="polite"></div>
+
+  <!-- 채널별 볼륨 팝오버 (2026-11-25) — 타일 하단 VOL 버튼으로 연다 -->
+  <div class="vol-pop" id="vol-pop" role="dialog" aria-label="채널 볼륨" hidden>
+    <div class="vol-top">
+      <span class="vol-name" id="vol-name">채널</span>
+      <button class="vol-x" id="vol-x" type="button" aria-label="볼륨 창 닫기">✕</button>
+    </div>
+    <div class="vol-bar">
+      <input type="range" id="vol-range" min="0" max="200" step="5" value="100" aria-label="채널 볼륨">
+    </div>
+    <div class="vol-num"><b id="vol-pct">100%</b><span id="vol-db">0.0 dB</span></div>
+    <div class="vol-presets" id="vol-presets"></div>
+    <div class="vol-note" id="vol-note">공식 HLS 채널은 최대 200%까지 직접 올릴 수 있습니다.</div>
+  </div>
+
+  <script src="js/channels.js?v=50"></script>
+  <script src="js/app.js?v=122"></script>
+  <script src="js/pwa.js?v=4"></script>
 </body>
+
 </html>

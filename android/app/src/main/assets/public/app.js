@@ -2,7 +2,7 @@
    WORLD LIVE // GLOBAL NEWSROOM MONITOR — app.js  (v2)
    16:9 broadcast multiview · 42 verified live feeds
    layouts 9 / 4 / 6 / 1 / ALL(스크롤·지연 마운트) · 독립 배치 저장
-   시작 기본값(2026-11-24 확정): 4분할 · KBS(음성 ON)/YTN/연합뉴스TV/CNN INTERNATIONAL
+   시작 기본값(2026-11-24 확정): 4분할 · YTN(음성 ON)/연합뉴스TV/KBS/CNN INTERNATIONAL
    ═══════════════════════════════════════════════════════════════ */
 (function () {
 'use strict';
@@ -11,21 +11,580 @@
 const LS_KEY = 'worldlive.v3';
 const LEGACY_LS_KEYS = ['worldlive.v2', 'worldlive.v1'];   // v3 마이그레이션 원본
 /* 기본 배치 버전 — 이 값이 오르면 예전 저장 상태는 ‘한 번만’ 새 기본값으로 맞춘다.
-   (2 = 2026-11-24 사용자 확정: 4분할 시작 · KBS/YTN/연합뉴스TV/CNN INTERNATIONAL · KBS 음성 ON) */
-const PRESET_VER = 3;
-const DEFAULT_AUDIO = 'ytn24';       // 기본 청취 채널 — 1번 칸 YTN
+   (2 = 2026-11-24 사용자 확정: 4분할 · KBS/YTN/연합뉴스TV/CNN · KBS 음성 ON,
+    5 = 2026-11-24 YTN 공식 HLS 교체 뒤 · 4분할 · YTN/연합뉴스TV/KBS/CNN · YTN 음성 ON) */
+const PRESET_VER = 5;
+/* 국내뉴스 9분할 전용 프리셋 버전 — 오르면 저장된 ‘국내뉴스’ 배치만 새 기본 순서로 맞춘다.
+   (1 = 2026-11-25 03:30 초기값 · 2 = YTN → 연합뉴스TV → KBS → MBC → SBS → JTBC → TV조선 → MBN → 채널A
+    ※ 9분할·6분할·4분할 프리셋과 사용자가 바꿔 둔 배치는 건드리지 않는다) */
+const KR_PRESET_VER = 2;
+/* 경제뉴스 9분할 전용 프리셋 버전 — 오르면 저장된 ‘경제뉴스’ 배치만 새 기본 순서로 맞춘다(1 = 2026-11-25 신설) */
+const ECON_PRESET_VER = 1;
+const DEFAULT_AUDIO = 'ytn24';       // 기본 청취 채널 — 1번 칸 YTN(공식 HLS, 끊김 없음)
 const DEFAULT_LAYOUT = '4';          // 시작 화면 = 4분할
 const LAYOUTS = {
   '9':  { cols: 3, rows: 3, count: 9, label: '9분할' },
   '4':  { cols: 2, rows: 2, count: 4, label: '4분할' },
   '6':  { cols: 3, rows: 2, count: 6, label: '6분할' },
+  'kr': { cols: 3, rows: 3, count: 9, label: '국내뉴스', kr: true },
+  'econ': { cols: 3, rows: 3, count: 9, label: '경제뉴스', econ: true },
   '1':  { cols: 1, rows: 1, count: 1, label: '전체화면' },
   'all':{ scroll: true, count: 0, label: '전체 스크롤' }
 };
 const GAP = 6;
 const IO_MARGIN = '90% 0px 90% 0px';
 
-const isMobileUA = () => /android|iphone|ipad|ipod|mobile/i.test(navigator.userAgent || '');
+/* ── 시간대 자동 전환 (2026-11-25 사용자 요청) ───────────────────
+   "오선의 미증시는 저녁 9시부터 아침 6시반까지 할거야. 그 시간 외에는 다른 채널 넣어줄래?"
+   · 채널에 timeSlot:{ from, to, alt } 이 있으면, 한국 시각(KST)이 from~to 안이면 그 채널,
+     밖이면 alt 채널을 그 칸에 보여 준다. 저장된 배치는 그대로 두므로
+     사용자가 그 칸을 직접 다른 채널로 바꾸면 자동 전환이 끼어들지 않는다.
+   · ?night=1 / ?night=0 으로 검증할 때 시간대를 강제할 수 있다. */
+const FORCE_NIGHT = (function () {
+  try {
+    const v = new URLSearchParams(location.search).get('night');
+    return v === '1' ? true : (v === '0' ? false : null);
+  } catch (e) { return null; }
+})();
+function kstMinutes() {
+  try {
+    const s = new Date().toLocaleString('en-US', { timeZone: 'Asia/Seoul', hour12: false, hour: '2-digit', minute: '2-digit' });
+    const m = s.match(/(\d{1,2}):(\d{2})/);
+    if (m) return ((Number(m[1]) % 24) * 60) + Number(m[2]);
+  } catch (e) {}
+  const d = new Date();
+  return d.getHours() * 60 + d.getMinutes();
+}
+function hhmmToMin(s) {
+  const m = String(s || '').match(/(\d{1,2}):(\d{2})/);
+  return m ? (Number(m[1]) * 60 + Number(m[2])) : 0;
+}
+function inTimeSlot(ch) {
+  if (!ch || !ch.timeSlot) return true;
+  if (FORCE_NIGHT !== null) return FORCE_NIGHT;
+  const m = kstMinutes();
+  const a = hhmmToMin(ch.timeSlot.from), b = hhmmToMin(ch.timeSlot.to);
+  return a <= b ? (m >= a && m < b) : (m >= a || m < b);   // 자정을 넘는 구간(21:00~06:30)도 처리
+}
+/* 지금 시각에 이 칸에 보여야 하는 채널 — 시간대 채널이면 안/밖에 따라 교체 */
+function resolveTimeChannel(ch) {
+  if (!ch || !ch.timeSlot) return ch;
+  if (inTimeSlot(ch)) return ch;
+  return byId(ch.timeSlot.alt) || ch;
+}
+
+/* ── 오디오 라우드니스 평준화 (loudness leveling · Web Audio) ─────────────
+   2026-11-25 사용자 요청(원문): "한국경제TV 수준의 오디오 레벨이면 소리가 단단하고 크게 잘
+   들리는데 … 라우드니스를 일정하게 맞추는 작업인데 … 3DB 올린 채널들 표도 안 나니까
+   원상복귀하고. 라우드니스 균일화를 한국경제TV 오디오 레벨 수준으로 평준화할 수 있으면 해봐"
+   → ① 예전 고정 +3dB 증폭(GainNode 1.4125)과 하단 '+3dB' 표식은 **지웠다**(원음).
+     ② HLS·KBS·MBN 타일만 실시간 라우드니스 평준화로 채널 간 음량을 유튜브(한국경제TV) 수준에 맞춘다.
+   → ③ 2026-11-25 06:0x 후속 요청(원문): "라우드니스를 너무 올렸어. YTN KBS는 너무 크니까
+     노이즈가 들리네. -20으로 낮춰줘" — 목표를 **-14 → -20 LUFS** 로 6dB 내렸다. 원음이
+     -22~-26 LUFS 인 공식 HLS 를 +2~+6dB 만 올리는 셈이라, 증폭으로 끌어올라오던 바닥
+     잡음·숨소리도 6dB 함께 내려간다. 개별 채널 VOL 슬라이더와 처리 그래프는 그대로 둔다.
+
+   [왜 유튜브 타일은 손댈 수 없나 — 교차 출처 iframe]
+   유튜브 타일은 <iframe src="https://www.youtube.com/embed/…"> 다. 부모 페이지에서
+   iframe.contentDocument 가 null(교차 출처)이라 내부 <video> 요소를 잡을 수조차 없고,
+   Web Audio 의 createMediaElementSource 는 DOM 요소 참조가 필요하므로 원천적으로 불가능하다.
+   바깥에서 할 수 있는 일은 postMessage(YouTube IFrame API)로 setVolume(0~100)·mute/unMute 뿐이고
+   100 이 최대치다(100 초과 값은 플레이어가 100으로 자름). 즉 유튜브 소리는 '100% = 원음'이 한계다.
+   대신 유튜브는 자기 플레이어 안에서 라우드니스를 약 -14 LUFS 로 정규화해 재생한다.
+   처음엔 그 크기를 목표로 삼았으나, YTN·KBS 에서 너무 크고 노이즈가 들린다는 사용자 요청으로
+   목표를 -20 LUFS 로 낮췄다(위 ③). 유튜브 타일은 유튜브가 정한 크기 그대로 둔다.
+
+   [HLS 타일은 왜 가능한가]
+   hls.js 는 세그먼트를 XHR 로 받아 MediaSource(blob:) 로 재생한다 → <video> 가 같은 출처(blob)로
+   취급되어 교차 출처 오염이 없다. 그래서 createMediaElementSource 로 실제 소리를 그래프로 넘겨
+   레벨을 읽고(GainNode·DynamicsCompressorNode) 조절할 수 있다. crossOrigin 은 걸지 않는다 —
+   CORS 를 주지 않는 스트림에 걸면 영상 재생 자체가 깨진다.
+   Safari/iOS 의 native HLS(<video src="….m3u8"> 직접)는 교차 출처 원본이라 붙이면 무음이 되므로
+   손대지 않고 원음 100% 로 둔다(안드로이드 크롬·PC 크롬은 hls.js 경로라 적용).
+
+   [원리 — 방송국 송출을 흉내 낸 3단 처리]
+   <video> → 고역통과(30Hz, 럼블 제거) → 레벨러 → 자동 게인(GainNode) → 리미터 → 출력
+   · 자동 게인(AGC): 출력 라우드니스를 BS.1770 K-weighting 으로 재어 최근 6초의 '통합
+     라우드니스'(절대 -70·상대 -10 LU 게이트)를 구하고 목표(-20 LUFS)와 비교한다. ±1dB
+     데드존 안에서는 건드리지 않고(미세 흔들림·펌핑 방지), 최대 1.2dB/s 로 천천히 따라간다.
+   · 레벨러: 문턱 -18dB·비율 2.6 으로 말소리 피크를 다소 눌러 '빽빽하고 단단한' 밀도를 만든다.
+   · 리미터: 문턱 -1.5dB·비율 20 으로 0dBFS 클리핑만 확실히 막는다.
+   · 무음/저잡음(출력 -52 LUFS 미만) 구간에서는 게인을 얼려 두어 숨소리·잡음이 올라오지 않는다.
+   · 게인 범위는 -9 ~ +15dB — 원래 음량이 큰 피드를 억지로 올리거나, 작은 피드를 과하게 밀지 않는다.
+
+   [측정 방식]
+   라우드니스는 ITU-R BS.1770 의 K-weighting 을 근사해 쓴다: 38Hz 고역통과 + 1.5kHz +4dB 하이쉘프를
+   통과시킨 신호의 평균제곱 → -0.691 + 10log10(ms) (LUFS). 측정용 필터는 '분기'로만 달아
+   실제 소리에는 더해지지 않는다(0 게인으로 종단).
+
+   · ?level=0 (예전 이름 ?gain=0 도 같은 뜻) 으로 평준화를 끄고 원음으로 들을 수 있다.
+   · 검증용 훅: WL_AUDIO.meter() · WL_AUDIO.setTarget(-16) · WL_AUDIO.record(초) */
+const LEVEL_TARGET_LUFS = -20.0;   // 목표 라우드니스 — 2026-11-25 사용자 요청(-14 는 너무 크고 노이즈가 들림)
+const LEVEL_GATE_LUFS = -52;       // 이보다 조용하면 '무음'으로 보고 게인을 얼린다
+const LEVEL_DEAD_DB = 1.0;         // 데드존 — 이 안의 오차는 그냥 둔다(펌핑 방지)
+const LEVEL_MIN_DB = -9;           // 자동 게인 하한
+const LEVEL_MAX_DB = 15;           // 자동 게인 상한
+const LEVEL_TAU_S = 6.0;           // 라우드니스 평균 시간상수(초) — 말소리 기복에 흔들리지 않게
+const LEVEL_SLEW_DB_S = 1.2;       // 게인 변화 속도 제한(dB/초) — 급격한 펌핑 방지
+const LEVEL_BLOCKS = 40;           // 통합 라우드니스 창 — 150ms × 40 = 6초
+/* EBU R128(BS.1770)은 '채널별 평균제곱의 합'으로 잰다. AnalyserNode 는 스테레오를 모노로
+   섞어서 보여 주므로, 방송처럼 L/R이 같은(dual mono) 소스에서는 +3.01dB 를 더해야
+   ffmpeg·유튜브가 말하는 LUFS 와 같은 값이 된다(실측으로 확인: 이 보정 없이는 3dB 낮게 읽혔다). */
+const LEVEL_LOUD_OFFSET = -0.691 + 3.0103;
+let levelTarget = LEVEL_TARGET_LUFS;
+const LEVEL_ON = (function () {
+  try {
+    const q = new URLSearchParams(location.search);
+    const v = q.get('level') != null ? q.get('level') : q.get('gain');
+    return v === '1' || v === 'on' || v === 'true';   // 기본은 원음(디폴트), ?level=1 로만 평준화 실험
+  } catch (e) { return false; }
+})();
+const AUDIO = { ctx: null, bus: null, failed: false, chains: [], attached: 0, timer: 0 };
+function clampDb(x, lo, hi) { return x < lo ? lo : (x > hi ? hi : x); }
+function dbToLin(db) { return Math.pow(10, db / 20); }
+/* 오디오 그래프의 공통 출구 — 여기 하나만 destination 에 이어 둔다 */
+function audioCtx() {
+  if (AUDIO.ctx) return AUDIO.ctx;
+  if (AUDIO.failed) return null;
+  const AC = window.AudioContext || window.webkitAudioContext;
+  if (!AC) { AUDIO.failed = true; return null; }
+  try {
+    const ctx = new AC();
+    const bus = ctx.createGain();
+    bus.gain.value = 1;
+    bus.connect(ctx.destination);
+    AUDIO.ctx = ctx; AUDIO.bus = bus;
+    return ctx;
+  } catch (e) { AUDIO.failed = true; return null; }
+}
+/* K-weighting 측정 분기 — 소리에는 더해지지 않도록 0 게인으로 끝낸다.
+   ITU-R BS.1770 의 두 단계 필터를 그대로 쓴다(48kHz 표준 계수 → IIRFilterNode).
+   다른 샘플레이트에서는 같은 특성의 biquad(고역셸프 1682Hz +4dB → 38Hz 고역통과 Q0.5)로 근사. */
+function kWeightProbe(ctx, fromNode, fftSize) {
+  const an = ctx.createAnalyser();
+  an.fftSize = fftSize || 32768;
+  try {
+    if (Math.abs(ctx.sampleRate - 48000) < 1) {
+      const s1 = ctx.createIIRFilter(
+        [1.53512485958697, -2.69169618940638, 1.19839281085285],
+        [1.0, -1.69065929318241, 0.73248077421585]);          // stage 1: 머리 효과(고역셸프 +4dB)
+      const s2 = ctx.createIIRFilter([1.0, -2.0, 1.0],
+        [1.0, -1.99004745483398, 0.99007225036621]);          // stage 2: 38Hz 고역통과
+      fromNode.connect(s1); s1.connect(s2); s2.connect(an);
+    } else {
+      const hs = ctx.createBiquadFilter();
+      hs.type = 'highshelf'; hs.frequency.value = 1682; hs.gain.value = 4;
+      const hp = ctx.createBiquadFilter();
+      hp.type = 'highpass'; hp.frequency.value = 38; hp.Q.value = 0.5;
+      fromNode.connect(hs); hs.connect(hp); hp.connect(an);
+    }
+  } catch (e) {
+    fromNode.connect(an);                                    // 필터를 못 만들면 무가중으로라도 측정
+  }
+  const sink = ctx.createGain(); sink.gain.value = 0;
+  an.connect(sink); sink.connect(AUDIO.bus);
+  return an;
+}
+/* Pause 중이던/제스처 전에 만들어진 <video> 들을 지금 연결한다 */
+function attachPendingLevel() {
+  if (!LEVEL_ON) return;
+  Object.keys(live).forEach(function (k) {
+    const L = live[k];
+    if (L && L.video && !L.video._wlChain) attachLevel(L.video, { slot: +k, id: L.ch.id });
+  });
+  try { if (pvVideo && !pvVideo._wlChain) attachLevel(pvVideo, { id: 'preview' }); } catch (e) {}
+}
+/* <video> 하나를 평준화 그래프에 연결 — 디폴트(LEVEL_ON=false)에서는 AudioContext 자체를 열지 않고 순정 원음 그대로 재생 */
+function attachLevel(v, meta) {
+  if (!LEVEL_ON || !v) return false;
+  if (v._wlChain) return true;
+  const ctx = audioCtx();
+  if (!ctx) return false;
+  /* 첫 제스처 전 AudioContext 는 suspended — 그때 엘리먼트를 그래프로 넘기면 소리가 죽는다.
+     그래서 running 이 된 뒤(터치·키 입력)에 붙인다. 그 전에는 원음 그대로 재생. */
+  if (ctx.state !== 'running') {
+    v._wlWait = meta || {};
+    return false;
+  }
+  try {
+    const src = ctx.createMediaElementSource(v);
+    const chId = (meta && meta.id) || '';
+    const user = ctx.createGain();
+    user.gain.value = volPct(chId) / 100;
+
+    const hpf = ctx.createBiquadFilter();
+    hpf.type = 'highpass'; hpf.frequency.value = 30; hpf.Q.value = 0.6;
+    const comp = ctx.createDynamicsCompressor();          // 레벨러 — 밀도 만들기
+    comp.threshold.value = -18; comp.knee.value = 10; comp.ratio.value = 2.6;
+    comp.attack.value = 0.012; comp.release.value = 0.30;
+    const gain = ctx.createGain(); gain.gain.value = 1;   // 자동 게인(AGC)
+    const lim = ctx.createDynamicsCompressor();           // 리미터 — 클리핑 방지
+    lim.threshold.value = -1.5; lim.knee.value = 0; lim.ratio.value = 20;
+    lim.attack.value = 0.002; lim.release.value = 0.12;
+    const lim2 = ctx.createDynamicsCompressor();
+    lim2.threshold.value = -1; lim2.knee.value = 0; lim2.ratio.value = 20;
+    lim2.attack.value = 0.002; lim2.release.value = 0.10;
+    src.connect(hpf); hpf.connect(comp); comp.connect(gain); gain.connect(lim);
+    lim.connect(user); user.connect(lim2); lim2.connect(AUDIO.bus);
+    const chain = {
+      v: v, src: src, hpf: hpf, comp: comp, gain: gain, lim: lim, user: user, lim2: lim2,
+      slot: meta && meta.slot != null ? meta.slot : null,
+      id: chId || (v.title || 'video'),
+      gDb: 0, primed: false, lvl: null, lufs: -Infinity, intL: -Infinity, peak: 0, t: 0,
+      blocks: new Float32Array(LEVEL_BLOCKS), bn: 0, bi: 0, mt: 0,
+      buf: new Float32Array(32768), pbuf: new Float32Array(1024)
+    };
+    chain.meter = kWeightProbe(ctx, lim, 32768);          // 출력 라우드니스(K-weight 근사 · 약 0.7초 창)
+    const post = ctx.createAnalyser(); post.fftSize = 1024;  // 피크 감시(가중치 없음)
+    lim.connect(post);
+    chain.post = post;
+    v._wlChain = chain;
+    v._wlWait = null;
+    AUDIO.chains.push(chain); AUDIO.attached++;
+    startLevelLoop();
+    v.addEventListener('playing', wakeAudio);
+    return true;
+  } catch (e) { return false; }
+}
+function detachLevel(v) {
+  const c = v && v._wlChain;
+  if (!c) return;
+  try { c.src.disconnect(); } catch (e) {}
+  try { c.hpf.disconnect(); c.comp.disconnect(); c.gain.disconnect(); c.lim.disconnect(); } catch (e) {}
+  try { c.user.disconnect(); c.lim2.disconnect(); } catch (e) {}
+  try { c.meter.disconnect(); } catch (e) {}
+  try { c.post.disconnect(); } catch (e) {}
+  const k = AUDIO.chains.indexOf(c);
+  if (k >= 0) AUDIO.chains.splice(k, 1);
+  if (AUDIO.attached > 0) AUDIO.attached--;
+  v._wlChain = null;
+}
+/* K-weight 신호의 단기 라우드니스(LUFS) */
+function lufsOf(an, buf) {
+  an.getFloatTimeDomainData(buf);
+  let sum = 0;
+  for (let i = 0; i < buf.length; i++) sum += buf[i] * buf[i];
+  const ms = sum / buf.length;
+  return ms > 1e-12 ? (LEVEL_LOUD_OFFSET + 10 * Math.log10(ms)) : -Infinity;
+}
+/* 최근 약 10초 블록을 모아 EBU R128 방식(절대 -70 LUFS · 상대 -10 LU 게이트)으로
+   '통합 라우드니스'를 구한다. ffmpeg ebur128·유튜브 정규화가 쓰는 것과 같은 잣대다. */
+function gatedLufs(c) {
+  const n = Math.min(c.bn || 0, LEVEL_BLOCKS);
+  if (!n) return -Infinity;
+  let sum = 0, k = 0;
+  for (let i = 0; i < n; i++) {
+    const p = c.blocks[i];
+    if (!(p > 0)) continue;
+    const l = -0.691 + 10 * Math.log10(p);
+    if (l > -70) { sum += p; k++; }
+  }
+  if (!k) return -Infinity;
+  const ungated = LEVEL_LOUD_OFFSET + 10 * Math.log10(sum / k);
+  const rel = ungated - 10;
+  let s2 = 0, k2 = 0;
+  for (let i = 0; i < n; i++) {
+    const p = c.blocks[i];
+    if (!(p > 0)) continue;
+    if ((LEVEL_LOUD_OFFSET + 10 * Math.log10(p)) > rel) { s2 += p; k2++; }
+  }
+  return k2 ? (LEVEL_LOUD_OFFSET + 10 * Math.log10(s2 / k2)) : ungated;
+}
+/* 아직 게이트를 걸 만큼 자료가 없을 때 쓰는 단순 평균(초기 프라이밍용) */
+function ungatedLufs(c) {
+  const n = Math.min(c.bn || 0, LEVEL_BLOCKS);
+  if (!n) return -Infinity;
+  let sum = 0;
+  for (let i = 0; i < n; i++) sum += c.blocks[i];
+  return sum > 0 ? (LEVEL_LOUD_OFFSET + 10 * Math.log10(sum / n)) : -Infinity;
+}
+function levelTick() {
+  const ctx = AUDIO.ctx;
+  if (!ctx || ctx.state !== 'running' || !AUDIO.chains.length) return;
+  const now = performance.now();
+  for (let n = 0; n < AUDIO.chains.length; n++) {
+    const c = AUDIO.chains[n];
+    const dt = c.t ? Math.min(2, (now - c.t) / 1000) : 0.15;
+    c.t = now;
+    /* 리미터 뒤 실제 피크 — 0dBFS 에 닿으면 게인을 즉시 조금 내린다 */
+    c.post.getFloatTimeDomainData(c.pbuf);
+    let pk = 0;
+    for (let i = 0; i < c.pbuf.length; i++) { const a = c.pbuf[i] < 0 ? -c.pbuf[i] : c.pbuf[i]; if (a > pk) pk = a; }
+    c.peak = pk;
+    const L = lufsOf(c.meter, c.buf);
+    c.lufs = L;
+    if (isFinite(L) && L > -70) {                    // 블록 기록(무음은 버린다)
+      c.blocks[c.bi] = Math.pow(10, (L - LEVEL_LOUD_OFFSET) / 10);
+      c.bi = (c.bi + 1) % LEVEL_BLOCKS;
+      if (c.bn < LEVEL_BLOCKS) c.bn++;
+    }
+    /* 통합 라우드니스는 1초에 한 번만 계산한다 */
+    if (now - (c.mt || 0) > 900) {
+      c.mt = now;
+      c.intL = gatedLufs(c);
+    }
+    const IL = c.intL;
+    if (!isFinite(IL) || IL < LEVEL_GATE_LUFS) continue;     // 무음·저잡음: 게인 얼림
+    if (!c.primed) {
+      /* 첫 1.5초만 기다렸다가 단순 평균으로 한 번 크게 맞춘다 — 채널을 바꾸면 몇 초 안에
+         목표 근처로 가고, 그 뒤로는 아래의 느린 보정만 한다(진동 방지). */
+      const U = ungatedLufs(c);
+      if (isFinite(U) && c.bn >= 10) {
+        c.gDb = clampDb(levelTarget - U, LEVEL_MIN_DB, LEVEL_MAX_DB);
+        c.primed = true;
+      }
+    } else if (now - (c.at || 0) > 900) {
+      c.at = now;
+      /* 폐루프 보정은 창(6초)보다 훨씬 느리게 — 한 번에 오차의 10%, 최대 0.3dB.
+         (창 지연 6초 × 0.05/s ≈ 위상여유 확보 → 헌팅 없음) */
+      const err = levelTarget - IL;
+      if (Math.abs(err) > LEVEL_DEAD_DB) {
+        c.gDb = clampDb(c.gDb + clampDb(err * 0.10, -0.3, 0.3), LEVEL_MIN_DB, LEVEL_MAX_DB);
+      }
+    }
+    if (pk > 0.985) c.gDb = clampDb(c.gDb - 0.15, LEVEL_MIN_DB, LEVEL_MAX_DB);   // 피크 보호(완만하게)
+    c.gain.gain.setTargetAtTime(dbToLin(c.gDb), ctx.currentTime, 0.05);
+  }
+}
+function startLevelLoop() {
+  if (AUDIO.timer) return;
+  AUDIO.timer = setInterval(levelTick, 150);
+}
+/* 자동재생 정책 — 첫 터치·키 입력에서 AudioContext 를 깨우고 대기하던 영상을 연결한다 */
+function wakeAudio() {
+  if (!LEVEL_ON) return;
+  const ctx = AUDIO.ctx;
+  if (!ctx) return;
+  if (ctx.state === 'suspended') {
+    try { ctx.resume().then(attachPendingLevel, function () {}); } catch (e) {}
+  } else attachPendingLevel();
+}
+/* 검증용 훅 — 브라우저 콘솔에서 WL_AUDIO.meter() / record(20) / setTarget(-16) */
+window.WL_AUDIO = {
+  target: function () { return levelTarget; },
+  enabled: LEVEL_ON,
+  state: function () { return AUDIO.ctx ? AUDIO.ctx.state : 'none'; },
+  attached: function () { return AUDIO.attached; },
+  meter: function () {
+    return AUDIO.chains.map(function (c) {
+      return {
+        slot: c.slot, id: c.id, muted: c.v.muted, paused: c.v.paused,
+        gainDb: Math.round(c.gDb * 10) / 10,
+        lufs: isFinite(c.lufs) ? Math.round(c.lufs * 10) / 10 : null,
+        intLufs: isFinite(c.intL) ? Math.round(c.intL * 10) / 10 : null,
+        vol: Math.round(((c.user && c.user.gain.value) || 1) * 100),   // 사용자가 맞춘 채널 볼륨(%)
+        peak: Math.round(c.peak * 1000) / 1000
+      };
+    });
+  },
+  setTarget: function (lufs) {
+    const v = parseFloat(lufs);
+    if (isFinite(v) && v < 0 && v > -40) levelTarget = v;
+    return levelTarget;
+  },
+  setGain: function (db, slot) {          // 수동 고정(검증용) — 자동 게인을 잠시 덮어쓴다
+    const c = AUDIO.chains.filter(function (x) { return slot == null || x.slot === slot; })[0];
+    if (!c) return null;
+    c.gDb = clampDb(parseFloat(db) || 0, LEVEL_MIN_DB, LEVEL_MAX_DB);
+    c.gain.gain.value = dbToLin(c.gDb);
+    return c.gDb;
+  },
+  /* 지금 듣고 있는(음소거 아닌) HLS 타일을 초 단위로 녹음해 webm 으로 내려받는다.
+     post=true(기본)는 평준화를 거친 소리, raw=true 는 원음 — 같은 조건 비교용. */
+  record: function (secs, opts) {
+    const ctx = AUDIO.ctx;
+    const o = opts || {};
+    if (!ctx) return Promise.reject(new Error('AudioContext 없음'));
+    let c = null;
+    if (o.slot != null) c = AUDIO.chains.filter(function (x) { return x.slot === o.slot; })[0];
+    else c = AUDIO.chains.filter(function (x) { return !x.v.muted; })[0] || AUDIO.chains[0];
+    if (!c) return Promise.reject(new Error('연결된 HLS 타일 없음'));
+    const raw = !!o.raw;
+    const dest = ctx.createMediaStreamDestination();
+    (raw ? c.src : c.lim).connect(dest);
+    const rec = new MediaRecorder(dest.stream, { mimeType: 'audio/webm;codecs=opus' });
+    const chunks = [];
+    rec.ondataavailable = function (e) { if (e.data && e.data.size) chunks.push(e.data); };
+    return new Promise(function (resolve) {
+      rec.onstop = function () {
+        try { (raw ? c.src : c.lim).disconnect(dest); } catch (e) {}
+        const blob = new Blob(chunks, { type: 'audio/webm' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = 'worldlive-' + (raw ? 'raw' : 'level') + '-' + String(c.id).replace(/[^\w-]+/g, '_')
+          + '-' + new Date().toISOString().slice(11, 19).replace(/:/g, '') + '.webm';
+        document.body.appendChild(a); a.click(); a.remove();
+        resolve({ name: a.download, bytes: blob.size, gainDb: Math.round(c.gDb * 10) / 10, intLufs: Math.round(c.intL * 10) / 10 });
+      };
+      rec.start();
+      setTimeout(function () { try { rec.stop(); } catch (e) {} }, Math.max(1000, (secs || 20) * 1000));
+    });
+  }
+};
+
+/* ── 채널별 볼륨 (사용자가 직접 조절 · 채널 ID별 저장) ─────────────────
+   2026-11-25 사용자 요청: "어려우면 채널별 볼륨을 넣어주면 내가 키울게"
+   · 공식 HLS(YTN·KBS·MBN·CNN·BBC …) 0~200% — 자동 평준화 위에 더 얹는다.
+   · YouTube 0~100% — 플레이어 자체 볼륨(setVolume 0~100)이 한계다.
+   · 값은 채널 ID별로 worldlive.v3 에 저장돼 새로고침·재부팅 뒤에도 유지된다.
+     (100%는 저장하지 않는다 = 기본값) */
+function volMaxOf(ch) {
+  return (LEVEL_ON && ch && (ch.kind === 'hls' || ch.kind === 'kbs' || ch.kind === 'mbn')) ? 200 : 100;
+}
+function volPct(chId) {
+  const v = chId ? state.vol[chId] : undefined;
+  return (typeof v === 'number' && v >= 0 && v <= 200) ? v : 100;
+}
+function volTag(ch) {
+  if (!ch) return '';
+  const p = volPct(ch.id);
+  if (p === 100) return '';
+  return ' <span class="ss-vol" title="이 채널에 직접 맞춘 볼륨">VOL ' + p + '%</span>';
+}
+let saveTimer = 0;
+function scheduleSave() {
+  if (saveTimer) clearTimeout(saveTimer);
+  saveTimer = setTimeout(function () { saveTimer = 0; try { save(); } catch (e) {} }, 200);
+}
+/* 채널 하나의 볼륨을 실제 재생에 반영 — 순정 네이티브 video.volume / YouTube setVolume */
+function applyChannelVolume(chId) {
+  const ch = chId ? byId(chId) : null;
+  if (!ch) return;
+  const pct = volPct(chId);
+  const ctx = AUDIO.ctx;
+  AUDIO.chains.forEach(function (c) {
+    if (c.id === chId && c.user && ctx) c.user.gain.setTargetAtTime(pct / 100, ctx.currentTime, 0.03);
+  });
+  const ids = slotIds();
+  ids.forEach(function (id, i) {
+    if (id !== chId) return;
+    const L = live[i];
+    if (L && L.video) {
+      try { L.video.volume = Math.max(0, Math.min(1, pct / 100)); } catch (e) {}
+    }
+    if (ch.kind === 'youtube' || ch.kind === 'youtube-video') {
+      ytCmd(i, 'setVolume', [Math.min(100, pct)]);
+    }
+  });
+}
+function setChannelVolume(chId, pct) {
+  const ch = chId ? byId(chId) : null;
+  if (!ch) return;
+  const max = volMaxOf(ch);
+  const v = Math.max(0, Math.min(max, Math.round(Number(pct) || 0)));
+  if (v === 100) delete state.vol[chId]; else state.vol[chId] = v;
+  applyChannelVolume(chId);
+  refreshVolUI();
+  scheduleSave();
+}
+/* 타일의 VOL 배지·버튼 상태·하단 스트립·팝오버를 한 번에 맞춘다 */
+function refreshVolUI() {
+  grid.querySelectorAll('.tile').forEach(function (el) {
+    const i = parseInt(el.dataset.slot, 10);
+    const ch = slotChannel(i);
+    if (!ch) return;
+    const chip = el.querySelector('.vol-chip');
+    if (chip) {
+      const p = volPct(ch.id);
+      chip.textContent = p === 100 ? '' : 'VOL ' + p + '%';
+      chip.hidden = p === 100;
+    }
+    const btn = el.querySelector('[data-act="vol"]');
+    if (btn) btn.classList.toggle('is-on', volPct(ch.id) !== 100);
+  });
+  syncVolPop();
+  try { updateStrip(); } catch (e) {}
+}
+/* ── 볼륨 팝오버 ─────────────────────────────────────────────── */
+let volSlot = null;
+function volPopEl() { return $('#vol-pop'); }
+function buildVolPresets(ch) {
+  const wrap = $('#vol-presets');
+  if (!wrap) return;
+  wrap.innerHTML = '';
+  const list = volMaxOf(ch) > 100 ? [30, 70, 100, 120, 150, 200] : [30, 50, 70, 100];
+  list.forEach(function (p) {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.dataset.vol = String(p);
+    b.textContent = p === 100 ? '100% (기본)' : p + '%';
+    wrap.appendChild(b);
+  });
+}
+function syncVolPop() {
+  const pop = volPopEl();
+  if (!pop || pop.hidden || volSlot == null) return;
+  const ch = slotChannel(volSlot);
+  if (!ch) { closeVolPop(); return; }
+  const max = volMaxOf(ch);
+  const p = Math.min(max, volPct(ch.id));
+  const r = $('#vol-range');
+  if (r && document.activeElement !== r) r.value = String(p);
+  if (r) r.style.setProperty('--vol-fill', Math.round((p / max) * 100) + '%');
+  $('#vol-pct').textContent = p + '%';
+  $('#vol-db').textContent = (p === 0 ? '-∞' : p === 100 ? '0.0' : (20 * Math.log10(p / 100)).toFixed(1)) + ' dB';
+  $('#vol-note').textContent = max > 100
+    ? '평준화 모드(?level=1) — 최대 200%(+6.0 dB)까지 조절할 수 있습니다.'
+    : '원음 그대로 재생됩니다 (0~100% 조절 · 기본 100%).';
+  pop.querySelectorAll('#vol-presets [data-vol]').forEach(function (b) {
+    b.classList.toggle('is-current', Number(b.dataset.vol) === p);
+  });
+}
+function openVolPop(i, btnEl) {
+  const ch = slotChannel(i);
+  const pop = volPopEl();
+  if (!ch || !pop) return;
+  volSlot = i;
+  $('#vol-name').textContent = ch.name;
+  const r = $('#vol-range');
+  r.min = '0'; r.max = String(volMaxOf(ch)); r.step = '5';
+  r.value = String(volPct(ch.id));
+  buildVolPresets(ch);
+  pop.hidden = false;
+  syncVolPop();
+  /* 누른 버튼 근처에 띄운다 — 위쪽 우선, 자리가 없으면 아래, 화면 밖으로는 나가지 않게 */
+  const tile = grid.querySelector('.tile[data-slot="' + i + '"]');
+  const anchor = btnEl || (tile && tile.querySelector('[data-act="vol"]')) || tile;
+  if (!anchor) return;
+  const rect = anchor.getBoundingClientRect();
+  const w = pop.offsetWidth || 250, h = pop.offsetHeight || 180;
+  let left = rect.left + rect.width / 2 - w / 2;
+  left = Math.max(10, Math.min(window.innerWidth - w - 10, left));
+  let top = rect.top - h - 10;
+  if (top < 10) top = Math.min(window.innerHeight - h - 10, rect.bottom + 10);
+  pop.style.left = Math.round(left) + 'px';
+  pop.style.top = Math.round(top) + 'px';
+}
+function closeVolPop() {
+  const p = volPopEl();
+  if (p) p.hidden = true;
+  volSlot = null;
+}
+function bindVolPop() {
+  const pop = volPopEl();
+  if (!pop) return;
+  const x = $('#vol-x'); if (x) x.addEventListener('click', closeVolPop);
+  const r = $('#vol-range');
+  if (r) r.addEventListener('input', function (e) {
+    const ch = volSlot != null ? slotChannel(volSlot) : null;
+    if (ch) setChannelVolume(ch.id, e.target.value);
+  });
+  const ps = $('#vol-presets');
+  if (ps) ps.addEventListener('click', function (e) {
+    const b = e.target.closest('[data-vol]');
+    if (!b) return;
+    const ch = volSlot != null ? slotChannel(volSlot) : null;
+    if (ch) setChannelVolume(ch.id, b.dataset.vol);
+  });
+  document.addEventListener('pointerdown', function (e) {
+    if (pop.hidden) return;
+    if (e.target.closest('#vol-pop') || e.target.closest('[data-act="vol"]')) return;
+    closeVolPop();
+  }, true);
+  window.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && !pop.hidden) closeVolPop();
+  });
+}
 
 /* ── state ─────────────────────────────────────────────────── */
 function freshSets() {
@@ -33,6 +592,8 @@ function freshSets() {
     '9': DEFAULT_SETS['9'].slice(),
     '4': DEFAULT_SETS['4'].slice(),
     '6': DEFAULT_SETS['6'].slice(),
+    'kr': DEFAULT_SETS['kr'].slice(),
+    'econ': DEFAULT_SETS['econ'].slice(),
     '1': DEFAULT_SETS['1'].slice()
   };
 }
@@ -45,11 +606,14 @@ const state = {
   allOrder: [],            // ‘내 순서’ — 전체 스크롤(ALL LIVE) 채널 순서
   custom: [],
   audioId: DEFAULT_AUDIO,  // 기본은 1번 칸 YTN 단독 청취
+  vol: {},                 // 채널 ID별 볼륨(%) — HLS 0~200, YouTube 0~100 (100=기본)
   muted: false,
-  selSlot: 0,              // 액티브 오디오 탤리 — 지금 듣고 있는 타일(흰색 테두리)
+  selSlot: 0,              // 액티브 오디오 탤리 — 지금 듣고 있는 타일(흰색 테두리, 1번 칸 YTN)
   startedAt: Date.now()
 };
 const live = {};            // slot index -> { node, media, ch, state, iframe, video, hls, ps }
+const YT_RETRY = {};        // slot index -> 빈 유튜브 타일 자동 재시도 횟수
+const YT_FALLBACK = {};     // slot index -> 고정 영상이 끝나 채널 라이브로 한 번 전환했는지
 let gen = 0;
 let io = null;
 
@@ -70,9 +634,11 @@ function save() {
   try {
     localStorage.setItem(LS_KEY, JSON.stringify({
       presetVer: PRESET_VER,
+      krVer: KR_PRESET_VER,
+      econVer: ECON_PRESET_VER,
       layout: state.layout, start: state.start, startPinned: state.startPinned, sort: state.sort, sets: state.sets,
       allOrder: state.allOrder,
-      custom: state.custom, audioId: state.audioId, muted: state.muted
+      custom: state.custom, audioId: state.audioId, muted: state.muted, vol: state.vol
     }));
   } catch (e) {}
 }
@@ -83,8 +649,11 @@ function normalizeSet(arr, key) {
   const seeds = (DEFAULT_SETS[key] || DEFAULT_SETS['9']).slice();
   const n = seeds.length;
   const out = [];
+  const swap = (typeof SLOT_REPLACE === 'object' && SLOT_REPLACE) || {};
   arr.slice(0, n).forEach(id => {
     if (typeof id !== 'string') return;
+    /* 자리가 바뀐 채널(OBS→MBN)은 같은 칸에서 새 채널로 교체한다 */
+    if (swap[id] && byId(swap[id])) id = swap[id];
     if (RETIRED_IDS.indexOf(id) >= 0) return;
     if (!byId(id) || out.indexOf(id) >= 0) return;
     out.push(id);
@@ -115,6 +684,12 @@ function applyStored(d) {
   if (typeof d.startPinned === 'boolean') state.startPinned = d.startPinned;
   if (typeof d.sort === 'string' && SORT_MODES[d.sort]) state.sort = d.sort;
   if (Array.isArray(d.allOrder)) state.allOrder = d.allOrder.filter(id => typeof id === 'string' && byId(id));
+  if (d.vol && typeof d.vol === 'object') {
+    Object.keys(d.vol).forEach(id => {
+      const v = Number(d.vol[id]);
+      if (isFinite(v) && v >= 0 && v <= 200 && v !== 100) state.vol[id] = Math.round(v);
+    });
+  }
   if (typeof d.audioId === 'string' && byId(d.audioId)) { state.audioId = d.audioId; state.muted = false; }
   else {
     if (d.audioId === null) state.audioId = null;      // 사용자가 ‘전체 음소거’로 저장한 상태
@@ -153,7 +728,21 @@ function load() {
     }
   }
   const ver = (d && Number(d.presetVer)) || 0;
-  if (ver >= PRESET_VER) { applyStored(d); return; }
+  if (ver >= PRESET_VER) {
+    applyStored(d);
+    /* 국내뉴스만 별도 버전으로 관리한다 — 사용자가 순서를 바꿨든 아니든,
+       국내뉴스 프리셋이 오르면 그 배치 하나만 새 기본 순서로 맞춘다. */
+    if (!(d && Number(d.krVer) >= KR_PRESET_VER)) {
+      state.sets['kr'] = DEFAULT_SETS['kr'].slice();
+      save();
+    }
+    /* 경제뉴스도 같은 방식 — 이 카테고리를 처음 받는 기기는 기본 순서로 채운다 */
+    if (!(d && Number(d.econVer) >= ECON_PRESET_VER)) {
+      state.sets['econ'] = DEFAULT_SETS['econ'].slice();
+      save();
+    }
+    return;
+  }
   if (d) applyStored({ custom: d.custom, allOrder: d.allOrder, sort: d.sort });
   applyPresetDefaults();
   save();
@@ -239,7 +828,7 @@ function slotIds() {
 }
 function slotChannel(i) {
   const ids = slotIds();
-  return byId(ids[i]) || CHANNELS[0];
+  return resolveTimeChannel(byId(ids[i]) || CHANNELS[0]);
 }
 function chCount() { return slotIds().length; }
 
@@ -362,6 +951,7 @@ const ICONS = {
   src:'<svg viewBox="0 0 16 16"><g stroke="currentColor" stroke-width="1.35" stroke-linecap="round"><path d="M2.5 4.4h11M2.5 8h11M2.5 11.6h11"/><circle cx="5.6" cy="4.4" r="1.5" fill="#0B1017"/><circle cx="10.4" cy="8" r="1.5" fill="#0B1017"/><circle cx="6.8" cy="11.6" r="1.5" fill="#0B1017"/></g></svg>',
   spk:'<svg viewBox="0 0 16 16"><path d="M2.6 6h2.2L7.6 3.6v8.8L4.8 10H2.6z" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linejoin="round"/><path d="M9.6 6a2.9 2.9 0 0 1 0 4M11.6 4.2a5.4 5.4 0 0 1 0 7.6" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round"/></svg>',
   spkOff:'<svg viewBox="0 0 16 16"><path d="M2.6 6h2.2L7.6 3.6v8.8L4.8 10H2.6z" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linejoin="round"/><g stroke="currentColor" stroke-width="1.25" stroke-linecap="round"><path d="M10.2 6.2l3.4 3.6M13.6 6.2l-3.4 3.6"/></g></svg>',
+  vol:'<svg viewBox="0 0 16 16"><path d="M1.8 6.2h2.1L6.7 4v8L3.9 9.8H1.8z" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/><g stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><path d="M8.6 6.2v3.6M11 4.4v7.2"/></g></svg>',
   max:'<svg viewBox="0 0 16 16"><g fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="square"><path d="M6 2.4H2.4V6M10 2.4h3.6V6M6 13.6H2.4V10M10 13.6h3.6V10"/></g></svg>',
   pop:'<svg viewBox="0 0 16 16"><g fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><path d="M9.4 2.6h4v4M13.4 2.6L8.6 7.4"/><path d="M12 9.8v3.2a.8.8 0 0 1-.8.8H2.8a.8.8 0 0 1-.8-.8V5.4a.8.8 0 0 1 .8-.8h3.2"/></g></svg>',
   re:'<svg viewBox="0 0 16 16"><g fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><path d="M13.2 6.7A5.3 5.3 0 1 0 13.7 9"/><path d="M13.9 2.9v3.8H10"/></g></svg>',
@@ -414,11 +1004,12 @@ function buildTile(i) {
     </div>
     <div class="tlay-ctrl">
       <div class="ctrl-meta">
-        <div class="ctrl-country"><span class="kind-chip">${KIND_LABEL[ch.kind] || ''}</span><span class="cname">${esc(ch.country || '')}</span></div>
+        <div class="ctrl-country"><span class="kind-chip">${KIND_LABEL[ch.kind] || ''}</span><span class="cname">${esc(ch.country || '')}</span><span class="vol-chip"${volPct(ch.id) === 100 ? ' hidden' : ''}>${volPct(ch.id) === 100 ? '' : 'VOL ' + volPct(ch.id) + '%'}</span></div>
         <div class="ctrl-src" title="${esc(ch.name)}">${esc(ch.name)}</div>
       </div>
       <div class="ctrl-btns">
         <button class="tbtn" data-act="audio" title="단독 음성">${ICONS.spkOff}</button>
+        <button class="tbtn${volPct(ch.id) === 100 ? '' : ' is-on'}" data-act="vol" title="채널 볼륨 조절">${ICONS.vol}</button>
         ${isAll ? '' : `<button class="tbtn" data-act="src" title="채널 변경">${ICONS.src}</button>`}
         <button class="tbtn" data-act="max" title="1×1 전체화면 (ESC → 이전 화면)">${ICONS.max}</button>
         <button class="tbtn" data-act="pop" title="새 창에서 열기">${ICONS.pop}</button>
@@ -436,6 +1027,7 @@ function idleFace(ch) {
 function mountSlot(i) {
   const el = grid.querySelector('.tile[data-slot="' + i + '"]');
   if (!el) return;
+  const myGen = gen;
   const ch = slotChannel(i);
   const media = el.querySelector('.tile-media');
   if (live[i]) {
@@ -452,17 +1044,20 @@ function mountSlot(i) {
   const muted = state.muted || state.audioId !== ch.id;
 
   if (ch.kind === 'youtube' || ch.kind === 'youtube-video') {
+    /* 고정 영상(youtube-video) 타일이 끝나면, 같은 채널의 '지금 라이브'(live_stream)로 한 번
+       자동 전환한다 — 방송사가 스트림을 새로 열었을 때 손대지 않고도 살아날 가능성을 얻기 위함. */
+    const useChannelLive = (ch.kind === 'youtube') || (!!ch.ytChannel && YT_FALLBACK[i] === 1);
     const params = new URLSearchParams({
-      /* 모바일 크롬·사파리는 '소리 켜진 자동재생'을 막습니다. 그대로 두면 유튜브 타일(첫 화면 YTN)이
-         아예 열리지 않고 멈춘 화면으로 남습니다. → 모바일에서는 음소거로 먼저 띄워 영상이 반드시 뜨게 하고,
-         음성 채널은 준비되는 대로 unMute, 그래도 막히면 첫 터치에서 소리를 켭니다. */
-      autoplay: '1', mute: (muted || isMobileUA()) ? '1' : '0', controls: '0', rel: '0',
+      /* 자동재생은 '음소거' 상태에서만 허용됩니다(mute=0&autoplay=1 은 모바일·데스크톱 모두 차단).
+         그래서 모든 유튜브 타일은 mute=1 로 먼저 띄워 '바로 재생'되게 하고,
+         음성 채널은 onReady 에서 unMute 를 시도, 막히면 첫 터치에서 소리를 켭니다(armSoundUnlock). */
+      autoplay: '1', mute: '1', controls: '0', rel: '0',
       modestbranding: '1', playsinline: '1', disablekb: '1', fs: '0',
       iv_load_policy: '3', enablejsapi: '1', loop: '0'
     });
     if (location.origin && location.origin !== 'null') params.set('origin', location.origin);
-    const path = ch.kind === 'youtube'
-      ? 'embed/live_stream?channel=' + encodeURIComponent(ch.src)
+    const path = useChannelLive
+      ? 'embed/live_stream?channel=' + encodeURIComponent(ch.kind === 'youtube' ? ch.src : ch.ytChannel)
       : 'embed/' + encodeURIComponent(ch.src);
     const iframe = document.createElement('iframe');
     iframe.src = 'https://www.youtube.com/' + path + (path.indexOf('?') >= 0 ? '&' : '?') + params.toString();
@@ -472,7 +1067,11 @@ function mountSlot(i) {
     iframe.title = ch.name + ' live';
     media.appendChild(iframe);
     live[i].iframe = iframe;
-    const hs = () => { ytListen(i); ytCmd(i, muted ? 'mute' : 'unMute'); };
+    const hs = () => {
+      ytListen(i);
+      ytCmd(i, muted ? 'mute' : 'unMute');
+      ytCmd(i, 'setVolume', [Math.min(100, volPct(ch.id))]);   // 채널별 볼륨(YouTube 0~100)
+    };
     iframe.addEventListener('load', () => { setTimeout(hs, 350); setTimeout(hs, 1500); });
     setTimeout(hs, 1800);
     setTimeout(() => {
@@ -484,6 +1083,28 @@ function mountSlot(i) {
     setTimeout(() => {
       if (live[i] && live[i].state === 'loading' && !live[i].err) setTileState(i, live[i].ch.status === 'event' ? 'offline' : 'live');
     }, 11000);
+    /* 방송사 채널 라이브는 뉴스 편성 시간에만 열립니다(24시간 상시가 아닌 곳이 있음).
+       그래서 한 번 비어 버린 타일(offline)은 4분 뒤 스스로 한 번 더 붙여 본다 —
+       편성이 시작되면 새로고침 없이 자동으로 화면이 살아난다(최대 45회 ≈ 3시간). */
+    if (ch.kind === 'youtube-video' || ch.kind === 'youtube') {
+      setTimeout(() => {
+        const L = live[i];
+        if (!L || myGen !== gen || !L.ch || L.ch.id !== ch.id) return;
+        if (L.state !== 'offline') return;
+        /* 고정 영상이 끝났으면 먼저 같은 채널의 '지금 라이브'(live_stream)로 한 번 넘겨 본다 */
+        if (ch.ytChannel && YT_FALLBACK[i] !== 1 && !useChannelLive) {
+          YT_FALLBACK[i] = 1;
+          unmountSlot(i);
+          mountSlot(i);
+          return;
+        }
+        const n = (YT_RETRY[i] || 0) + 1;
+        if (n > 45) return;
+        YT_RETRY[i] = n;
+        unmountSlot(i);
+        mountSlot(i);
+      }, 240000);
+    }
 
   } else if (ch.kind === 'hls') {
     const v = document.createElement('video');
@@ -509,6 +1130,19 @@ function mountSlot(i) {
     setTileState(i, 'sync');
     mountKbs(i, v, ch);
 
+  } else if (ch.kind === 'mbn') {
+    // MBN 공식 온에어 — 인증 API가 내려주는 서명 .m3u8을 hls.js로 재생
+    const v = document.createElement('video');
+    v.muted = muted; v.autoplay = true; v.playsInline = true; v.controls = false;
+    v.setAttribute('playsinline', '');
+    v.title = ch.name + ' live';
+    media.appendChild(v);
+    live[i].video = v;
+    v.addEventListener('playing', () => { setTileState(i, 'live'); v.dataset.ok = '1'; });
+    v.addEventListener('waiting', () => { if (!v.dataset.ok) setTileState(i, 'sync'); });
+    setTileState(i, 'sync');
+    mountMbn(i, v, ch);
+
   } else if (ch.kind === 'iframe') {
     // 방송사 공식 페이지를 그대로 삽입 (자사 플레이어로만 재생되는 채널)
     const f = document.createElement('iframe');
@@ -533,6 +1167,8 @@ function unmountSlot(i) {
   const L = live[i];
   if (!L) return;
   try { if (L.hls) L.hls.destroy(); } catch (e) {}
+  /* 해제되는 타일의 오디오 그래프도 떼어 낸다 — 칸을 비울 때 노드가 쌓이지 않도록 */
+  try { if (L.video) detachLevel(L.video); } catch (e) {}
   try { if (L.video) { L.video.pause(); L.video.removeAttribute('src'); L.video.load(); } } catch (e) {}
   try { if (L.iframe) L.iframe.src = 'about:blank'; } catch (e) {}
   const el = L.node;
@@ -575,6 +1211,41 @@ function mountKbs(i, v, ch) {
 function kbsNoFeed(i, ch) {
   setTileState(i, 'external');
   showVeil(i, 'KBS 공식 온에어', 'KBS가 이 네트워크(해외 IP로 보임)에는 실시간 주소를 내려주지 않습니다. KBS 공식 온에어 페이지에서 시청하세요.', 'KBS 온에어 열기', 'open');
+}
+
+/* MBN 공식 온에어 — mbn.co.kr 플레이어가 쓰는 인증 API가 원본 .m3u8에 CloudFront 서명을 붙여 돌려준다.
+   (CORS `*` · 서명 만료 후 다시 받으면 새 주소 · IP 제한 없음 · 2026-11-25 실측)
+   화면을 열 때 한 번 받고, 재생이 끊기면(서명 만료·일시 장애) 새 주소를 한 번 더 받아 스스로 회복한다.
+   백업(600k) 주소도 같은 인증 API를 거친다. */
+function mbnFetchUrl(ch, rawUrl) {
+  const base = (ch && ch.api) || '';
+  const target = rawUrl || (ch && ch.src) || '';
+  if (!base || !target) return Promise.resolve('');
+  const u = base + '?vod_url=' + encodeURIComponent(target) + '&_=' + Date.now();
+  return fetch(u, { cache: 'no-store', credentials: 'omit' })
+    .then(r => (r.ok ? r.text() : Promise.reject(new Error('HTTP ' + r.status))))
+    .then(t => {
+      const s = String(t || '').trim();
+      return /^https?:\/\//.test(s) ? s : '';
+    });
+}
+function mountMbn(i, v, ch) {
+  mbnFetchUrl(ch).then(url => {
+    const cur = live[i];
+    if (!cur || cur.ch.id !== ch.id) return;
+    if (!url) { mbnNoFeed(i, ch); return; }
+    const backupUrl = ch.backup ? url.replace('/1000k/', '/600k/') : null;
+    attachHls(i, v, url, (backupUrl && backupUrl !== url) ? backupUrl : null,
+      () => mbnFetchUrl(ch));
+  }).catch(() => {
+    if (!live[i] || live[i].ch.id !== ch.id) return;
+    setTileState(i, 'error');
+    showVeil(i, 'MBN 온에어 연결 실패', ch.name + ' — MBN 온에어 주소를 받아오지 못했습니다. 잠시 후 다시 시도해 주세요.', '다시 시도', 'retry');
+  });
+}
+function mbnNoFeed(i, ch) {
+  setTileState(i, 'external');
+  showVeil(i, 'MBN 공식 온에어', 'MBN이 이 네트워크에는 실시간 주소를 내려주지 않습니다. MBN 공식 온에어 페이지에서 시청하세요.', 'MBN 온에어 열기', 'open');
 }
 
 /* HLS 재생 — 1차 주소가 치명적 오류(매니페스트/세그먼트 실패)를 내면
@@ -628,6 +1299,7 @@ function attachHls(i, v, primary, backup, refresh) {
       cur.hls = hls;
       hls.loadSource(url);
       hls.attachMedia(v);
+      attachLevel(v, { slot: i, id: cur.ch.id });   // HLS 평준화 — MSE(blob:) 재생이라 교차 출처 오염 없음
       hls.on(window.Hls.Events.MANIFEST_PARSED, () => {
         const wantSound = !state.muted && !!live[i] && state.audioId === live[i].ch.id;
         if (wantSound) playWithSound(v);
@@ -739,7 +1411,12 @@ function sizeGrid() {
   if (isPortrait()) {
     grid.style.width = '100%';
     grid.style.height = 'auto';
-    grid.style.gridTemplateColumns = '1fr';
+    /* 국내뉴스도 세로 화면에서는 다른 분할과 같게 1열 — 화면 하나(16:9)씩 위에서 아래로
+       9개가 순서대로 나온다(2026-11-25 사용자 요청). 두 칸씩 보고 싶으면 모바일 뷰 버튼으로 2열. */
+    grid.style.gridTemplateColumns = (LAYOUTS[state.layout] && (LAYOUTS[state.layout].kr || LAYOUTS[state.layout].econ) &&
+      document.body.classList.contains('is-mobile-quad'))
+      ? 'repeat(2, minmax(0, 1fr))'
+      : '1fr';
     grid.style.gridTemplateRows = '';
     grid.style.gap = '12px';
     return;
@@ -780,6 +1457,26 @@ function destroyAll() {
     try { if (L.iframe) L.iframe.src = 'about:blank'; } catch (e) {}
     delete live[k];
   });
+}
+
+/* 시간대 경계(21:00 / 06:30)를 넘기면 그 칸만 새 채널로 갈아 끼운다.
+   30초마다 · 화면으로 돌아올 때 확인하며, 저장된 배치(state.sets)는 건드리지 않는다. */
+function timeSlotSync() {
+  const ids = slotIds();
+  let changed = false;
+  for (let i = 0; i < ids.length; i++) {
+    const L = live[i];
+    if (!L || !L.ch) continue;                     // 아직 붙지 않은 칸(전체 스크롤 지연 마운트)은 건너뛄다
+    const want = slotChannel(i);
+    if (!want || L.ch.id === want.id) continue;
+    const wasAudio = !state.muted && state.audioId === L.ch.id;
+    unmountSlot(i);
+    mountSlot(i);
+    if (wasAudio) { state.audioId = want.id; state.muted = false; }
+    changed = true;
+    toast(L.ch.name + ' → ' + want.name + ' (시간대 자동 전환)');
+  }
+  if (changed) { selByChannel(); save(); syncAudioButtons(); syncTally(); updateStrip(); applyAudio(); }
 }
 
 function rebuildGrid() {
@@ -875,10 +1572,10 @@ function selectSlot(i) {
   if (!L) return;
   if (ch.kind === 'youtube' || ch.kind === 'youtube-video') {
     ytCmd(i, 'unMute');
-    ytCmd(i, 'setVolume', [100]);
+    ytCmd(i, 'setVolume', [Math.min(100, volPct(ch.id))]);
     ytCmd(i, 'playVideo');
-  } else if ((ch.kind === 'hls' || ch.kind === 'kbs') && L.video) {
-    try { L.video.volume = 1; } catch (e) {}
+  } else if ((ch.kind === 'hls' || ch.kind === 'kbs' || ch.kind === 'mbn') && L.video) {
+    try { L.video.volume = Math.max(0, Math.min(1, volPct(ch.id) / 100)); } catch (e) {}
     if (L.video.paused) L.video.play().catch(() => {});
   }
 }
@@ -914,17 +1611,18 @@ function setAudio(chId) {
   save();
 }
 function applyAudio() {
+  wakeAudio();          // 첫 제스처(또는 재생 시작)에서 AudioContext resume + 평준화 연결
   Object.keys(live).forEach(k => {
     const i = parseInt(k, 10), L = live[k];
     const muted = state.muted || state.audioId !== L.ch.id;
     if (L.iframe) {
       ytCmd(i, muted ? 'mute' : 'unMute');
-      if (!muted) { ytCmd(i, 'setVolume', [100]); ytCmd(i, 'playVideo'); }
+      if (!muted) { ytCmd(i, 'setVolume', [Math.min(100, volPct(L.ch.id))]); ytCmd(i, 'playVideo'); }
     }
     if (L.video != null) {
       L.video.muted = muted;
       if (!muted) {
-        try { L.video.volume = 1; } catch (e) {}
+        try { L.video.volume = Math.max(0, Math.min(1, volPct(L.ch.id) / 100)); } catch (e) {}
         playWithSound(L.video);
       }
     }
@@ -979,11 +1677,11 @@ function updateStrip() {
     : 'MASTER CONTROL — ' + ok + '/' + ids.length + ' FEEDS NOMINAL' + (warn ? ' · ' + warn + ' CHECK' : '');
   $('#ss-status').textContent = label;
   const ch = state.audioId ? byId(state.audioId) : null;
-  $('#ss-audio').innerHTML = (state.muted || !ch) ? 'AUDIO — ALL MUTED' : 'AUDIO — <b>' + esc(ch.name) + '</b>';
+  $('#ss-audio').innerHTML = (state.muted || !ch) ? 'AUDIO — ALL MUTED' : 'AUDIO — <b>' + esc(ch.name) + '</b>' + volTag(ch);
 }
 
 /* ── start layout menu ─────────────────────────────────────── */
-const START_NAMES = { '9':'9분할', '6':'6분할', '4':'4분할', '1':'전체화면', 'all':'전체 스크롤' };
+const START_NAMES = { '9':'9분할', '6':'6분할', '4':'4분할', 'kr':'국내뉴스', 'econ':'경제뉴스', '1':'전체화면', 'all':'전체 스크롤' };
 function refreshStartUI() {
   $('#start-label').textContent = state.startPinned ? (START_NAMES[state.start] || '9분할') : '마지막 화면';
   document.querySelectorAll('#start-menu [data-start]').forEach(b => {
@@ -996,6 +1694,8 @@ function refreshStartUI() {
 }
 function setStart(layout) {
   if (layout === 'reset') { resetPreset(); return; }
+  if (layout === 'krreset') { setStart('kr'); resetKrNews(); return; }
+  if (layout === 'econreset') { setStart('econ'); resetEconNews(); return; }
   if (layout === 'auto') {
     state.startPinned = false;
     save();
@@ -1025,6 +1725,21 @@ function resetPreset() {
   rebuildGrid();
   applyAudio();
   toast('기본 배치로 초기화 — 4분할 · YTN / 연합뉴스TV / KBS / CNN INTERNATIONAL (YTN 음성 ON)');
+}
+/* 국내뉴스 9분할 — 방송사 순서를 기본값으로 되돌린다(사용자가 바꿔 둔 국내뉴스 배치만 초기화) */
+function resetKrNews() {
+  state.sets['kr'] = DEFAULT_SETS['kr'].slice();
+  state.allOrder = [];
+  save();
+  applyLayout('kr');
+  toast('국내뉴스 9분할 — YTN / 연합뉴스TV / KBS / MBC / SBS / JTBC / TV조선 / MBN / 채널A');
+}
+/* 경제뉴스 9분할 — 사용자가 바꿔 둔 경제뉴스 배치만 기본 순서로 되돌린다 */
+function resetEconNews() {
+  state.sets['econ'] = DEFAULT_SETS['econ'].slice();
+  save();
+  applyLayout('econ');
+  toast('경제뉴스 9분할 — 한국경제TV / 매일경제TV / 삼프로TV / 오선의 미증시 / Bloomberg / CNBC / Yahoo Finance / Fox Business / Euronews Business');
 }
 
 function refreshSortUI() {
@@ -1154,9 +1869,32 @@ function srcCard(c, current) {
   });
   return b;
 }
+/* 채널 찾기에서 다른 칸에 이미 있는 채널을 고를 때, 그 기존 칸에 채울 ‘화면에 없는 첫 채널’.
+   후보 순서 = ① 이 분할의 기본 배치(YTN·연합뉴스TV·KBS → …) ② 지금 정렬(지역·국가순 등) 순서
+   이미 쓰고 있는 채널·없는 채널은 건너뛴다. 후보가 하나도 없으면 null(→ 직전 채널과 자리 교환). */
+function nextUnusedId(layout, used) {
+  const seen = {};
+  let pick = null;
+  const take = function (id) {
+    if (pick || !id || seen[id] || used.indexOf(id) >= 0) return;
+    seen[id] = 1;
+    if (byId(id)) pick = id;
+  };
+  ((DEFAULT_SETS[layout] || [])).forEach(take);
+  if (!pick) sortedIds().forEach(take);
+  return pick;
+}
+/* 한 칸만 다시 만들기 — 기존 재생 자원(hls·오디오 노드)을 정리하고 새 채널로 다시 붙인다 */
+function remountTile(i) {
+  try { unmountSlot(i); } catch (e) {}
+  const el = grid.querySelector('.tile[data-slot="' + i + '"]');
+  if (el) el.replaceWith(buildTile(i));
+  mountSlot(i);
+}
 function assignSource(slot, id) {
   if (state.layout === 'all') {
-    // 전체 스크롤 — 현재 순서에서 그 칸만 교체하고 ‘내 순서’로 고정
+    /* 전체 스크롤 — 그 칸을 고른 채널로 바꾸고 ‘내 순서’로 고정.
+       고른 채널이 이미 다른 칸에 있으면 그 칸과 자리를 맞바꾼다(= 중복 없이 그 칸은 직전 채널이 됨). */
     const order = sortedIds().slice();
     const dup = order.indexOf(id);
     if (dup >= 0 && dup !== slot) { const keep = order[slot]; order[slot] = id; order[dup] = keep; }
@@ -1173,17 +1911,37 @@ function assignSource(slot, id) {
     toast('전체 스크롤 SLOT ' + String(slot + 1).padStart(2, '0') + ' — ' + (ch ? ch.name : id));
     return;
   }
-  state.sets[state.layout][slot] = id;
-  // 듣고 있던 칸의 채널을 바꾸면 새 채널로 청취를 이어간다 (테두리 유지)
+  const set = state.sets[state.layout];
+  const prev = set[slot];
+  const movedTo = [];                       // 같은 채널이 있어 자동으로 다른 채널이 채워진 칸
+  const dups = [];
+  set.forEach(function (v, i) { if (i !== slot && v === id) dups.push(i); });
+  set[slot] = id;
+  /* 화면에 같은 채널이 두 칸 겹치지 않게 — 기존 칸은 비우고 ‘아직 화면에 없는 채널’로 채운다.
+     채울 후보가 없으면(모든 채널이 이미 화면에 있음) 그 칸을 직전 채널로 바꿔 자리만 맞바꾼다. */
+  dups.forEach(function (j) {
+    const used = set.filter(function (v, i) { return i !== j; });
+    set[j] = nextUnusedId(state.layout, used) || prev;
+    movedTo.push(j);
+  });
+  // 듣고 있던 칸이 자동 교체됐으면 그 칸의 새 채널로 청취를 이어간다
+  if (!state.muted && state.selSlot != null && movedTo.indexOf(state.selSlot) >= 0) state.audioId = set[state.selSlot];
+  // 고른 칸의 채널을 바꾸면 새 채널로 청취를 이어간다 (테두리 유지)
   if (state.selSlot === slot) { state.audioId = id; state.muted = false; }
   save();
   closeModal();
   const ch = byId(id);
-  toast(LAYOUTS[state.layout].label + ' SLOT ' + String(slot + 1).padStart(2, '0') + ' — ' + (ch ? ch.name : id));
-  const el = grid.querySelector('.tile[data-slot="' + slot + '"]');
-  if (el) el.replaceWith(buildTile(slot));
-  delete live[slot];
-  mountSlot(slot);
+  const pad = function (i) { return String(i + 1).padStart(2, '0'); };
+  let msg = LAYOUTS[state.layout].label + ' SLOT ' + pad(slot) + ' — ' + (ch ? ch.name : id);
+  if (movedTo.length) {
+    msg += ' · 겹친 ' + movedTo.map(function (j) {
+      const c = byId(set[j]); return 'SLOT ' + pad(j) + (c ? ' → ' + c.name : '');
+    }).join(', ');
+  }
+  toast(msg);
+  remountTile(slot);
+  movedTo.forEach(remountTile);
+  selByChannel();          // 듣던 채널이 다른 칸으로 옮겨 갔으면 테두리도 그 칸으로
   applyAudio();
   refreshStartUI();
 }
@@ -1197,7 +1955,8 @@ function pvExternalUrl(ch) {
   if (!ch) return '#';
   if (ch.kind === 'youtube') return 'https://www.youtube.com/channel/' + ch.src + '/live';
   if (ch.kind === 'youtube-video') return 'https://www.youtube.com/watch?v=' + ch.src;
-  if (ch.kind === 'kbs') return ch.web || '#';
+  if (ch.kind === 'kbs' || ch.kind === 'mbn') return ch.web || '#';
+  if (ch.web) return ch.web;            // HLS·MBN이라도 방송사 공식 페이지가 있으면 그쪽으로(YTN 등)
   return ch.src || '#';
 }
 function pvSetBadge(kind) {
@@ -1229,7 +1988,7 @@ function pvOnMessage(d) {
   if (!d) return;
   if (d.event === 'onReady') {
     pvCmd(pvAudioOn ? 'unMute' : 'mute');
-    if (pvAudioOn) pvCmd('setVolume', [85]);
+    if (pvAudioOn) pvCmd('setVolume', [100]);   // YouTube 는 100% 가 최대(외부 증폭 불가)
     setTimeout(() => pvCmd('playVideo'), 250);
   }
   if (d.event === 'infoDelivery' && d.info && typeof d.info.playerState === 'number') {
@@ -1260,6 +2019,7 @@ function pvAttachHls(v, ch) {
       pvHls = hls;
       hls.loadSource(url);
       hls.attachMedia(v);
+      attachLevel(v, { id: ch.id });   // 미리보기도 같은 평준화
       hls.on(window.Hls.Events.MANIFEST_PARSED, () => { pvSetBadge('live'); v.play().catch(() => {}); });
       hls.on(window.Hls.Events.ERROR, (ev, data) => {
         if (!data || !data.fatal) return;
@@ -1309,7 +2069,7 @@ function pvToggleAudio() {
   $('#pv-audio-txt').textContent = pvAudioOn ? '소리 끄기' : '소리 켜기';
   if (pvVideo) pvVideo.muted = !pvAudioOn;
   if (pvIframe) {
-    if (pvAudioOn) { pvCmd('unMute'); pvCmd('setVolume', [85]); }
+    if (pvAudioOn) { pvCmd('unMute'); pvCmd('setVolume', [100]); }
     else pvCmd('mute');
   }
 }
@@ -1323,7 +2083,7 @@ function openPreview(ch) {
   $('#pv-pop').href = pvExternalUrl(ch);
   $('#pv-audio').classList.remove('is-on');
   $('#pv-audio-txt').textContent = '소리 켜기';
-  $('#pv-audio').hidden = !(ch.kind === 'youtube' || ch.kind === 'youtube-video' || ch.kind === 'hls' || ch.kind === 'kbs');
+  $('#pv-audio').hidden = !(ch.kind === 'youtube' || ch.kind === 'youtube-video' || ch.kind === 'hls' || ch.kind === 'kbs' || ch.kind === 'mbn');
   pvSetBadge('preview');
 
   const st = $('#pv-stage');
@@ -1373,6 +2133,25 @@ function openPreview(ch) {
     ensureHls().then(() => {
       if (pvVideo !== v) return;
       kbsFetchUrl(ch).then(url => {
+        if (pvVideo !== v) return;
+        if (!url) { pvSetBadge('error'); return; }
+        pvAttachHls(v, Object.assign({}, ch, { src: url, backup: null }));
+      }).catch(() => { if (pvVideo === v) pvSetBadge('error'); });
+    });
+
+  } else if (ch.kind === 'mbn') {
+    const v = document.createElement('video');
+    v.muted = true; v.autoplay = true; v.playsInline = true; v.controls = true;
+    v.setAttribute('playsinline', '');
+    v.title = ch.name + ' 미리보기';
+    st.appendChild(v);
+    pvVideo = v;
+    v.addEventListener('playing', () => pvSetBadge('live'));
+    v.addEventListener('error', () => pvSetBadge('error'));
+    pvSetBadge('sync');
+    ensureHls().then(() => {
+      if (pvVideo !== v) return;
+      mbnFetchUrl(ch).then(url => {
         if (pvVideo !== v) return;
         if (!url) { pvSetBadge('error'); return; }
         pvAttachHls(v, Object.assign({}, ch, { src: url, backup: null }));
@@ -1504,7 +2283,8 @@ function openExternal(i) {
   let url;
   if (ch.kind === 'youtube') url = 'https://www.youtube.com/channel/' + ch.src + '/live';
   else if (ch.kind === 'youtube-video') url = 'https://www.youtube.com/watch?v=' + ch.src;
-  else if (ch.kind === 'kbs') url = ch.web || '#';
+  else if (ch.kind === 'kbs' || ch.kind === 'mbn') url = ch.web || '#';
+  else if (ch.web) url = ch.web;         // HLS라도 방송사 공식 페이지가 있으면 그쪽으로(YTN 등)
   else url = ch.src;
   window.open(url, '_blank', 'noopener');
 }
@@ -1663,7 +2443,7 @@ function reassertCinemaAudio() {
   if (i < 0) return;
   const L = live[i];
   if (!L) return;
-  if (L.iframe) { ytCmd(i, 'unMute'); ytCmd(i, 'setVolume', [100]); ytCmd(i, 'playVideo'); }
+  if (L.iframe) { ytCmd(i, 'unMute'); ytCmd(i, 'setVolume', [Math.min(100, volPct(a.id))]); ytCmd(i, 'playVideo'); }
   if (L.video) { try { L.video.muted = false; L.video.volume = 1; L.video.play().catch(() => {}); } catch (e) {} }
 }
 function showCinemaHud(ms) {
@@ -1842,6 +2622,8 @@ function swapSlots(a, b) {
 
 /* ── events ────────────────────────────────────────────────── */
 function bindEvents() {
+  // 오디오 평준화 그래프 — 첫 터치·키 입력에서 AudioContext 를 깨우고 엘리먼트를 연결한다
+  ['pointerdown', 'touchstart', 'keydown'].forEach(t => window.addEventListener(t, wakeAudio, true));
   document.querySelectorAll('.layout-btn').forEach(b => {
     // 전체화면 버튼 = 선택 채널 1×1 + 클린 FULL (ESC → 이전 화면)
     b.addEventListener('click', () => b.dataset.layout === '1' ? showCleanFull() : applyLayout(b.dataset.layout));
@@ -1915,6 +2697,7 @@ function bindEvents() {
     if (act === 'mv-next') { moveAllOrder(slotChannel(i).id, 'next'); return; }
     if (act === 'mv-first') { moveAllOrder(slotChannel(i).id, 'first'); return; }
     if (act === 'audio') { setAudio(slotChannel(i).id); return; }
+    if (act === 'vol') { openVolPop(i, actBtn); return; }
     if (act === 'max') { showBig(i, true); return; }   // 1×1 + FULL (ESC → 이전 화면)
     if (act === 'pop') { openExternal(i); return; }
     if (act === 'reload') { try { unmountSlot(i); } catch (x) {} mountSlot(i); toast(slotChannel(i).name + ' — 재연결'); return; }
@@ -2220,18 +3003,21 @@ function bindEvents() {
     if (e.target.closest('[data-pv-close]')) closePreview(true);
   });
 
-  // 모바일 뷰 전환 (2열 4분할 <-> 1열 와이드)
+  // 모바일 뷰 전환 (1열 와이드 <-> 2열) — 국내뉴스는 기본이 1열 세로 피드라
+  // 버튼을 누르면 두 칸씩 보는 2열로 바뀐다.
   const btnMobileView = $('#btn-mobile-view');
   if (btnMobileView) {
     btnMobileView.addEventListener('click', () => {
-      const isSingle = document.body.classList.toggle('is-mobile-single');
+      const isQuad = document.body.classList.toggle('is-mobile-quad');
+      document.body.classList.remove('is-mobile-single');
       const ic2 = btnMobileView.querySelector('.ic-grid-2');
       const ic1 = btnMobileView.querySelector('.ic-grid-1');
       if (ic2 && ic1) {
-        ic2.style.display = isSingle ? 'none' : 'block';
-        ic1.style.display = isSingle ? 'block' : 'none';
+        ic2.style.display = isQuad ? 'block' : 'none';
+        ic1.style.display = isQuad ? 'none' : 'block';
       }
       sizeGrid();
+      toast(isQuad ? '모바일 뷰 — 2열로 보기' : '모바일 뷰 — 1열(한 화면씩) 보기');
     });
   }
 
@@ -2296,6 +3082,8 @@ function bindEvents() {
     else if (k === '3') applyLayout('4');
     else if (k === '4') showCleanFull();
     else if (k === '5' || k === 'a') applyLayout('all');
+    else if (k === 'k') applyLayout('kr');
+    else if (k === 'e') applyLayout('econ');
     else if (k === 'f') toggleFullscreen();
     else if (k === 'h' && isFull()) toggleHud();
     else if (k === 'm') $('#btn-mute').click();
@@ -2353,6 +3141,12 @@ window.WORLD_LIVE = {
     tiles: Object.keys(live).map(k => ({ slot: +k, id: live[k].ch.id, name: live[k].ch.name, kind: live[k].ch.kind, state: live[k].state, backupUsed: !!live[k].backupUsed, src: live[k].src || null, ps: live[k].ps == null ? null : live[k].ps, err: live[k].err || null }))
   }),
   setLayout: l => applyLayout(l),
+  /* 시간대 자동 전환 상태 — kst 분, 강제 모드, 칸별로 지금 보여야 하는 채널 */
+  timeSlot: () => ({
+    kstMinutes: kstMinutes(), forceNight: FORCE_NIGHT,
+    slots: slotIds().map((id, i) => ({ slot: i, stored: id, show: (slotChannel(i) || {}).id }))
+  }),
+  syncTimeSlot: () => timeSlotSync(),
   setAudio: id => setAudio(id),
   selectSlot: i => selectSlot(i),
   swap: (a, b) => swapSlots(a, b),
@@ -2372,40 +3166,6 @@ window.WORLD_LIVE = {
   filterSources: q => applySourceFilter(q),
   srcCount: () => srcEntries.length
 };
-
-/* ── 첫 화면 오디오 폴백 ────────────────────────────────────────
-   기본 청취 채널(YTN)이 첫 화면에서 8초 안에 재생 상태(playerState=1)에
-   이르지 못하면 — 모바일 자동재생 정책·임베드 지연·방송측 일시 장애 등 —
-   같은 화면의 다음 한국 채널(연합뉴스TV)로 소리를 넘깁니다.
-   · 사용자가 그전에 타일을 눌러 직접 고른 경우에는 건드리지 않습니다.
-   · YTN이 정상 재생되면 아무 것도 하지 않습니다. */
-let audioFallbackArmed = false;
-function armAudioFallback() {
-  if (audioFallbackArmed) return;
-  audioFallbackArmed = true;
-  if (state.audioId !== 'ytn24') return;
-  const picked = state.selSlot;
-  const startedAt = Date.now();
-  const check = () => {
-    if (state.audioId !== 'ytn24' || state.selSlot !== picked) return;   // 사용자가 바꿈
-    const ids = slotIds();
-    const at = ids.indexOf('ytn24');
-    if (at < 0) return;
-    const L = live[at];
-    const ch = L && L.ch;
-    const isYt = ch && (ch.kind === 'youtube' || ch.kind === 'youtube-video');
-    const ok = isYt
-      ? (L.ps === 1)
-      : !!(L && L.video && L.video.readyState >= 2 && !L.video.paused);
-    if (ok) return;                                   // 정상 재생 — 폴백 불필요
-    if (Date.now() - startedAt < 8000) { setTimeout(check, 1200); return; }
-    const alt = ids.indexOf('yonhap24');
-    if (alt < 0) return;
-    selectSlot(alt);
-    toast('YTN이 지연되어 연합뉴스TV 소리로 전환했습니다 — YTN 타일을 누르면 다시 YTN 소리');
-  };
-  setTimeout(check, 3000);
-}
 
 /* ── boot ──────────────────────────────────────────────────── */
 function boot() {
@@ -2434,15 +3194,19 @@ function boot() {
   else if (!LAYOUTS[state.layout]) state.layout = state.start;
   buildClocks();
   bindEvents();
+  bindVolPop();
   refreshStartUI();
   refreshSortUI();
   markBuild();
   applyLayout(state.layout, false);
   rebuildGrid();
   applyAudio();
-  armAudioFallback();
+  refreshVolUI();
   tickClocks();
   setInterval(tickClocks, 1000);
+  /* 시간대 자동 전환 — 열어 둔 채 21:00·06:30을 넘기면 그 칸이 알아서 바뀌도록 */
+  setInterval(timeSlotSync, 30000);
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) timeSlotSync(); });
 }
 boot();
 
