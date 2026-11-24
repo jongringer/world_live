@@ -244,9 +244,13 @@ const CHANNELS = [
     note:'MBCNEWS 채널의 그때그때 라이브를 따라갑니다(채널 ID 방식). 고정 스트림이 끊겼을 때 대체 소스로 쓰세요.' },
 
   { id:'sbsnews', name:'SBS 뉴스', short:'SBS', country:'한국', cc:'KR', zone:'KOREA',
-    kind:'youtube', src:'UCkinYTS9IHqOEwR1Sze2JTw', status:'live',
+    kind:'youtube-video', src:'OcND87a_81M', status:'live',
     web:'https://www.sbs.co.kr/live/S01',
-    note:'SBS 공식 뉴스 유튜브 라이브입니다. SBS play 온에어는 60초 미리보기 뒤 로그인을 요구해 자동 시청 화면에 쓸 수 없습니다.' },
+    note:'SBS 뉴스가 내보내는 \'SBS 실시간 라이브\'를 고정 영상으로 연결합니다(2026-11-24 23:58 실측 재생·임베드 허용 확인). SBS는 실시간 라이브를 수시로 새 영상으로 갈아 끼우므로, 끊기면 소스 라이브러리에서\nSBS 실시간 라이브의 새 주소로 바꿔 주세요. SBS play 온에어 페이지는 60초 미리보기 뒤 로그인을 요구해 쓸 수 없습니다.' },
+
+  { id:'sbsnews_auto', name:'SBS 뉴스 · 자동', short:'SBS', country:'한국', cc:'KR', zone:'KOREA',
+    kind:'youtube', src:'UCkinYTS9IHqOEwR1Sze2JTw', status:'live', alt:true,
+    note:'SBS 뉴스 채널의 그때그때 라이브를 따라갑니다(채널 ID 방식). SBS는 이 방식의 임베드가 막히는 경우가 많아 대체 소스로만 둡니다.' },
 
   { id:'sbsbiz', name:'SBS Biz 뉴스 · YouTube', short:'SBS', country:'한국', cc:'KR', zone:'KOREA',
     kind:'youtube', src:'UCbMjg2EvXs_RUGW-KrdM3pw', status:'live', alt:true,
@@ -337,8 +341,8 @@ const CHANNEL_BY_ID = CHANNELS.reduce((m, c) => (m[c.id] = c, m), {});
 /* 이 카탈로그의 빌드 표식 — 화면 하단 신호 스트립에 표시됩니다.
    휴대폰이 옛 파일(브라우저 캐시)을 불러왔는지 이 한 줄로 확인할 수 있고,
    채널·소스를 고칠 때마다 이 값과 index.html의 ?v= 를 함께 올려 주세요. */
-const CHANNELS_BUILD = 'SRC 11-24f';
-const CHANNELS_BUILD_DETAIL = '국내뉴스 9분할 추가 — KBS·MBC·SBS·OBS·YTN·연합뉴스TV·JTBC·TV조선·채널A (MBC·SBS·OBS·JTBC·TV조선·채널A는 공식 뉴스 유튜브 라이브) · 2026-11-24 23:35 갱신';
+const CHANNELS_BUILD = 'SRC 11-25a';
+const CHANNELS_BUILD_DETAIL = '국내뉴스 9분할 추가 — KBS·MBC·SBS·OBS·YTN·연합뉴스TV·JTBC·TV조선·채널A (MBC·SBS·OBS·JTBC·TV조선·채널A는 공식 뉴스 유튜브 라이브) · SBS 실시간 라이브 고정 연결 · 2026-11-25 00:20 갱신';
 
 /* 다시 재생되지 않는 예전 소스 ID → 지금 쓰는 소스로 자동 교체
    (브라우저에 저장된 커스텀 소스에 옛 ID가 남아 있어도 되살아나지 않게) */
