@@ -223,6 +223,47 @@ const CHANNELS = [
   { id:'yonhap24', name:'연합뉴스TV 라이브', short:'YTV', country:'한국', cc:'KR', zone:'KOREA',
     kind:'youtube-video', src:'6QZ_qc75ihU', status:'live' },
 
+  /* ── 국내뉴스 9분할 전용 — 각 방송사 공식 뉴스 채널 (2026-11-24 실측) ────────
+     MBC·SBS·OBS·JTBC·TV조선·채널A의 '방송 채널 자체' 온에어는 다음 이유로
+     페이지 안(hls.js)에서 돌릴 수 없어, 각 사가 공식 뉴스 채널로 운영하는
+     유튜브 라이브를 채널 ID(kind:'youtube')로 연결했다. 채널 ID 방식이라
+     방송사가 라이브 영상을 새로 열어도 자동으로 따라간다.
+       · MBC  : 온에어 API(mediaapi.imbc.com)가 CORS를 onair.imbc.com 으로 고정 → 외부 페이지 호출 차단
+       · SBS  : apis.sbs.co.kr 는 열려 있으나 실시간 스트림이 60초 미리보기 후 로그인 요구
+       · JTBC : onair API(api.jtbc.co.kr)가 'Invalid CORS request'로 외부 출처 거부
+       · TV조선: 온에어 CDN이 http 전용·인증서 불일치, 공식 페이지는 X-Frame-Options: SAMEORIGIN
+       · OBS   : 온에어 CDN vod.obs.co.kr:444 접속 불가, 공식 페이지 X-Frame-Options: SAMEORIGIN
+       · 채널A : 온에어 페이지가 유튜브 iframe 플레이어라 결국 유튜브 라이브가 원천 */
+  { id:'mbcnews', name:'MBC 뉴스', short:'MBC', country:'한국', cc:'KR', zone:'KOREA',
+    kind:'youtube', src:'UCF4Wxdo3inmxP-Y59wXDsFw', status:'live',
+    web:'https://onair.imbc.com/',
+    note:'MBC 공식 뉴스 유튜브(MBCNEWS) 라이브입니다. MBC 온에어 본방은 외부 페이지 삽입이 막혀 있어(API CORS 고정) 뉴스 라이브로 연결합니다.' },
+
+  { id:'sbsnews', name:'SBS 뉴스', short:'SBS', country:'한국', cc:'KR', zone:'KOREA',
+    kind:'youtube', src:'UCkinYTS9IHqOEwR1Sze2JTw', status:'live',
+    web:'https://www.sbs.co.kr/live/S01',
+    note:'SBS 공식 뉴스 유튜브 라이브입니다. SBS play 온에어는 60초 미리보기 뒤 로그인을 요구해 자동 시청 화면에 쓸 수 없습니다.' },
+
+  { id:'obsnews', name:'OBS 뉴스', short:'OBS', country:'한국', cc:'KR', zone:'KOREA',
+    kind:'youtube', src:'UComhAmtkBwTPF_PvwN8Gc6w', status:'live',
+    web:'https://www.obs.co.kr/tv/',
+    note:'OBS 공식 뉴스 유튜브 라이브입니다. OBS 온에어는 페이지 삽입이 막혀 있습니다(X-Frame-Options).' },
+
+  { id:'jtbcnews', name:'JTBC 뉴스', short:'JTBC', country:'한국', cc:'KR', zone:'KOREA',
+    kind:'youtube', src:'UCsU-I-vHLiaMfV_ceaYz5rQ', status:'live',
+    web:'https://onair.jtbc.co.kr/',
+    note:'JTBC 공식 뉴스 유튜브 라이브입니다. JTBC 온에어 API는 외부 출처(CORS)를 거부합니다.' },
+
+  { id:'tvchosun_news', name:'TV조선 뉴스', short:'TV조선', country:'한국', cc:'KR', zone:'KOREA',
+    kind:'youtube', src:'UCWlV3Lz_55UaX4JsMj-z__Q', status:'live',
+    web:'https://broadcast.tvchosun.com/onair/on.cstv',
+    note:'TV조선 공식 뉴스 유튜브(뉴스TVCHOSUN) 라이브입니다. TV조선 온에어 스트림은 http 전용·인증서 불일치로 https 화면에서 재생되지 않습니다.' },
+
+  { id:'channela_news', name:'채널A 뉴스', short:'채널A', country:'한국', cc:'KR', zone:'KOREA',
+    kind:'youtube', src:'UCfq4V1DAuaojnr2ryvWNysw', status:'live',
+    web:'https://www.ichannela.com/com/cmm/onair.do',
+    note:'채널A 공식 뉴스 유튜브 라이브입니다(채널A 온에어도 유튜브 플레이어를 씁니다).' },
+
   /* ── 외부 공식 링크 (페이지 내 재생 불가) ────────────────────── */
   { id:'bbc_web', name:'BBC NEWS · WATCH LIVE', short:'BBC', country:'영국', cc:'GB', zone:'EXTERNAL',
     kind:'web', src:'https://www.bbc.com/watch-live-news', status:'external',
@@ -262,7 +303,10 @@ const DEFAULT_SETS = {
   '9': ['ytn24', 'yonhap24', 'kbs24', 'cnn', 'bbc', 'abc', 'aj', 'iranintl', 'f24'],
   '4': ['ytn24', 'yonhap24', 'kbs24', 'cnn'],
   '6': ['ytn24', 'yonhap24', 'kbs24', 'cnn', 'bbc', 'abc'],
-  '1': ['ytn24']
+  '1': ['ytn24'],
+  /* 국내뉴스 9분할 — 사용자가 정한 순서 그대로:
+     KBS → MBC → SBS → OBS → YTN → 연합뉴스TV → JTBC → TV조선 → 채널A */
+  'kr': ['kbs24', 'mbcnews', 'sbsnews', 'obsnews', 'ytn24', 'yonhap24', 'jtbcnews', 'tvchosun_news', 'channela_news']
 };
 
 const KIND_LABEL = { youtube:'YT·LIVE', 'youtube-video':'YT·LIVE', hls:'HLS', kbs:'KBS·ONAIR', iframe:'PAGE', web:'WEB' };
@@ -281,8 +325,8 @@ const CHANNEL_BY_ID = CHANNELS.reduce((m, c) => (m[c.id] = c, m), {});
 /* 이 카탈로그의 빌드 표식 — 화면 하단 신호 스트립에 표시됩니다.
    휴대폰이 옛 파일(브라우저 캐시)을 불러왔는지 이 한 줄로 확인할 수 있고,
    채널·소스를 고칠 때마다 이 값과 index.html의 ?v= 를 함께 올려 주세요. */
-const CHANNELS_BUILD = 'SRC 11-24d';
-const CHANNELS_BUILD_DETAIL = 'YTN을 공식 온에어 1080p HLS로 교체(유튜브는 대체 소스 ytn_yt) · 연합뉴스TV는 공식 홈페이지에 HLS가 없어 YouTube 유지 · 2026-11-24 09:16 갱신';
+const CHANNELS_BUILD = 'SRC 11-24e';
+const CHANNELS_BUILD_DETAIL = '국내뉴스 9분할 추가 — KBS·MBC·SBS·OBS·YTN·연합뉴스TV·JTBC·TV조선·채널A (MBC·SBS·OBS·JTBC·TV조선·채널A는 공식 뉴스 유튜브 라이브) · 2026-11-24 23:40 갱신';
 
 /* 다시 재생되지 않는 예전 소스 ID → 지금 쓰는 소스로 자동 교체
    (브라우저에 저장된 커스텀 소스에 옛 ID가 남아 있어도 되살아나지 않게) */
