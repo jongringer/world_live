@@ -99,8 +99,9 @@ function resolveTimeChannel(ch) {
 
    [원리 — 방송국 송출을 흉내 낸 3단 처리]
    <video> → 고역통과(30Hz, 럼블 제거) → 레벨러 → 자동 게인(GainNode) → 리미터 → 출력
-   · 자동 게인(AGC): 출력 라우드니스를 K-weight 근사로 재어 목표(-14 LUFS)와 비교한다. ±0.75dB
-     데드존 안에서는 건드리지 않고(미세 흔들림·펌핑 방지), 시간상수 2초로 천천히 따라간다.
+   · 자동 게인(AGC): 출력 라우드니스를 BS.1770 K-weighting 으로 재어 최근 10초의 '통합
+     라우드니스'(절대 -70·상대 -10 LU 게이트)를 구하고 목표(-14 LUFS)와 비교한다. ±1dB
+     데드존 안에서는 건드리지 않고(미세 흔들림·펌핑 방지), 최대 1.2dB/s 로 천천히 따라간다.
    · 레벨러: 문턱 -18dB·비율 2.6 으로 말소리 피크를 다소 눌러 '빽빽하고 단단한' 밀도를 만든다.
    · 리미터: 문턱 -1.5dB·비율 20 으로 0dBFS 클리핑만 확실히 막는다.
    · 무음/저잡음(출력 -52 LUFS 미만) 구간에서는 게인을 얼려 두어 숨소리·잡음이 올라오지 않는다.
@@ -119,7 +120,8 @@ const LEVEL_DEAD_DB = 1.0;         // 데드존 — 이 안의 오차는 그냥 
 const LEVEL_MIN_DB = -9;           // 자동 게인 하한
 const LEVEL_MAX_DB = 15;           // 자동 게인 상한
 const LEVEL_TAU_S = 6.0;           // 라우드니스 평균 시간상수(초) — 말소리 기복에 흔들리지 않게
-const LEVEL_SLEW_DB_S = 1.5;       // 게인 변화 속도 제한(dB/초) — 급격한 펌핑 방지
+const LEVEL_SLEW_DB_S = 1.2;       // 게인 변화 속도 제한(dB/초) — 급격한 펌핑 방지
+const LEVEL_BLOCKS = 67;           // 통합 라우드니스 창 — 150ms × 67 ≈ 10초
 let levelTarget = LEVEL_TARGET_LUFS;
 const LEVEL_ON = (function () {
   try {
@@ -146,15 +148,32 @@ function audioCtx() {
     return ctx;
   } catch (e) { AUDIO.failed = true; return null; }
 }
-/* K-weighting 근사 측정 분기 — 소리에는 더해지지 않도록 0 게인으로 끝낸다 */
+/* K-weighting 측정 분기 — 소리에는 더해지지 않도록 0 게인으로 끝낸다.
+   ITU-R BS.1770 의 두 단계 필터를 그대로 쓴다(48kHz 표준 계수 → IIRFilterNode).
+   다른 샘플레이트에서는 같은 특성의 biquad(고역셸프 1682Hz +4dB → 38Hz 고역통과 Q0.5)로 근사. */
 function kWeightProbe(ctx, fromNode, fftSize) {
-  const hp = ctx.createBiquadFilter();
-  hp.type = 'highpass'; hp.frequency.value = 38; hp.Q.value = 0.5;
-  const hs = ctx.createBiquadFilter();
-  hs.type = 'highshelf'; hs.frequency.value = 1500; hs.gain.value = 4;
-  const an = ctx.createAnalyser(); an.fftSize = fftSize || 8192;
+  const an = ctx.createAnalyser();
+  an.fftSize = fftSize || 32768;
+  try {
+    if (Math.abs(ctx.sampleRate - 48000) < 1) {
+      const s1 = ctx.createIIRFilter(
+        [1.53512485958697, -2.69169618940638, 1.19839281085285],
+        [1.0, -1.69065929318241, 0.73248077421585]);          // stage 1: 머리 효과(고역셸프 +4dB)
+      const s2 = ctx.createIIRFilter([1.0, -2.0, 1.0],
+        [1.0, -1.99004745483398, 0.99007225036621]);          // stage 2: 38Hz 고역통과
+      fromNode.connect(s1); s1.connect(s2); s2.connect(an);
+    } else {
+      const hs = ctx.createBiquadFilter();
+      hs.type = 'highshelf'; hs.frequency.value = 1682; hs.gain.value = 4;
+      const hp = ctx.createBiquadFilter();
+      hp.type = 'highpass'; hp.frequency.value = 38; hp.Q.value = 0.5;
+      fromNode.connect(hs); hs.connect(hp); hp.connect(an);
+    }
+  } catch (e) {
+    fromNode.connect(an);                                    // 필터를 못 만들면 무가중으로라도 측정
+  }
   const sink = ctx.createGain(); sink.gain.value = 0;
-  fromNode.connect(hp); hp.connect(hs); hs.connect(an); an.connect(sink); sink.connect(AUDIO.bus);
+  an.connect(sink); sink.connect(AUDIO.bus);
   return an;
 }
 /* Pause 중이던/제스처 전에 만들어진 <video> 들을 지금 연결한다 */
@@ -203,7 +222,8 @@ function attachLevel(v, meta) {
       v: v, src: src, hpf: hpf, comp: comp, gain: gain, lim: lim, user: user, lim2: lim2,
       slot: meta && meta.slot != null ? meta.slot : null,
       id: chId || (v.title || 'video'),
-      gDb: 0, primed: false, lvl: null, lufs: -Infinity, peak: 0, t: 0,
+      gDb: 0, primed: false, lvl: null, lufs: -Infinity, intL: -Infinity, peak: 0, t: 0,
+      blocks: new Float32Array(LEVEL_BLOCKS), bn: 0, bi: 0, mt: 0,
       buf: new Float32Array(32768), pbuf: new Float32Array(1024)
     };
     chain.meter = kWeightProbe(ctx, lim, 32768);          // 출력 라우드니스(K-weight 근사 · 약 0.7초 창)
@@ -231,7 +251,7 @@ function detachLevel(v) {
   if (AUDIO.attached > 0) AUDIO.attached--;
   v._wlChain = null;
 }
-/* K-weight 신호의 단기 라우드니스(LUFS 근사) */
+/* K-weight 신호의 단기 라우드니스(LUFS) */
 function lufsOf(an, buf) {
   an.getFloatTimeDomainData(buf);
   let sum = 0;
@@ -239,13 +259,36 @@ function lufsOf(an, buf) {
   const ms = sum / buf.length;
   return ms > 1e-12 ? (-0.691 + 10 * Math.log10(ms)) : -Infinity;
 }
+/* 최근 약 10초 블록을 모아 EBU R128 방식(절대 -70 LUFS · 상대 -10 LU 게이트)으로
+   '통합 라우드니스'를 구한다. 유튜브가 쓰는 -14 LUFS 와 같은 잣대다. */
+function gatedLufs(c) {
+  const n = Math.min(c.bn || 0, LEVEL_BLOCKS);
+  if (!n) return -Infinity;
+  let sum = 0, k = 0;
+  for (let i = 0; i < n; i++) {
+    const p = c.blocks[i];
+    if (!(p > 0)) continue;
+    const l = -0.691 + 10 * Math.log10(p);
+    if (l > -70) { sum += p; k++; }
+  }
+  if (!k) return -Infinity;
+  const ungated = -0.691 + 10 * Math.log10(sum / k);
+  const rel = ungated - 10;
+  let s2 = 0, k2 = 0;
+  for (let i = 0; i < n; i++) {
+    const p = c.blocks[i];
+    if (!(p > 0)) continue;
+    if ((-0.691 + 10 * Math.log10(p)) > rel) { s2 += p; k2++; }
+  }
+  return k2 ? (-0.691 + 10 * Math.log10(s2 / k2)) : ungated;
+}
 function levelTick() {
   const ctx = AUDIO.ctx;
   if (!ctx || ctx.state !== 'running' || !AUDIO.chains.length) return;
   const now = performance.now();
   for (let n = 0; n < AUDIO.chains.length; n++) {
     const c = AUDIO.chains[n];
-    const dt = c.t ? Math.min(2, (now - c.t) / 1000) : 0.12;
+    const dt = c.t ? Math.min(2, (now - c.t) / 1000) : 0.15;
     c.t = now;
     /* 리미터 뒤 실제 피크 — 0dBFS 에 닿으면 게인을 즉시 조금 내린다 */
     c.post.getFloatTimeDomainData(c.pbuf);
@@ -254,17 +297,27 @@ function levelTick() {
     c.peak = pk;
     const L = lufsOf(c.meter, c.buf);
     c.lufs = L;
-    if (!isFinite(L) || L < LEVEL_GATE_LUFS) continue;      // 무음·저잡음: 게인 얼림
+    if (isFinite(L) && L > -70) {                    // 블록 기록(무음은 버린다)
+      c.blocks[c.bi] = Math.pow(10, (L + 0.691) / 10);
+      c.bi = (c.bi + 1) % LEVEL_BLOCKS;
+      if (c.bn < LEVEL_BLOCKS) c.bn++;
+    }
+    /* 통합 라우드니스는 1초에 한 번만 계산한다 */
+    if (now - (c.mt || 0) > 900) {
+      c.mt = now;
+      c.intL = gatedLufs(c);
+    }
+    const IL = c.intL;
+    if (!isFinite(IL) || IL < LEVEL_GATE_LUFS) continue;     // 무음·저잡음: 게인 얼림
     if (!c.primed) {
       /* 첫 측정에서 바로 목표 근처로 — 몇 초 동안 서서히 커지는 느낌을 없앤다 */
-      c.gDb = clampDb(levelTarget - L, LEVEL_MIN_DB, LEVEL_MAX_DB);
-      c.lvl = L; c.primed = true;
+      c.gDb = clampDb(levelTarget - IL, LEVEL_MIN_DB, LEVEL_MAX_DB);
+      c.primed = true;
     } else {
-      const a = 1 - Math.exp(-dt / LEVEL_TAU_S);
-      c.lvl += (L - c.lvl) * a;
-      const err = levelTarget - c.lvl;
+      const err = levelTarget - IL;
       if (Math.abs(err) > LEVEL_DEAD_DB) {
-        const want = c.gDb + err * Math.min(1, dt / LEVEL_TAU_S);
+        /* 오차의 절반만 반영(과도 방지) + 초당 1.2dB 슬루 제한 */
+        const want = c.gDb + err * 0.5;
         const step = clampDb(want - c.gDb, -LEVEL_SLEW_DB_S * dt, LEVEL_SLEW_DB_S * dt);
         c.gDb = clampDb(c.gDb + step, LEVEL_MIN_DB, LEVEL_MAX_DB);
       }
@@ -298,6 +351,7 @@ window.WL_AUDIO = {
         slot: c.slot, id: c.id, muted: c.v.muted, paused: c.v.paused,
         gainDb: Math.round(c.gDb * 10) / 10,
         lufs: isFinite(c.lufs) ? Math.round(c.lufs * 10) / 10 : null,
+        intLufs: isFinite(c.intL) ? Math.round(c.intL * 10) / 10 : null,
         peak: Math.round(c.peak * 1000) / 1000
       };
     });
@@ -339,7 +393,7 @@ window.WL_AUDIO = {
         a.download = 'worldlive-' + (raw ? 'raw' : 'level') + '-' + String(c.id).replace(/[^\w-]+/g, '_')
           + '-' + new Date().toISOString().slice(11, 19).replace(/:/g, '') + '.webm';
         document.body.appendChild(a); a.click(); a.remove();
-        resolve({ name: a.download, bytes: blob.size, gainDb: Math.round(c.gDb * 10) / 10, lufs: Math.round(c.lufs * 10) / 10 });
+        resolve({ name: a.download, bytes: blob.size, gainDb: Math.round(c.gDb * 10) / 10, intLufs: Math.round(c.intL * 10) / 10 });
       };
       rec.start();
       setTimeout(function () { try { rec.stop(); } catch (e) {} }, Math.max(1000, (secs || 20) * 1000));
