@@ -1196,6 +1196,7 @@ function pvExternalUrl(ch) {
   if (ch.kind === 'youtube') return 'https://www.youtube.com/channel/' + ch.src + '/live';
   if (ch.kind === 'youtube-video') return 'https://www.youtube.com/watch?v=' + ch.src;
   if (ch.kind === 'kbs') return ch.web || '#';
+  if (ch.web) return ch.web;            // HLS라도 방송사 공식 페이지가 있으면 그쪽으로(YTN 등)
   return ch.src || '#';
 }
 function pvSetBadge(kind) {
@@ -1503,6 +1504,7 @@ function openExternal(i) {
   if (ch.kind === 'youtube') url = 'https://www.youtube.com/channel/' + ch.src + '/live';
   else if (ch.kind === 'youtube-video') url = 'https://www.youtube.com/watch?v=' + ch.src;
   else if (ch.kind === 'kbs') url = ch.web || '#';
+  else if (ch.web) url = ch.web;         // HLS라도 방송사 공식 페이지가 있으면 그쪽으로(YTN 등)
   else url = ch.src;
   window.open(url, '_blank', 'noopener');
 }
