@@ -107,6 +107,7 @@ function attachPendingGain() {
 window.WL_AUDIO = {
   db: GAIN_DB, linear: +GAIN_LINEAR.toFixed(4), enabled: GAIN_ON,
   state: function () { return AUDIO.ctx ? AUDIO.ctx.state : 'none'; },
+  graph: function () { return { ctx: AUDIO.ctx, bus: AUDIO.bus, tap: AUDIO.tap }; },   // 검증용 — 증폭 전/후 레벨 동시 측정
   attached: function () { return AUDIO.attached; },
   videos: function () {
     return Object.keys(live).map(function (k) {
