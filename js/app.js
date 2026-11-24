@@ -1289,9 +1289,13 @@ function attachHls(i, v, primary, backup, refresh) {
       let netRetry = 0, netRetriedAll = false;
       let mediaRecovered = false;
       const hls = new window.Hls({
+        enableWorker: true,
+        capLevelToPlayerSize: true,
         lowLatencyMode: false,
-        liveSyncDurationCount: 4,
-        maxBufferLength: 24,
+        liveSyncDurationCount: 3,
+        maxBufferLength: 12,
+        maxMaxBufferLength: 20,
+        backBufferLength: 6,
         manifestLoadingMaxRetry: 2,
         levelLoadingMaxRetry: 2,
         fragLoadingMaxRetry: 2
