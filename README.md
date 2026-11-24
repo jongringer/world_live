@@ -279,6 +279,45 @@
 - **Pretendard 로딩 확인**: `document.fonts.check('700 13px "Pretendard Variable"', '서울 뉴욕 파리 채널 찾기')` → true, 같은 문자열 폭이 폴백(Malgun Gothic) 421px 대비 386px.
 - 채널 찾기 → 미리보기 → 칸 추가 / 전체 스크롤 맨 앞 추가 / 목록으로 복귀를 실제 클릭으로 검증(9분할 3번 칸 BBC, 전체 스크롤 DW 맨 앞).
 
+## 🔊 오디오 전체 +3dB 증폭 (2026-11-24 · v9.5 · gain3db)
+
+사용자 요청: **"월드 라이브 오디오 전소스를 3dB씩 올려줘. 소리가 다른 소스보다 작은거 같아"** — HLS·KBS 타일의 오디오를 Web Audio로 **정확히 +3dB(×1.4125)** 키웠습니다.
+
+### 무엇에 적용되나
+
+| 소스 | 재생 방식 | +3dB | 비고 |
+|---|---|---|---|
+| **HLS 채널** (YTN·CNN·BBC·알자지라·프랑스24·NHK·DW 등 30여 개) | hls.js → MediaSource(`blob:`) | ✅ 적용 | `createMediaElementSource` → `GainNode(1.4125)` → 리미터 → 출력 |
+| **KBS NEWS 24** | 공식 온에어 서명 주소 → hls.js | ✅ 적용 | 위와 같은 경로 |
+| **채널 찾기 미리보기**(HLS·KBS) | hls.js | ✅ 적용 | 미리보기에서 `소리 켜기` 했을 때도 +3dB |
+| **YouTube 타일**(연합뉴스TV·NBC·블룸버그 등) | `iframe` (YouTube 플레이어) | ⛔ 불가 | 브라우저 보안상 iframe 소리를 바깥에서 키울 수 없음 → `setVolume(100)` **최대치 유지** |
+| **외부 공식 링크(WEB)** | 새 창 | — | 페이지 안에서 재생하지 않음 |
+| **Safari·iOS의 native HLS** | `<video src="….m3u8">` 직접 | ⛔ 미적용 | 교차 출처 원본이라 Web Audio에 붙이면 무음이 될 수 있어 원음 100% 유지(안드로이드 크롬·PC 크롬은 hls.js 경로로 +3dB) |
+
+### 왜 `crossOrigin`을 걸지 않았나
+
+- hls.js는 세그먼트를 XHR로 받아 **MediaSource(`blob:`)** 로 재생합니다. 이때 `<video>`는 같은 출처(blob)로 취급되어 **교차 출처 오염이 없고**, `createMediaElementSource`가 실제 소리를 냅니다(실측 확인).
+- 반대로 CORS 헤더를 주지 않는 스트림에 `crossOrigin='anonymous'`를 걸면 **영상 재생 자체가 깨집니다.** MSE 재생에는 애초에 필요 없으므로 걸지 않았습니다.
+- 참고로 확인한 주요 스트림은 모두 CORS를 허용합니다 — `ylive.ytn.co.kr`(ACAO `*`), `live.france24.com`·`d3bp6dwmpbdajl.cloudfront.net`(요청 출처 반사), `masterpl.hls.nhkworld.jp`(ACAO `*`).
+
+### 소리가 작아지거나 왜곡되지 않게 한 장치
+
+- **리미터(`DynamicsCompressorNode`)** — +3dB로 올린 순간 피크가 0dBFS를 넘어 찍히지 않게 threshold −1dB·ratio 12로 눌러 줍니다(평균 음량은 +3dB, 아주 센 순간만 보호).
+- **자동재생 정책 대응** — 브라우저는 사용자가 화면을 누르기 전 `AudioContext`를 `suspended`로 둡니다. 첫 터치·키 입력에서 `resume()`하고 대기 중이던 영상을 그때 연결합니다(`kickAudio`). 즉 **첫 터치에 소리와 함께 +3dB가 걸립니다.**
+- **음소거·단독 청취 규칙은 그대로** — `<video muted>`는 Web Audio를 거쳐도 무음이므로 지금 듣는 채널 하나만 소리가 나고, 흰색 테두리·`M` 전체 음소거도 이전과 같습니다.
+- **끄는 방법** — 주소 끝에 **`?gain=0`**(또는 `?gain=off`)을 붙이면 증폭 없이 원음으로 재생합니다. 하단 신호 스트립 `AUDIO — 채널명 +3dB`의 금색 표식이 증폭이 걸려 있다는 표시입니다.
+
+### 실측 검증 (2026-11-24 09:5x KST · 운영 페이지 https://jongringer.github.io/world_live/)
+
+- 증폭 전(pre-gain)과 후(증폭 버스)를 **같은 순간에** 두 AnalyserNode로 읽어 최소자승으로 게인을 계산:
+  - **YTN 1080p HLS**: 1 → 1.0359, 1.4125 → **1.4023**(상관 0.996)
+  - **KBS NEWS 24 720p**: 1 → 1.0135, 1.4125 → **1.4125**(상관 1.000)
+  - **CNN INTERNATIONAL**: 1 → 1.0073, 1.4125 → **1.4125**(상관 1.000)
+  - **미리보기(BBC NEWS 960×540)**: 1.4125 → **1.4125**(상관 0.986)
+- 440Hz 사인파를 같은 버스에 넣은 확정 측정: gain 1 → 0.07532, **1.4125 → 0.10641(+3.00dB)**, 2 → 0.15074(+6.03dB).
+- 9분할 9/9 LIVE·전체 스크롤 46칸(가상화 마운트 15칸·영상 12개 모두 증폭 연결)·4분할 4/4 LIVE에서 재생 오류 없음. `AudioContext`를 강제로 `suspended`로 만든 뒤 타일을 클릭하면 `running`으로 돌아오고 소리도 함께 살아남(모바일 첫 터치 경로 확인).
+- `?gain=0`에서는 `AudioContext`를 만들지 않고(연결 0개) 원음 100%로 재생.
+
 ## 선택 채널 흰색 테두리 · 원클릭 오디오 전환 (v5)
 
 - 9분할·6분할·4분할·전체화면(1×1)·전체 스크롤(ALL LIVE) 어디서든 **영상 영역을 한 번 클릭**하면 그 채널만 청취합니다 — HLS는 `muted=false`·`volume=1`·`play()`, YouTube는 `unMute` + `setVolume(100)` + `playVideo()`.
