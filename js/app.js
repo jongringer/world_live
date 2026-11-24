@@ -1047,12 +1047,14 @@ function mountSlot(i) {
     /* 고정 영상(youtube-video) 타일이 끝나면, 같은 채널의 '지금 라이브'(live_stream)로 한 번
        자동 전환한다 — 방송사가 스트림을 새로 열었을 때 손대지 않고도 살아날 가능성을 얻기 위함. */
     const useChannelLive = (ch.kind === 'youtube') || (!!ch.ytChannel && YT_FALLBACK[i] === 1);
+    const isSingle = state.layout === '1';
     const params = new URLSearchParams({
       /* 자동재생은 '음소거' 상태에서만 허용됩니다(mute=0&autoplay=1 은 모바일·데스크톱 모두 차단).
          그래서 모든 유튜브 타일은 mute=1 로 먼저 띄워 '바로 재생'되게 하고,
-         음성 채널은 onReady 에서 unMute 를 시도, 막히면 첫 터치에서 소리를 켭니다(armSoundUnlock). */
-      autoplay: '1', mute: '1', controls: '0', rel: '0',
-      modestbranding: '1', playsinline: '1', disablekb: '1', fs: '0',
+         음성 채널은 onReady 에서 unMute 를 시도, 막히면 첫 터치에서 소리를 켭니다(armSoundUnlock).
+         1×1 풀화면에서는 controls=1 로 열어 유튜브 설정(⚙️ 화질 1080p 등)에 접근할 수 있게 합니다. */
+      autoplay: '1', mute: '1', controls: isSingle ? '1' : '0', rel: '0',
+      modestbranding: '1', playsinline: '1', disablekb: isSingle ? '0' : '1', fs: '0',
       iv_load_policy: '3', enablejsapi: '1', loop: '0'
     });
     if (location.origin && location.origin !== 'null') params.set('origin', location.origin);
@@ -2465,6 +2467,18 @@ function hideCinemaHud() {
   const hud = $('#cinema-hud');
   if (hud) hud.classList.remove('is-on');
 }
+function setYtControls(slot, show) {
+  const L = live[slot];
+  if (!L || !L.iframe || !L.iframe.src) return;
+  try {
+    const u = new URL(L.iframe.src);
+    const want = show ? '1' : '0';
+    if (u.searchParams.get('controls') === want) return;
+    u.searchParams.set('controls', want);
+    u.searchParams.set('disablekb', want === '1' ? '0' : '1');
+    L.iframe.src = u.toString();
+  } catch (e) {}
+}
 function enterCinema(slot) {
   if (CINEMA.active) return;
   const el = grid.querySelector('.tile[data-slot="' + slot + '"]');
@@ -2479,6 +2493,7 @@ function enterCinema(slot) {
   grid.querySelectorAll('.tile').forEach(t => t.classList.toggle('is-cinema-target', t === el));
   // 이 채널을 그대로 듣는다 — 음소거였으면 이 칸으로 소리를 켠다(한 번 탭과 같은 규칙)
   if (state.muted || state.audioId !== ch.id) { try { selectSlot(slot); } catch (e) {} }
+  if (ch.kind === 'youtube' || ch.kind === 'youtube-video') setYtControls(slot, true);
   CINEMA.audio = { id: state.audioId, muted: !!state.muted };
   try { history.pushState({ worldliveCinema: 1 }, ''); CINEMA.pushed = true; } catch (e) { CINEMA.pushed = false; }
   showCinemaHud(2400);                        // 진입 직후 2.4초 안내 → 곧 완전 클린
@@ -2489,6 +2504,8 @@ function enterCinema(slot) {
 function exitCinema(opts) {
   opts = opts || {};
   if (!CINEMA.active) return;
+  const exitedSlot = CINEMA.slot;
+  const ch = slotChannel(exitedSlot);
   const wasPushed = CINEMA.pushed;
   const backTo = CINEMA.scroll;
   CINEMA.active = false;
@@ -2496,6 +2513,7 @@ function exitCinema(opts) {
   hideCinemaHud();
   document.body.classList.remove('is-cinema');
   grid.querySelectorAll('.tile.is-cinema-target').forEach(t => t.classList.remove('is-cinema-target'));
+  if (ch && (ch.kind === 'youtube' || ch.kind === 'youtube-video')) setYtControls(exitedSlot, false);
   if (document.fullscreenElement) {
     CINEMA.fsSuppress = true;                 // 우리가 뺀 전체화면 이벤트는 무시
     try { document.exitFullscreen().catch(() => {}); } catch (e) {}
