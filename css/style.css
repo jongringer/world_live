@@ -1797,3 +1797,99 @@ body.is-native-full .grid .tile.is-tally .tally-ring {
   .layouts .layout-btn[data-layout="6"] { order: 6; }
   .layouts .layout-btn[data-layout="1"] { order: 7; }
 }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   v9.11 — 데스크톱 웹 상단 바 75% 콤팩트 (2026-11-25 사용자 요청)
+   "월드 라이브 웹 화면 상단 오버되니까 지금이 100%면 75%로 줄여줘.
+    채널 변경 아이콘까지 보이게."
+   · 높이 66 → 50px, 버튼 37 → 28px, 로고 58 → 44px, 시계 18 → 14px,
+     아이콘 15~17 → 12~13px, gap·패딩을 75% 수준으로 줄인다.
+   · 글자(버튼 라벨 12px·시계 14px)는 75%보다 조금 크게 남겨 노안에도 읽히게
+     하고, 색 대비는 그대로 둔다(저대비 금지).
+   · 데스크톱·가로 화면에만 적용한다. 스마트폰 세로 화면은 위쪽
+     (orientation: portrait) 모바일 블록이 그대로 담당한다.
+   · 맨 끝에 두어 위쪽 미디어쿼리(1700·1460·1300·1150) 값을 덮어쓴 뒤,
+     좁은 폭용 값을 다시 한 단계씩 지정한다.
+   ═══════════════════════════════════════════════════════════════════════ */
+@media (min-aspect-ratio: 1/1) {
+  :root { --topbar-h: 50px; }
+
+  .topbar { gap: 14px; padding: 0 12px; }
+
+  /* 로고 + WORLD LIVE */
+  .brand { gap: 10px; }
+  .brand-mark { width: 44px; height: 44px; }
+  .brand-name { font-size: 16px; letter-spacing: 0.05em; }
+  .brand-sub { font-size: 6.5px; letter-spacing: 0.3em; margin-top: 2px; }
+
+  /* 분할·정렬 버튼 */
+  .layouts { gap: 3px; }
+  .layout-btn { height: 28px; padding: 0 8px; gap: 5px; border-radius: 4px; }
+  .layout-btn svg { width: 12px; height: 12px; }
+  .layout-btn .lb-txt { font-size: 12px; }
+  .layout-btn .lb-dim { font-size: 7px; }
+  .nav-sep { height: 16px; margin: 0 4px; }
+
+  /* 아이콘 버튼(음소거·APK·소스) · 첫 화면 */
+  .actions { gap: 4px; }
+  .icon-btn { width: 28px; height: 28px; border-radius: 4px; }
+  .icon-btn svg { width: 13px; height: 13px; }
+  .icon-btn.wide { padding: 0 8px; gap: 5px; }
+  .icon-btn.wide .lb-txt { font-size: 12px; }
+  .start-btn .start-label, .sort-btn .sort-label { font-size: 10.5px; }
+  .start-btn .cs-caret, .sort-btn .cs-caret { font-size: 9px; }
+
+  /* 채널 찾기 */
+  .find-btn { height: 28px; padding: 0 10px; gap: 6px; font-size: 12px; margin-right: 4px; border-radius: 4px; }
+  .find-btn svg { width: 12px; height: 12px; }
+
+  /* 세계 시계 */
+  .clock { padding: 0 10px; gap: 3px; }
+  .clock:first-child { padding-left: 4px; }
+  .clock-c { font-size: 10.5px; gap: 5px; }
+  .clock-tz { font-size: 7px; padding: 0.5px 3px; }
+  .clock-t { font-size: 14px; }
+  .clock-dot { width: 4px; height: 4px; }
+}
+
+@media (min-aspect-ratio: 1/1) and (max-width: 1460px) {
+  .topbar { gap: 9px; padding: 0 10px; }
+  .layout-btn { padding: 0 7px; }
+  .clock { padding: 0 7px; }
+}
+
+@media (min-aspect-ratio: 1/1) and (max-width: 1300px) {
+  .topbar { gap: 8px; }
+  .layout-btn { padding: 0 6px; }
+  .clock { padding: 0 6px; }
+}
+
+@media (min-aspect-ratio: 1/1) and (max-width: 1150px) {
+  .topbar { gap: 6px; padding: 0 8px; }
+  .layout-btn { padding: 0 5px; }
+}
+
+/* 아주 좁은 가로 창(≈640px)에서도 오른쪽 끝 아이콘까지 */
+@media (min-aspect-ratio: 1/1) and (max-width: 700px) {
+  .topbar { gap: 5px; padding: 0 6px; }
+  .brand { gap: 7px; }
+  .brand-mark { width: 38px; height: 38px; }
+  .layout-btn { padding: 0 5px; gap: 4px; }
+}
+
+/* 정사각·세로 화면(노치 안전영역 포함 높이)은 위 포트레이트 블록 계산을 그대로 쓴다
+   — 위 콤팩트 블록의 --topbar-h: 50px 이 1:1 화면까지 덮지 않도록 되돌린다. */
+@media (max-aspect-ratio: 1/1) {
+  :root { --topbar-h: calc(var(--topbar-base-h) + var(--sat)); }
+}
+
+/* ── 아주 좁은 스마트폰(≤380px)에서도 상단 바 오른쪽 아이콘까지 한 줄에 ──
+   360×740에서 소스(채널 변경) 아이콘이 18px 잘리던 문제를 줄인다.
+   데스크톱 규칙과 겹치지 않도록 세로 화면에만 적용한다. */
+@media (max-width: 380px) and (orientation: portrait) {
+  .topbar { gap: 3px !important; padding-left: max(var(--sal), 5px) !important; padding-right: max(var(--sar), 5px) !important; }
+  .brand-mark { width: 28px; height: 28px; }
+  .layouts { gap: 1px !important; padding: 1px !important; }
+  .layout-btn { padding: 0 5px !important; }
+  .actions { gap: 3px !important; }
+}
