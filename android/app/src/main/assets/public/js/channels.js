@@ -205,9 +205,21 @@ const CHANNELS = [
     web:'https://onair.kbs.co.kr/index.html?sname=onair&stype=live&ch_code=81&ch_type=globalList',
     note:'KBS 공식 온에어(onair.kbs.co.kr)의 KBS NEWS 24 실시간 주소를 그때그때 받아 재생합니다. 해외 IP에서는 KBS가 주소를 주지 않아 공식 페이지로 안내합니다.' },
 
+  /* YTN — YTN 공식 온에어(www.ytn.co.kr 라이브 플레이어)가 쓰는 실시간 HLS
+     (flowplayer + hls.js · 1920×1080 30fps 단일 화질 · CORS `*` · 토큰·Referer 없음 · 2026-11-24 실측)
+     유튜브 라이브(aZyD6EPl6KU)는 재생 버튼을 눌러야 할 때가 있어 공식 HLS로 바꿨다.
+     HLS가 막히면 소스 라이브러리의 'YTN · YouTube'(ytn_yt)로 바꿔 볼 수 있다. */
   { id:'ytn24', name:'YTN 24시간 라이브', short:'YTN', country:'한국', cc:'KR', zone:'KOREA',
-    kind:'youtube-video', src:'aZyD6EPl6KU', status:'live' },
+    kind:'hls', src:'https://ylive.ytn.co.kr/live/20221013_ytnlive/playlist.m3u8', status:'live',
+    web:'https://www.ytn.co.kr/_hd/hd_live.html',
+    note:'YTN 공식 온에어의 1080p 실시간 스트림을 클릭 없이 바로 재생합니다.' },
 
+  { id:'ytn_yt', name:'YTN · YouTube', short:'YTN', country:'한국', cc:'KR', zone:'KOREA',
+    kind:'youtube-video', src:'aZyD6EPl6KU', status:'live', alt:true },
+
+  /* 연합뉴스TV — 공식 홈페이지(www.yonhapnewstv.co.kr/live · m.yonhapnewstv.co.kr/live)가
+     자사 HLS 없이 YouTube(6QZ_qc75ihU)만 삽입하고 있어 유튜브 소스를 그대로 쓴다.
+     (2026-11-24 실측: 사이트·모바일 페이지·JS 어디에도 .m3u8 없음 · KakaoTV livelink는 서비스 종료로 죽음) */
   { id:'yonhap24', name:'연합뉴스TV 라이브', short:'YTV', country:'한국', cc:'KR', zone:'KOREA',
     kind:'youtube-video', src:'6QZ_qc75ihU', status:'live' },
 
@@ -269,8 +281,8 @@ const CHANNEL_BY_ID = CHANNELS.reduce((m, c) => (m[c.id] = c, m), {});
 /* 이 카탈로그의 빌드 표식 — 화면 하단 신호 스트립에 표시됩니다.
    휴대폰이 옛 파일(브라우저 캐시)을 불러왔는지 이 한 줄로 확인할 수 있고,
    채널·소스를 고칠 때마다 이 값과 index.html의 ?v= 를 함께 올려 주세요. */
-const CHANNELS_BUILD = 'SRC 11-24c';
-const CHANNELS_BUILD_DETAIL = '기본 배치 확정(YTN·연합뉴스TV·KBS·CNN INTERNATIONAL / 9분할 9채널, 기본 소리=연합뉴스TV) · 2026-11-24 09:00 갱신';
+const CHANNELS_BUILD = 'SRC 11-24d';
+const CHANNELS_BUILD_DETAIL = 'YTN을 공식 온에어 1080p HLS로 교체(유튜브는 대체 소스 ytn_yt) · 연합뉴스TV는 공식 홈페이지에 HLS가 없어 YouTube 유지 · 2026-11-24 09:16 갱신';
 
 /* 다시 재생되지 않는 예전 소스 ID → 지금 쓰는 소스로 자동 교체
    (브라우저에 저장된 커스텀 소스에 옛 ID가 남아 있어도 되살아나지 않게) */
