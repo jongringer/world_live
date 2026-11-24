@@ -122,6 +122,10 @@ const LEVEL_MAX_DB = 15;           // 자동 게인 상한
 const LEVEL_TAU_S = 6.0;           // 라우드니스 평균 시간상수(초) — 말소리 기복에 흔들리지 않게
 const LEVEL_SLEW_DB_S = 1.2;       // 게인 변화 속도 제한(dB/초) — 급격한 펌핑 방지
 const LEVEL_BLOCKS = 67;           // 통합 라우드니스 창 — 150ms × 67 ≈ 10초
+/* EBU R128(BS.1770)은 '채널별 평균제곱의 합'으로 잰다. AnalyserNode 는 스테레오를 모노로
+   섞어서 보여 주므로, 방송처럼 L/R이 같은(dual mono) 소스에서는 +3.01dB 를 더해야
+   ffmpeg·유튜브가 말하는 LUFS 와 같은 값이 된다(실측으로 확인: 이 보정 없이는 3dB 낮게 읽혔다). */
+const LEVEL_LOUD_OFFSET = -0.691 + 3.0103;
 let levelTarget = LEVEL_TARGET_LUFS;
 const LEVEL_ON = (function () {
   try {
@@ -257,7 +261,7 @@ function lufsOf(an, buf) {
   let sum = 0;
   for (let i = 0; i < buf.length; i++) sum += buf[i] * buf[i];
   const ms = sum / buf.length;
-  return ms > 1e-12 ? (-0.691 + 10 * Math.log10(ms)) : -Infinity;
+  return ms > 1e-12 ? (LEVEL_LOUD_OFFSET + 10 * Math.log10(ms)) : -Infinity;
 }
 /* 최근 약 10초 블록을 모아 EBU R128 방식(절대 -70 LUFS · 상대 -10 LU 게이트)으로
    '통합 라우드니스'를 구한다. 유튜브가 쓰는 -14 LUFS 와 같은 잣대다. */
@@ -272,15 +276,15 @@ function gatedLufs(c) {
     if (l > -70) { sum += p; k++; }
   }
   if (!k) return -Infinity;
-  const ungated = -0.691 + 10 * Math.log10(sum / k);
+  const ungated = LEVEL_LOUD_OFFSET + 10 * Math.log10(sum / k);
   const rel = ungated - 10;
   let s2 = 0, k2 = 0;
   for (let i = 0; i < n; i++) {
     const p = c.blocks[i];
     if (!(p > 0)) continue;
-    if ((-0.691 + 10 * Math.log10(p)) > rel) { s2 += p; k2++; }
+    if ((LEVEL_LOUD_OFFSET + 10 * Math.log10(p)) > rel) { s2 += p; k2++; }
   }
-  return k2 ? (-0.691 + 10 * Math.log10(s2 / k2)) : ungated;
+  return k2 ? (LEVEL_LOUD_OFFSET + 10 * Math.log10(s2 / k2)) : ungated;
 }
 function levelTick() {
   const ctx = AUDIO.ctx;
@@ -298,7 +302,7 @@ function levelTick() {
     const L = lufsOf(c.meter, c.buf);
     c.lufs = L;
     if (isFinite(L) && L > -70) {                    // 블록 기록(무음은 버린다)
-      c.blocks[c.bi] = Math.pow(10, (L + 0.691) / 10);
+      c.blocks[c.bi] = Math.pow(10, (L - LEVEL_LOUD_OFFSET) / 10);
       c.bi = (c.bi + 1) % LEVEL_BLOCKS;
       if (c.bn < LEVEL_BLOCKS) c.bn++;
     }
