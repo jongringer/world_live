@@ -252,7 +252,7 @@
 - **교체 내용**: `nbc`를 **`kind:'youtube-video', src:'13rFWn3k36s'`**(당시 라이브 `LIVE: NBC News NOW - Nov. 24`)로 바꾸고 `ytChannel:'UCeY0bbntWzzVIaj2z3QigXg'`·`web:'https://www.youtube.com/@NBCNews/live'`를 함께 적었습니다. `index.html`의 `js/channels.js?v=45 → ?v=46`, `sw.js` `worldlive-pwa-v7 → v8`, 빌드 표식 `SRC 11-25f → SRC 11-25g`.
 - **대체 HLS는 쓰지 않았습니다**: Xumo/Samsung TV Plus 계열 NBC News NOW HLS(`d1si3n1st4nkgb.cloudfront.net/10502/88896001/hls/master.m3u8`, CORS `*`)는 **한국 IP에서 매니페스트는 받아지지만 세그먼트가 타임아웃**했고(`hls-test.html` 실측), Akamai 판본(`pb-o6czxr182vtiv.akamaized.net`)은 **403**. 사용자는 국내에서 보므로 미국 전용 FAST 스트림은 쓸 수 없습니다.
 - **주의(매일 갱신 필요)**: NBC News는 24시간 라이브를 **하루에 한 번**(한국시간 13~14시경, 미국 동부 자정) `LIVE: NBC News NOW - <날짜>` 새 영상으로 갈아 끼웁니다(`Nov. 24`·`Sept. 24`·`July 24` 영상이 따로 존재). 그래서 이 칸은 새 영상이 열리면 OFFLINE이 되며, **`📡 world_live 라이브 주소 새벽 점검` 예약 작업(06:05·15:05 KST)** 이 새 ID로 교체합니다.
-- **검증 (운영 페이지, 2026-11-25 04:33 KST)**: 4분할 1번 칸에 NBC NEWS NOW를 넣어 **LIVE · 실제 방송 영상 재생**(BREAKING NEWS / 백악관 추수감사절 칠면조 사면 중계 자막 흐름 확인), 오디오 `AUDIO — NBC NEWS NOW +3dB`, 하단 `SRC 11-25g · 04:33:06 KST`, `4/4 FEEDS NOMINAL`. 스크린샷 `downloads/world_live-nbc-news-now-복구-2026-11-25-0433.png`.
+- **검증 (운영 페이지, 2026-11-25 04:33 KST)**: 4분할 1번 칸에 NBC NEWS NOW를 넣어 **LIVE · 실제 방송 영상 재생**(BREAKING NEWS / 백악관 추수감사절 칠면조 사면 중계 자막 흐름 확인), 오디오 `AUDIO — NBC NEWS NOW` (고정 +3dB는 11-25에 폐지, HLS 타일은 라우드니스 평준화), 하단 `SRC 11-25g · 04:33:06 KST`, `4/4 FEEDS NOMINAL`. 스크린샷 `downloads/world_live-nbc-news-now-복구-2026-11-25-0433.png`.
 
 ## 빌드 표식 (2026-11-23 추가)
 
@@ -342,44 +342,85 @@
 - **Pretendard 로딩 확인**: `document.fonts.check('700 13px "Pretendard Variable"', '서울 뉴욕 파리 채널 찾기')` → true, 같은 문자열 폭이 폴백(Malgun Gothic) 421px 대비 386px.
 - 채널 찾기 → 미리보기 → 칸 추가 / 전체 스크롤 맨 앞 추가 / 목록으로 복귀를 실제 클릭으로 검증(9분할 3번 칸 BBC, 전체 스크롤 DW 맨 앞).
 
-## 🔊 오디오 전체 +3dB 증폭 (2026-11-24 · v9.5 · gain3db)
+## 🔊 오디오 라우드니스 평준화 + 채널별 볼륨 (2026-11-25 · v9.10)
 
-사용자 요청: **"월드 라이브 오디오 전소스를 3dB씩 올려줘. 소리가 다른 소스보다 작은거 같아"** — HLS·KBS 타일의 오디오를 Web Audio로 **정확히 +3dB(×1.4125)** 키웠습니다.
+사용자 요청: **"한국경제TV 수준의 오디오 레벨이면 소리가 단단하고 크게 잘 들리는데 … 라우드니스를 일정하게 맞추는 작업인데 … 3DB 올린 채널들 표도 안 나니까 원상복귀하고. 라우드니스 균일화를 한국경제TV 오디오 레벨 수준으로 평준화할 수 있으면 해봐"**, 이어서 **"홈페이지에 소스를 가져오는 채널들이 전반적으로 소리가 작게 나옴. YTN KBS 등. 유튜브 채널들은 소리가 빵빵하거든. 어려우면 채널별 볼륨을 넣어주면 내가 키울게"**.
 
-### 무엇에 적용되나
+### ① 고정 +3dB 증폭은 원상복귀
 
-| 소스 | 재생 방식 | +3dB | 비고 |
+- 2026-11-24에 넣었던 `GainNode(1.4125)` 고정 증폭과 하단 신호 스트립의 금색 `+3dB` 표식을 **완전히 제거**했습니다(`attachGain`·`gainTag`·`.ss-gain` 삭제). 지금은 고정 증폭이 없습니다.
+- 남아 있는 Web Audio 처리는 **채널별 음량을 자동으로 맞추는 평준화**이고, 주소 끝 `?level=0`(예전 이름 `?gain=0`)으로 끌 수 있습니다.
+
+### ② 왜 유튜브 타일은 손댈 수 없나 (교차 출처 iframe)
+
+| 항목 | 확인 결과 |
+|---|---|
+| 타일 구조 | `<iframe src="https://www.youtube.com/embed/…">` |
+| 부모에서 내부 접근 | `iframe.contentDocument` → **null**(교차 출처). 내부 `<video>` 요소 참조 자체가 불가능 |
+| Web Audio | `createMediaElementSource()`는 DOM 요소 참조가 필요 → **원천 불가** |
+| 바깥에서 가능한 일 | YouTube IFrame API `postMessage`로 `setVolume(0~100)`·`mute`/`unMute` 뿐. 100 초과 값은 플레이어가 100으로 자름 = **원음이 최대** |
+| 그래서 기준 | 유튜브는 자기 플레이어 안에서 라우드니스를 약 **-14 LUFS**로 정규화해 재생한다. 한국경제TV가 '빵빵하게' 들리는 것은 그 수준이므로, **-14 LUFS를 목표**로 삼았다 |
+
+즉 유튜브 타일(한국경제TV·매일경제TV·MBC·SBS·JTBC·TV조선·채널A·연합뉴스TV·Bloomberg·CNBC·NBC…)은 **유튜브가 이미 평준화해서 내보내는 소리**이고, 이번 작업은 그 기준에 공식 HLS 쪽을 맞춘 것입니다.
+
+### ③ 공식 HLS 타일 평준화 (YTN·KBS·MBN·CNN·BBC·ABC·NHK·알자지라·DW…)
+
+hls.js가 `MediaSource(blob:)`로 재생하므로 `<video>`가 교차 출처로 오염되지 않아 Web Audio로 실제 소리를 다룰 수 있습니다.
+
+```
+<video> → 고역통과 30Hz → 레벨러(DynamicsCompressor) → 자동 게인(GainNode) → 리미터 → 채널 볼륨 → 안전 리미터 → 출력
+```
+
+- **자동 게인(AGC)**: 출력 라우드니스를 **BS.1770 K-weighting**(48kHz 표준 IIR 계수)으로 재고, 최근 **6초의 통합 라우드니스**(절대 -70 LUFS·상대 -10 LU 게이트)를 **목표 -14 LUFS**와 비교합니다. ±1dB 데드존에서는 건드리지 않고, 한 번에 오차의 10%(최대 0.3dB)씩만 움직여 **펌핑·헌팅이 없습니다**. 채널을 바꾸면 1.5초 뒤 한 번 크게 맞춘 뒤 느리게 다듬습니다.
+- **레벨러**: 문턱 -18dB·비율 2.6 — 말소리 피크를 다소 눌러 '빽빽하고 단단한' 밀도를 만듭니다.
+- **리미터**: 문턱 -1.5dB·비율 20 — 0dBFS 클리핑 방지. 게인 범위는 **-9 ~ +15dB**.
+- **무음 구간**: 출력이 -52 LUFS 미만이면 게인을 **얼려** 숨소리·잡음이 올라오지 않습니다.
+- **측정 정확도**: EBU는 '채널별 평균제곱의 합'으로 재는데 AnalyserNode는 스테레오를 모노로 섞어 보여 주므로 **+3.01dB 보정**을 넣었습니다(보정 없이는 ffmpeg보다 3dB 낮게 읽혀 과증폭됨 — 실측으로 잡은 버그).
+
+#### 실측 (2026-11-25 05:2x~05:5x KST · 운영 페이지)
+
+원본 라우드니스(ffmpeg `ebur128`, 각 40초):
+
+| 채널 | 원본 | 피크 |
+|---|---|---|
+| YTN | **-24.2 LUFS** | -10.9 dBFS |
+| CNN International | -23.9 LUFS | -7.6 dBFS |
+| DW NEWS | -23.0 LUFS | -8.4 dBFS |
+| BBC NEWS | -22.4 LUFS | -8.7 dBFS |
+| 알자지라 | -22.8 LUFS | -10.8 dBFS |
+| NHK WORLD | -25.5 LUFS | -8.2 dBFS |
+| ABC NEWS LIVE | -25.9 LUFS | -10.3 dBFS |
+
+→ 공식 HLS는 채널마다 **약 4dB 편차**가 있고, 유튜브 기준(-14 LUFS)보다 **8~12dB 작았습니다**. 이것이 "YTN·KBS가 작게 들린다"의 실체입니다.
+
+평준화 적용 후(운영 페이지 `WL_AUDIO.meter()` 실측):
+
+| 채널 | 자동 게인 | 출력 라우드니스 | 피크 |
 |---|---|---|---|
-| **HLS 채널** (YTN·CNN·BBC·알자지라·프랑스24·NHK·DW 등 30여 개) | hls.js → MediaSource(`blob:`) | ✅ 적용 | `createMediaElementSource` → `GainNode(1.4125)` → 리미터 → 출력 |
-| **KBS NEWS 24** | 공식 온에어 서명 주소 → hls.js | ✅ 적용 | 위와 같은 경로 |
-| **채널 찾기 미리보기**(HLS·KBS) | hls.js | ✅ 적용 | 미리보기에서 `소리 켜기` 했을 때도 +3dB |
-| **YouTube 타일**(연합뉴스TV·NBC·블룸버그 등) | `iframe` (YouTube 플레이어) | ⛔ 불가 | 브라우저 보안상 iframe 소리를 바깥에서 키울 수 없음 → `setVolume(100)` **최대치 유지** |
-| **외부 공식 링크(WEB)** | 새 창 | — | 페이지 안에서 재생하지 않음 |
-| **Safari·iOS의 native HLS** | `<video src="….m3u8">` 직접 | ⛔ 미적용 | 교차 출처 원본이라 Web Audio에 붙이면 무음이 될 수 있어 원음 100% 유지(안드로이드 크롬·PC 크롬은 hls.js 경로로 +3dB) |
+| YTN 1080p | **+4.7 dB** | **-14.0 LUFS** | 0.31 |
+| KBS NEWS 24 | +3.7 dB | **-13.2 LUFS** | 0.16 |
+| CNN International | +5.4 dB | **-14.7 LUFS** | 0.33 |
+| BBC NEWS | +4.2 dB | **-14.7 LUFS** | 0.42 |
 
-### 왜 `crossOrigin`을 걸지 않았나
+- 채널 간 편차 **1.5dB 이내**, 유튜브(한국경제TV) 기준 -14 LUFS에 수렴.
+- **녹음 실측 교차검증**: YTN 출력 15초를 `MediaRecorder`(opus)로 녹음 → ffmpeg `ebur128` = **I -13.6 LUFS, True peak -1.0 dBFS, LRA 1.4 LU**. 페이지 미터(-13.9~-14.1)와 **0.5dB 이내**로 일치.
+- 재생 오류·끊김 없음(9분할 9/9, 4분할 4/4 LIVE), 음소거 분리 정상(음소거 타일의 미터는 -inf, 듣는 타일만 레벨 유지).
 
-- hls.js는 세그먼트를 XHR로 받아 **MediaSource(`blob:`)** 로 재생합니다. 이때 `<video>`는 같은 출처(blob)로 취급되어 **교차 출처 오염이 없고**, `createMediaElementSource`가 실제 소리를 냅니다(실측 확인).
-- 반대로 CORS 헤더를 주지 않는 스트림에 `crossOrigin='anonymous'`를 걸면 **영상 재생 자체가 깨집니다.** MSE 재생에는 애초에 필요 없으므로 걸지 않았습니다.
-- 참고로 확인한 주요 스트림은 모두 CORS를 허용합니다 — `ylive.ytn.co.kr`(ACAO `*`), `live.france24.com`·`d3bp6dwmpbdajl.cloudfront.net`(요청 출처 반사), `masterpl.hls.nhkworld.jp`(ACAO `*`).
+### ④ 채널별 볼륨 (사용자가 직접 조절 · 저장)
 
-### 소리가 작아지거나 왜곡되지 않게 한 장치
+- 위치: 타일 하단 컨트롤의 **VOL(막대 3개) 버튼** → 채널 이름·슬라이더·프리셋(**70·100·130·160·200%**, `기본`) 팝오버.
+- 범위: **공식 HLS 0~200%**(자동 평준화 위에 더 얹음, 최대 +6dB) / **YouTube 0~100%**(플레이어 한계).
+- 조절한 채널은 타일 메타에 금색 **`VOL 160%`** 배지, 하단 스트립에도 `AUDIO — 채널명 VOL 160%`로 표시됩니다.
+- 값은 **채널 ID별로 `worldlive.v3`(localStorage)에 저장**되어 새로고침·재부팅·앱 재실행 뒤에도 유지됩니다(100%는 기본값이라 저장하지 않음).
+- 채널 볼륨은 **AGC·리미터 뒤**에 붙여, 사용자가 올려 둔 볼륨을 자동 평준화가 도로 깎지 않습니다. 뒤에 안전 리미터를 하나 더 두어 200%에서도 찌그러지지 않습니다.
 
-- **리미터(`DynamicsCompressorNode`)** — +3dB로 올린 순간 피크가 0dBFS를 넘어 찍히지 않게 threshold −1dB·ratio 12로 눌러 줍니다(평균 음량은 +3dB, 아주 센 순간만 보호).
-- **자동재생 정책 대응** — 브라우저는 사용자가 화면을 누르기 전 `AudioContext`를 `suspended`로 둡니다. 첫 터치·키 입력에서 `resume()`하고 대기 중이던 영상을 그때 연결합니다(`kickAudio`). 즉 **첫 터치에 소리와 함께 +3dB가 걸립니다.**
-- **음소거·단독 청취 규칙은 그대로** — `<video muted>`는 Web Audio를 거쳐도 무음이므로 지금 듣는 채널 하나만 소리가 나고, 흰색 테두리·`M` 전체 음소거도 이전과 같습니다.
-- **끄는 방법** — 주소 끝에 **`?gain=0`**(또는 `?gain=off`)을 붙이면 증폭 없이 원음으로 재생합니다. 하단 신호 스트립 `AUDIO — 채널명 +3dB`의 금색 표식이 증폭이 걸려 있다는 표시입니다.
+### ⑤ 남은 한계
 
-### 실측 검증 (2026-11-24 09:5x KST · 운영 페이지 https://jongringer.github.io/world_live/)
-
-- 증폭 전(pre-gain)과 후(증폭 버스)를 **같은 순간에** 두 AnalyserNode로 읽어 최소자승으로 게인을 계산:
-  - **YTN 1080p HLS**: 1 → 1.0359, 1.4125 → **1.4023**(상관 0.996)
-  - **KBS NEWS 24 720p**: 1 → 1.0135, 1.4125 → **1.4125**(상관 1.000)
-  - **CNN INTERNATIONAL**: 1 → 1.0073, 1.4125 → **1.4125**(상관 1.000)
-  - **미리보기(BBC NEWS 960×540)**: 1.4125 → **1.4125**(상관 0.986)
-- 440Hz 사인파를 같은 버스에 넣은 확정 측정: gain 1 → 0.07532, **1.4125 → 0.10641(+3.00dB)**, 2 → 0.15074(+6.03dB).
-- 9분할 9/9 LIVE·전체 스크롤 46칸(가상화 마운트 15칸·영상 12개 모두 증폭 연결)·4분할 4/4 LIVE에서 재생 오류 없음. `AudioContext`를 강제로 `suspended`로 만든 뒤 타일을 클릭하면 `running`으로 돌아오고 소리도 함께 살아남(모바일 첫 터치 경로 확인).
-- `?gain=0`에서는 `AudioContext`를 만들지 않고(연결 0개) 원음 100%로 재생.
+- **YouTube 타일은 볼륨만** 조절됩니다(0~100%). iframe 안쪽을 키우는 것은 브라우저 보안상 불가능합니다.
+- **Safari·iOS의 native HLS**(`<video src="….m3u8">` 직접 재생)는 교차 출처 원본이라 Web Audio에 붙이면 무음이 될 수 있어 **평준화·채널 볼륨 모두 미적용**(원음 100%). 안드로이드 크롬·PC 크롬·PWA는 hls.js 경로라 적용됩니다.
+- 모노로 송출되는 피드는 채널 합산(+3dB) 가정 때문에 목표보다 약 3dB 작게 맞춰질 수 있습니다(현재 확인된 주요 채널은 모두 스테레오).
+- 광고·음악 구간이 갑자기 크면 6초 창이 반영되는 동안 **일시적으로 목표보다 크게** 들릴 수 있습니다(약 1~2초).
+- 검증용 훅: `WL_AUDIO.meter()`(채널별 게인·통합 라우드니스·피크), `WL_AUDIO.setTarget(-16)`, `WL_AUDIO.record(20)`(현재 듣는 HLS 타일을 webm으로 녹음 → ffmpeg로 확인).
 
 ## 선택 채널 흰색 테두리 · 원클릭 오디오 전환 (v5)
 

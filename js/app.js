@@ -368,6 +368,7 @@ window.WL_AUDIO = {
         gainDb: Math.round(c.gDb * 10) / 10,
         lufs: isFinite(c.lufs) ? Math.round(c.lufs * 10) / 10 : null,
         intLufs: isFinite(c.intL) ? Math.round(c.intL * 10) / 10 : null,
+        vol: Math.round(((c.user && c.user.gain.value) || 1) * 100),   // 사용자가 맞춘 채널 볼륨(%)
         peak: Math.round(c.peak * 1000) / 1000
       };
     });
