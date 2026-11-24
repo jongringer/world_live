@@ -333,9 +333,19 @@ const CHANNELS = [
     note:'삼프로TV(경제의 신과 함께) 라이브를 고정 영상으로 연결합니다 — 2026-11-25 03:40 실측 재생·임베드 허용 확인. 장 마감 뒤에도 편성 라이브가 이어지고, 방송사가 새 라이브로 갈아 끼우면 채널 라이브로 자동 전환됩니다.' },
 
   { id:'osun', name:'오선의 미증시', short:'오선', country:'한국', cc:'KR', zone:'KOREA',
-    kind:'youtube', src:'UC_JJ_NhRqPKcIOj5Ko3W_3w', status:'event',
+    kind:'youtube', src:'UC_JJ_NhRqPKcIOj5Ko3W_3w', status:'live',
+    /* 시간대 자동 전환 (2026-11-25 사용자 요청): 한국 시각 21:00~06:30 은 오선의 미증시,
+       그 외 시간은 이 칸이 서울경제TV(24시간 경제 라이브)로 자동 교체된다. */
+    timeSlot: { from:'21:00', to:'06:30', alt:'seoulecon' },
     web:'https://www.youtube.com/@futuresnow/live',
-    note:'오선의 미증시(@futuresnow) — 평일 밤 21:00~05:00 미국 장 시간에만 라이브가 열립니다. 채널 라이브를 그대로 따라가므로, 야간에 라이브가 시작되면 새로고침 없이 화면이 살아납니다(낮에는 \'라이브 신호 없음\' 대기).' },
+    note:'오선의 미증시(@futuresnow) — 평일 밤 21:00~06:30 미국 장 라이브를 채널 그대로 띄웁니다. 그 외 시간에는 이 칸이 서울경제TV로 자동 전환됩니다(사용자가 바꾼 배치는 그대로 유지).' },
+
+  /* 서울경제TV — 오선의 미증시가 없는 낮 시간(06:30~21:00)을 채우는 24시간 경제 라이브.
+     2026-08-10부터 이어지는 단일 라이브라 주소가 잘 바뀌지 않고, 임베드도 허용된다(2026-11-25 01:00 실측). */
+  { id:'seoulecon', name:'서울경제TV', short:'서울경제', country:'한국', cc:'KR', zone:'KOREA',
+    kind:'youtube-video', src:'0k8ekcI7MJE', ytChannel:'UC3p-0EWA8OXko2EUDUXAy5w', status:'live',
+    web:'https://www.youtube.com/@seouleconomytv/live',
+    note:'서울경제TV 24시간 트레이딩 라이브(공식 유튜브) — 임베드·재생 확인. 오선의 미증시가 쉬는 낮 시간대에 그 칸을 채우며, 방송사가 새 라이브로 갈아 끼우면 채널 라이브로 자동 전환됩니다.' },
 
   /* ── 외부 공식 링크 (페이지 내 재생 불가) ────────────────────── */
   { id:'bbc_web', name:'BBC NEWS · WATCH LIVE', short:'BBC', country:'영국', cc:'GB', zone:'EXTERNAL',
@@ -407,8 +417,8 @@ const CHANNEL_BY_ID = CHANNELS.reduce((m, c) => (m[c.id] = c, m), {});
 /* 이 카탈로그의 빌드 표식 — 화면 하단 신호 스트립에 표시됩니다.
    휴대폰이 옛 파일(브라우저 캐시)을 불러왔는지 이 한 줄로 확인할 수 있고,
    채널·소스를 고칠 때마다 이 값과 index.html의 ?v= 를 함께 올려 주세요. */
-const CHANNELS_BUILD = 'SRC 11-25e';
-const CHANNELS_BUILD_DETAIL = '경제뉴스 9분할 신설 — 한국경제TV·매일경제TV·삼프로TV·오선의 미증시(야간) → Bloomberg·CNBC·Yahoo Finance·Fox Business → Euronews Business · 상단 바 정리(PC 6분할 제거·모바일 9분할 제거) · 2026-11-25 04:00 갱신';
+const CHANNELS_BUILD = 'SRC 11-25f';
+const CHANNELS_BUILD_DETAIL = '경제뉴스 9분할 신설 — 한국경제TV·매일경제TV·삼프로TV·오선의 미증시(21:00~06:30, 그 외엔 서울경제TV 자동 전환) → Bloomberg·CNBC·Yahoo Finance·Fox Business → Euronews Business · 상단 바 정리(PC 6분할 제거·모바일 9분할 제거) · 2026-11-25 04:05 갱신';
 
 /* 다시 재생되지 않는 예전 소스 ID → 지금 쓰는 소스로 자동 교체
    (브라우저에 저장된 커스텀 소스에 옛 ID가 남아 있어도 되살아나지 않게) */

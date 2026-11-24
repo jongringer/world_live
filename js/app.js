@@ -34,6 +34,45 @@ const LAYOUTS = {
 const GAP = 6;
 const IO_MARGIN = '90% 0px 90% 0px';
 
+/* ── 시간대 자동 전환 (2026-11-25 사용자 요청) ───────────────────
+   "오선의 미증시는 저녁 9시부터 아침 6시반까지 할거야. 그 시간 외에는 다른 채널 넣어줄래?"
+   · 채널에 timeSlot:{ from, to, alt } 이 있으면, 한국 시각(KST)이 from~to 안이면 그 채널,
+     밖이면 alt 채널을 그 칸에 보여 준다. 저장된 배치는 그대로 두므로
+     사용자가 그 칸을 직접 다른 채널로 바꾸면 자동 전환이 끼어들지 않는다.
+   · ?night=1 / ?night=0 으로 검증할 때 시간대를 강제할 수 있다. */
+const FORCE_NIGHT = (function () {
+  try {
+    const v = new URLSearchParams(location.search).get('night');
+    return v === '1' ? true : (v === '0' ? false : null);
+  } catch (e) { return null; }
+})();
+function kstMinutes() {
+  try {
+    const s = new Date().toLocaleString('en-US', { timeZone: 'Asia/Seoul', hour12: false, hour: '2-digit', minute: '2-digit' });
+    const m = s.match(/(\d{1,2}):(\d{2})/);
+    if (m) return ((Number(m[1]) % 24) * 60) + Number(m[2]);
+  } catch (e) {}
+  const d = new Date();
+  return d.getHours() * 60 + d.getMinutes();
+}
+function hhmmToMin(s) {
+  const m = String(s || '').match(/(\d{1,2}):(\d{2})/);
+  return m ? (Number(m[1]) * 60 + Number(m[2])) : 0;
+}
+function inTimeSlot(ch) {
+  if (!ch || !ch.timeSlot) return true;
+  if (FORCE_NIGHT !== null) return FORCE_NIGHT;
+  const m = kstMinutes();
+  const a = hhmmToMin(ch.timeSlot.from), b = hhmmToMin(ch.timeSlot.to);
+  return a <= b ? (m >= a && m < b) : (m >= a || m < b);   // 자정을 넘는 구간(21:00~06:30)도 처리
+}
+/* 지금 시각에 이 칸에 보여야 하는 채널 — 시간대 채널이면 안/밖에 따라 교체 */
+function resolveTimeChannel(ch) {
+  if (!ch || !ch.timeSlot) return ch;
+  if (inTimeSlot(ch)) return ch;
+  return byId(ch.timeSlot.alt) || ch;
+}
+
 /* ── 전체 오디오 +3dB 증폭 (Web Audio) ──────────────────────
    사용자 요청(2026-11-24): "월드 라이브 오디오 전소스를 3dB씩 올려줘. 소리가 다른 소스보다 작은거 같아"
    · HLS·KBS 타일은 hls.js 가 MediaSource(blob:) 로 재생하므로 <video> 가 교차 출처로
@@ -380,7 +419,7 @@ function slotIds() {
 }
 function slotChannel(i) {
   const ids = slotIds();
-  return byId(ids[i]) || CHANNELS[0];
+  return resolveTimeChannel(byId(ids[i]) || CHANNELS[0]);
 }
 function chCount() { return slotIds().length; }
 
@@ -1003,6 +1042,26 @@ function destroyAll() {
     try { if (L.iframe) L.iframe.src = 'about:blank'; } catch (e) {}
     delete live[k];
   });
+}
+
+/* 시간대 경계(21:00 / 06:30)를 넘기면 그 칸만 새 채널로 갈아 끼운다.
+   30초마다 · 화면으로 돌아올 때 확인하며, 저장된 배치(state.sets)는 건드리지 않는다. */
+function timeSlotSync() {
+  const ids = slotIds();
+  let changed = false;
+  for (let i = 0; i < ids.length; i++) {
+    const L = live[i];
+    if (!L || !L.ch) continue;                     // 아직 붙지 않은 칸(전체 스크롤 지연 마운트)은 건너뛄다
+    const want = slotChannel(i);
+    if (!want || L.ch.id === want.id) continue;
+    const wasAudio = !state.muted && state.audioId === L.ch.id;
+    unmountSlot(i);
+    mountSlot(i);
+    if (wasAudio) { state.audioId = want.id; state.muted = false; }
+    changed = true;
+    toast(L.ch.name + ' → ' + want.name + ' (시간대 자동 전환)');
+  }
+  if (changed) { selByChannel(); save(); syncAudioButtons(); syncTally(); updateStrip(); applyAudio(); }
 }
 
 function rebuildGrid() {
@@ -2674,6 +2733,12 @@ window.WORLD_LIVE = {
     tiles: Object.keys(live).map(k => ({ slot: +k, id: live[k].ch.id, name: live[k].ch.name, kind: live[k].ch.kind, state: live[k].state, backupUsed: !!live[k].backupUsed, src: live[k].src || null, ps: live[k].ps == null ? null : live[k].ps, err: live[k].err || null }))
   }),
   setLayout: l => applyLayout(l),
+  /* 시간대 자동 전환 상태 — kst 분, 강제 모드, 칸별로 지금 보여야 하는 채널 */
+  timeSlot: () => ({
+    kstMinutes: kstMinutes(), forceNight: FORCE_NIGHT,
+    slots: slotIds().map((id, i) => ({ slot: i, stored: id, show: (slotChannel(i) || {}).id }))
+  }),
+  syncTimeSlot: () => timeSlotSync(),
   setAudio: id => setAudio(id),
   selectSlot: i => selectSlot(i),
   swap: (a, b) => swapSlots(a, b),
@@ -2729,6 +2794,9 @@ function boot() {
   applyAudio();
   tickClocks();
   setInterval(tickClocks, 1000);
+  /* 시간대 자동 전환 — 열어 둔 채 21:00·06:30을 넘기면 그 칸이 알아서 바뀌도록 */
+  setInterval(timeSlotSync, 30000);
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) timeSlotSync(); });
 }
 boot();
 
