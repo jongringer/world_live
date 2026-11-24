@@ -141,7 +141,7 @@
 - **전체 스크롤(ALL LIVE)**: 목록 자체가 채널의 순서이므로 같은 규칙이 ‘자리 맞바꿈’으로 나타납니다(고른 칸 = `C`, 기존 칸 = 직전 채널).
 - 드래그로 자리 바꾸기·미리보기의 칸 번호 버튼·커스텀 소스 삭제와 충돌하지 않습니다. 저장은 기존과 동일하게 `localStorage('worldlive.v3')`에 즉시 기록되어 새로고침 후에도 유지됩니다.
 
-### 실측 검증 (2026-11-24 13:26~13:29 KST · 운영 페이지 · app.js?v=103 · 커밋 1b00614)
+### 실측 검증 (2026-11-24 13:26~13:31 KST · 운영 페이지 · app.js?v=103 · 커밋 1b00614)
 
 | 분할 | 조작 | 결과 |
 |---|---|---|
@@ -150,6 +150,8 @@
 | 4분할 | 그 시점 SLOT 01 = 연합뉴스TV · SLOT 02 = CNN인 상태에서 **SLOT 02 → 연합뉴스TV** | SLOT 02 = 연합뉴스TV, 겹쳤던 **SLOT 01 = CNN**으로 자동 교체 → `[cnn, yonhap24, ytn24, kbs24]` 유지 |
 | 9분할 | 기본 배치에서 SLOT 02 → NHK, 이어서 **SLOT 01 → NHK** | SLOT 01 = NHK, 겹쳤던 SLOT 02 = YTN 자동 교체 |
 | 9분할 | 이어서 **SLOT 09(FRANCE 24) → NHK** | SLOT 09 = NHK, 겹쳤던 **SLOT 01 = 연합뉴스TV**(직전에 화면에 없던 채널) 자동 교체 → `[yonhap24, ytn24, kbs24, cnn, bbc, abc, aj, iranintl, nhk]` · **9/9 피드 정상**, 중복 0, 새로고침 후 동일 |
+| 6분할 | **SLOT 01(YTN) → ABC NEWS LIVE**(ABC는 SLOT 06에 있었음) | SLOT 01 = ABC, 겹쳤던 **SLOT 06 = YTN**으로 자동 교체 → `[abc, yonhap24, kbs24, cnn, bbc, ytn24]` |
+| 6분할 | 상단 `채널 찾기` → **BBC NEWS 미리보기 → 칸 2** | SLOT 02 = BBC, 겹쳤던 **SLOT 05 = 연합뉴스TV**로 자동 교체 → `[abc, bbc, kbs24, cnn, yonhap24, ytn24]` · **6/6 피드 정상** |
 
 검증 시트: `downloads/world_live_dedup_20261124.png` (변경 전 → 채널 찾기 → 직후 → 새로고침 후 → 9분할 결과).
 
