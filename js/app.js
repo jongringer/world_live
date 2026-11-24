@@ -76,8 +76,10 @@ function attachGain(v) {
   if (!bus) return false;
   try {
     const src = AUDIO.ctx.createMediaElementSource(v);
-    src.connect(bus);
     v._wlSrc = src;
+    /* 연결이 실패해도 소리는 나야 한다 — 이때는 엘리먼트가 그래프로 넘어온 상태라
+       출력에 직접 이어 원음으로라도 들리게 한다. */
+    try { src.connect(bus); } catch (e) { try { src.connect(AUDIO.ctx.destination); } catch (e2) {} }
     AUDIO.attached++;
     v.addEventListener('playing', kickAudio);
     try { updateStrip(); } catch (e) {}
