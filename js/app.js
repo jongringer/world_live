@@ -2397,7 +2397,8 @@ function armAudioFallback() {
       ? (L.ps === 1)
       : !!(L && L.video && L.video.readyState >= 2 && !L.video.paused);
     if (ok) return;                                   // 정상 재생 — 폴백 불필요
-    if (Date.now() - startedAt < 8000) { setTimeout(check, 1200); return; }
+    // 아직 붙는 중일 수 있으므로 넉넉히 기다립니다(스트림 4~9개 동시 로딩).
+    if (Date.now() - startedAt < 18000) { setTimeout(check, 1500); return; }
     const order = ['kbs24', 'yonhap24', 'ytn24'];
     const alt = order.map(id => ids.indexOf(id)).filter(i => i >= 0 && ids[i] !== want)[0];
     if (alt == null || alt < 0) return;
