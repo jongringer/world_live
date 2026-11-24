@@ -82,8 +82,16 @@ const CHANNELS = [
   { id:'cnn', name:'CNN INTERNATIONAL', short:'CNN', country:'미국', cc:'US', zone:'AMERICAS',
     kind:'hls', src:'https://d3bp6dwmpbdajl.cloudfront.net/v1/master/3722c60a815c199d9c0ef36c5b73da68a62b09d1/cc-ury0meh5m4nzm/index.m3u8', status:'live' },
 
+  /* NBC News NOW — 2026-11-25 소스 교체.
+     채널 라이브(embed/live_stream?channel=UCeY0bbntWzzVIaj2z3QigXg)는 NBC News가 막아
+     "이 동영상은 볼 수 없습니다"가 뜬다(oEmbed·브라우저 실측). NBC News는 24시간 라이브를
+     'LIVE: NBC News NOW - Nov. 24'처럼 **매일 새 영상으로 갈아 끼우므로** 현재 라이브 영상 ID를
+     고정하고, 채널 ID는 끊겼을 때의 자동 전환용으로 함께 적어 둔다. ID가 오래되면 이 칸은
+     OFFLINE이 되므로 주기적으로 갱신해야 한다(하단 ytChannel·web 참고). */
   { id:'nbc', name:'NBC NEWS NOW', short:'NBC', country:'미국', cc:'US', zone:'AMERICAS',
-    kind:'youtube', src:'UCeY0bbntWzzVIaj2z3QigXg', status:'live' },
+    kind:'youtube-video', src:'13rFWn3k36s', ytChannel:'UCeY0bbntWzzVIaj2z3QigXg', status:'live',
+    web:'https://www.youtube.com/@NBCNews/live',
+    note:'NBC News 공식 유튜브의 24시간 라이브 — NBC News는 하루에 한 번 새 라이브 영상으로 갈아 끼우기 때문에 고정 영상 ID(13rFWn3k36s = Nov. 24 방송)로 붙여 두었습니다. 방송일이 바뀌면 이 칸이 OFFLINE이 되므로 그때는 소스 변경에서 그날 라이브 ID를 넣거나 @NBCNews/live를 새 창으로 여세요.' },
 
   { id:'bloomberg', name:'BLOOMBERG TV', short:'BBG', country:'미국', cc:'US', zone:'AMERICAS',
     kind:'youtube', src:'UCIALMKvObZNtJ6AmdCLP7Lg', status:'live' },
@@ -417,8 +425,8 @@ const CHANNEL_BY_ID = CHANNELS.reduce((m, c) => (m[c.id] = c, m), {});
 /* 이 카탈로그의 빌드 표식 — 화면 하단 신호 스트립에 표시됩니다.
    휴대폰이 옛 파일(브라우저 캐시)을 불러왔는지 이 한 줄로 확인할 수 있고,
    채널·소스를 고칠 때마다 이 값과 index.html의 ?v= 를 함께 올려 주세요. */
-const CHANNELS_BUILD = 'SRC 11-25f';
-const CHANNELS_BUILD_DETAIL = '경제뉴스 9분할 신설 — 한국경제TV·매일경제TV·삼프로TV·오선의 미증시(21:00~06:30, 그 외엔 서울경제TV 자동 전환) → Bloomberg·CNBC·Yahoo Finance·Fox Business → Euronews Business · 상단 바 정리(PC 6분할 제거·모바일 9분할 제거) · 2026-11-25 04:05 갱신';
+const CHANNELS_BUILD = 'SRC 11-25g';
+const CHANNELS_BUILD_DETAIL = 'NBC NEWS NOW 소스 교체 — 채널 라이브 임베드 차단(오류·이 동영상은 볼 수 없습니다) → NBC News 공식 유튜브의 현재 라이브 영상 고정(13rFWn3k36s = Nov. 24)으로 복구 · 경제뉴스 9분할(오선의 미증시 21:00~06:30 자동 전환 유지) · 2026-11-25 04:35 갱신';
 
 /* 다시 재생되지 않는 예전 소스 ID → 지금 쓰는 소스로 자동 교체
    (브라우저에 저장된 커스텀 소스에 옛 ID가 남아 있어도 되살아나지 않게) */
