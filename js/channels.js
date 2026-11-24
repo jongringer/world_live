@@ -101,9 +101,9 @@ const CHANNELS = [
 
   /* 경제뉴스 9분할 — 미국 경제 채널 (2026-11-25 03:40 실측: 모두 유튜브 임베드 재생 확인) */
   { id:'yahoo_fin', name:'YAHOO FINANCE', short:'YHOO', country:'미국', cc:'US', zone:'AMERICAS',
-    kind:'youtube-video', src:'6MRyehWhrRM', ytChannel:'UCEAZeUIeJs0IjQiqTCdVSIg', status:'live',
+    kind:'youtube-video', src:'P_vVzEcKnWU', ytChannel:'UCEAZeUIeJs0IjQiqTCdVSIg', status:'live',
     web:'https://www.youtube.com/@YahooFinance/live',
-    note:'Yahoo Finance 라이브(공식 유튜브 @YahooFinance) — 미국 장 시간 중심으로 송출됩니다. 방송사가 새 라이브로 갈아 끼우면 채널 라이브로 자동 전환됩니다.' },
+    note:'Yahoo Finance 라이브(공식 유튜브 @YahooFinance) — 미국 장 시간 중심으로 송출됩니다. 2026-11-25 06:10 교체: 이전 ID(6MRyehWhrRM)는 Yahoo Finance가 아니라 Schwab Network의 9분짜리 다시보기 영상이라 라이브가 아니었습니다. 방송사가 새 라이브로 갈아 끼우면 채널 라이브로 자동 전환됩니다.' },
 
   { id:'fox_biz', name:'FOX BUSINESS', short:'FBN', country:'미국', cc:'US', zone:'AMERICAS',
     kind:'youtube-video', src:'P-SvyILdsYc', ytChannel:'UCCXoCcu9Rp7NPbTzIvogpZg', status:'live',
@@ -308,9 +308,9 @@ const CHANNELS = [
     note:'JTBC 뉴스가 내보내는 실시간 라이브를 고정 영상으로 연결합니다(2026-11-25 00:55 실측 isLive 확인). JTBC 온에어 API는 외부 출처(CORS)를 거부해 페이지 안 재생이 불가합니다. 방송사가 새 라이브로 갈아 끼우면 소스 라이브러리에서 새 주소로 바꿔 주세요.' },
 
   { id:'tvchosun_news', name:'TV조선 뉴스', short:'TV조선', country:'한국', cc:'KR', zone:'KOREA',
-    kind:'youtube-video', src:'Kfs13vKV8xM', status:'live', ytChannel:'UCWlV3Lz_55UaX4JsMj-z__Q',
+    kind:'youtube-video', src:'b8k7ZZvUAac', status:'live', ytChannel:'UCWlV3Lz_55UaX4JsMj-z__Q',
     web:'https://broadcast.tvchosun.com/onair/on.cstv',
-    note:'뉴스TVCHOSUN이 내보내는 이슈PLAY 실시간 라이브를 고정 영상으로 연결합니다(2026-11-25 00:55 실측 isLive 확인). TV조선 온에어 스트림은 http 전용·인증서 불일치로 https 화면에서 재생되지 않습니다. 방송사가 새 라이브로 갈아 끼우면 새 주소로 바꿔 주세요.' },
+    note:'뉴스TVCHOSUN이 내보내는 이슈PLAY 실시간 라이브를 고정 영상으로 연결합니다(2026-11-25 06:10 교체 — 이전 ID(Kfs13vKV8xM)는 속보 방송이 끝나 다시보기가 됨). TV조선 온에어 스트림은 http 전용·인증서 불일치로 https 화면에서 재생되지 않습니다. 방송사가 새 라이브로 갈아 끼우면 새 주소로 바꿔 주세요.' },
 
   { id:'channela_news', name:'채널A 뉴스', short:'채널A', country:'한국', cc:'KR', zone:'KOREA',
     kind:'youtube-video', src:'s20KqsSKv3g', status:'live', ytChannel:'UCfq4V1DAuaojnr2ryvWNysw',
@@ -326,19 +326,19 @@ const CHANNELS = [
      · 고정 영상(youtube-video)은 방송사가 새 라이브로 갈아 끼우면 끊기므로,
        ytChannel(채널 ID)을 함께 적어 두어 끊긴 뒤에는 채널 라이브로 한 번 자동 전환된다. */
   { id:'hktv', name:'한국경제TV', short:'한경', country:'한국', cc:'KR', zone:'KOREA',
-    kind:'youtube-video', src:'F86MAlGa5QI', ytChannel:'UCF8AeLlUbEpKju6v1H6p8Eg', status:'live',
+    kind:'youtube-video', src:'jYCUaFdAGUw', ytChannel:'UCF8AeLlUbEpKju6v1H6p8Eg', status:'live',
     web:'https://www.wowtv.co.kr/LiveCenter/Live/',
-    note:'한국경제TV 24시간 라이브(공식 유튜브)를 고정 영상으로 연결합니다 — 2026-11-25 03:40 실측 재생·임베드 허용 확인. 방송사가 새 라이브로 갈아 끼우면 채널 라이브로 자동 전환되고, 그래도 비면 소스 라이브러리에서 새 주소로 바꿔 주세요.' },
+    note:'한국경제TV 라이브(공식 유튜브)를 고정 영상으로 연결합니다 — 2026-11-25 06:10 교체(이전 ID F86MAlGa5QI는 딥담화 다시보기로 끝남). 채널이 아침·장중마다 새 라이브로 갈아 끼우므로 끊기면 새 주소로 바꿔 주세요.' },
 
   { id:'mktv', name:'매일경제TV', short:'매경', country:'한국', cc:'KR', zone:'KOREA',
-    kind:'youtube-video', src:'_as5avhckoM', ytChannel:'UCnfwIKyFYRuqZzzKBDt6JOA', status:'live',
+    kind:'youtube-video', src:'s9xL1DpBsfQ', ytChannel:'UCnfwIKyFYRuqZzzKBDt6JOA', status:'live',
     web:'https://mbnmoney.mbn.co.kr/',
-    note:'매일경제TV 24시간 라이브(공식 유튜브 @mkeconomy_tv)를 고정 영상으로 연결합니다 — 2026-11-25 03:40 실측 재생·임베드 허용 확인.' },
+    note:'매일경제TV 24시간 라이브(공식 유튜브 @mkeconomy_tv)를 고정 영상으로 연결합니다 — 2026-11-25 06:10 교체(이전 ID _as5avhckoM은 다시보기로 끝남).' },
 
   { id:'sampro', name:'삼프로TV', short:'삼프로', country:'한국', cc:'KR', zone:'KOREA',
-    kind:'youtube-video', src:'Oio7hpYbi60', ytChannel:'UChlv4GSd7OQl3js-jkLOnFA', status:'live',
+    kind:'youtube-video', src:'lH9LC1sf2Ps', ytChannel:'UChlv4GSd7OQl3js-jkLOnFA', status:'live',
     web:'https://www.youtube.com/@3protv/live',
-    note:'삼프로TV(경제의 신과 함께) 라이브를 고정 영상으로 연결합니다 — 2026-11-25 03:40 실측 재생·임베드 허용 확인. 장 마감 뒤에도 편성 라이브가 이어지고, 방송사가 새 라이브로 갈아 끼우면 채널 라이브로 자동 전환됩니다.' },
+    note:'삼프로TV(경제의 신과 함께) 라이브를 고정 영상으로 연결합니다 — 2026-11-25 06:10 교체(이전 ID Oio7hpYbi60은 11/24 오후 방송 전체보기 다시보기). 장 마감 뒤에도 편성 라이브가 이어지고, 방송사가 새 라이브로 갈아 끼우면 채널 라이브로 자동 전환됩니다.' },
 
   { id:'osun', name:'오선의 미증시', short:'오선', country:'한국', cc:'KR', zone:'KOREA',
     kind:'youtube', src:'UC_JJ_NhRqPKcIOj5Ko3W_3w', status:'live',
@@ -349,11 +349,12 @@ const CHANNELS = [
     note:'오선의 미증시(@futuresnow) — 평일 밤 21:00~06:30 미국 장 라이브를 채널 그대로 띄웁니다. 그 외 시간에는 이 칸이 서울경제TV로 자동 전환됩니다(사용자가 바꾼 배치는 그대로 유지).' },
 
   /* 서울경제TV — 오선의 미증시가 없는 낮 시간(06:30~21:00)을 채우는 24시간 경제 라이브.
-     2026-08-10부터 이어지는 단일 라이브라 주소가 잘 바뀌지 않고, 임베드도 허용된다(2026-11-25 01:00 실측). */
+     채널이 24시간 트레이딩 라이브를 운영하지만 방송사가 가끔 새 영상으로 갈아 끼운다
+     (2026-11-25 06:10 실측: 이전 ID 0k8ekcI7MJE는 라이브가 아니었고 채널의 현재 라이브는 ciA-0rInLwQ). */
   { id:'seoulecon', name:'서울경제TV', short:'서울경제', country:'한국', cc:'KR', zone:'KOREA',
-    kind:'youtube-video', src:'0k8ekcI7MJE', ytChannel:'UC3p-0EWA8OXko2EUDUXAy5w', status:'live',
+    kind:'youtube-video', src:'ciA-0rInLwQ', ytChannel:'UC3p-0EWA8OXko2EUDUXAy5w', status:'live',
     web:'https://www.youtube.com/@seouleconomytv/live',
-    note:'서울경제TV 24시간 트레이딩 라이브(공식 유튜브) — 임베드·재생 확인. 오선의 미증시가 쉬는 낮 시간대에 그 칸을 채우며, 방송사가 새 라이브로 갈아 끼우면 채널 라이브로 자동 전환됩니다.' },
+    note:'서울경제TV 24시간 트레이딩 라이브(공식 유튜브) — 임베드·재생 확인(2026-11-25 06:10 교체). 오선의 미증시가 쉬는 낮 시간대에 그 칸을 채우며, 방송사가 새 라이브로 갈아 끼우면 채널 라이브로 자동 전환됩니다.' },
 
   /* ── 외부 공식 링크 (페이지 내 재생 불가) ────────────────────── */
   { id:'bbc_web', name:'BBC NEWS · WATCH LIVE', short:'BBC', country:'영국', cc:'GB', zone:'EXTERNAL',
