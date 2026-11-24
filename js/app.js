@@ -1214,7 +1214,7 @@ function attachHls(i, v, primary, backup, refresh) {
       cur.hls = hls;
       hls.loadSource(url);
       hls.attachMedia(v);
-      attachLevel(v, { slot: i, id: ch.id });   // HLS 평준화 — MSE(blob:) 재생이라 교차 출처 오염 없음
+      attachLevel(v, { slot: i, id: cur.ch.id });   // HLS 평준화 — MSE(blob:) 재생이라 교차 출처 오염 없음
       hls.on(window.Hls.Events.MANIFEST_PARSED, () => {
         const wantSound = !state.muted && !!live[i] && state.audioId === live[i].ch.id;
         if (wantSound) playWithSound(v);
