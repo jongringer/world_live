@@ -121,7 +121,7 @@ const LEVEL_MIN_DB = -9;           // 자동 게인 하한
 const LEVEL_MAX_DB = 15;           // 자동 게인 상한
 const LEVEL_TAU_S = 6.0;           // 라우드니스 평균 시간상수(초) — 말소리 기복에 흔들리지 않게
 const LEVEL_SLEW_DB_S = 1.2;       // 게인 변화 속도 제한(dB/초) — 급격한 펌핑 방지
-const LEVEL_BLOCKS = 67;           // 통합 라우드니스 창 — 150ms × 67 ≈ 10초
+const LEVEL_BLOCKS = 40;           // 통합 라우드니스 창 — 150ms × 40 = 6초
 /* EBU R128(BS.1770)은 '채널별 평균제곱의 합'으로 잰다. AnalyserNode 는 스테레오를 모노로
    섞어서 보여 주므로, 방송처럼 L/R이 같은(dual mono) 소스에서는 +3.01dB 를 더해야
    ffmpeg·유튜브가 말하는 LUFS 와 같은 값이 된다(실측으로 확인: 이 보정 없이는 3dB 낮게 읽혔다). */
@@ -286,6 +286,14 @@ function gatedLufs(c) {
   }
   return k2 ? (LEVEL_LOUD_OFFSET + 10 * Math.log10(s2 / k2)) : ungated;
 }
+/* 아직 게이트를 걸 만큼 자료가 없을 때 쓰는 단순 평균(초기 프라이밍용) */
+function ungatedLufs(c) {
+  const n = Math.min(c.bn || 0, LEVEL_BLOCKS);
+  if (!n) return -Infinity;
+  let sum = 0;
+  for (let i = 0; i < n; i++) sum += c.blocks[i];
+  return sum > 0 ? (LEVEL_LOUD_OFFSET + 10 * Math.log10(sum / n)) : -Infinity;
+}
 function levelTick() {
   const ctx = AUDIO.ctx;
   if (!ctx || ctx.state !== 'running' || !AUDIO.chains.length) return;
@@ -314,19 +322,23 @@ function levelTick() {
     const IL = c.intL;
     if (!isFinite(IL) || IL < LEVEL_GATE_LUFS) continue;     // 무음·저잡음: 게인 얼림
     if (!c.primed) {
-      /* 첫 측정에서 바로 목표 근처로 — 몇 초 동안 서서히 커지는 느낌을 없앤다 */
-      c.gDb = clampDb(levelTarget - IL, LEVEL_MIN_DB, LEVEL_MAX_DB);
-      c.primed = true;
-    } else {
+      /* 첫 1.5초만 기다렸다가 단순 평균으로 한 번 크게 맞춘다 — 채널을 바꾸면 몇 초 안에
+         목표 근처로 가고, 그 뒤로는 아래의 느린 보정만 한다(진동 방지). */
+      const U = ungatedLufs(c);
+      if (isFinite(U) && c.bn >= 10) {
+        c.gDb = clampDb(levelTarget - U, LEVEL_MIN_DB, LEVEL_MAX_DB);
+        c.primed = true;
+      }
+    } else if (now - (c.at || 0) > 900) {
+      c.at = now;
+      /* 폐루프 보정은 창(6초)보다 훨씬 느리게 — 한 번에 오차의 10%, 최대 0.3dB.
+         (창 지연 6초 × 0.05/s ≈ 위상여유 확보 → 헌팅 없음) */
       const err = levelTarget - IL;
       if (Math.abs(err) > LEVEL_DEAD_DB) {
-        /* 오차의 절반만 반영(과도 방지) + 초당 1.2dB 슬루 제한 */
-        const want = c.gDb + err * 0.5;
-        const step = clampDb(want - c.gDb, -LEVEL_SLEW_DB_S * dt, LEVEL_SLEW_DB_S * dt);
-        c.gDb = clampDb(c.gDb + step, LEVEL_MIN_DB, LEVEL_MAX_DB);
+        c.gDb = clampDb(c.gDb + clampDb(err * 0.10, -0.3, 0.3), LEVEL_MIN_DB, LEVEL_MAX_DB);
       }
     }
-    if (pk > 0.95) c.gDb = clampDb(c.gDb - 0.5, LEVEL_MIN_DB, LEVEL_MAX_DB);   // 피크 보호
+    if (pk > 0.985) c.gDb = clampDb(c.gDb - 0.15, LEVEL_MIN_DB, LEVEL_MAX_DB);   // 피크 보호(완만하게)
     c.gain.gain.setTargetAtTime(dbToLin(c.gDb), ctx.currentTime, 0.05);
   }
 }
