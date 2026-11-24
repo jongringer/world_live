@@ -63,7 +63,7 @@
 
 - 모든 유튜브 타일(KBS NEWS 24·YTN 24시간 라이브는 HLS)은 **`autoplay=1&mute=1&playsinline=1&enablejsapi=1`** 로 생성합니다. `mute=0` 이면 브라우저 정책이 자동재생을 막아 타일이 멈춘 화면으로 남기 때문입니다(첫 화면 YTN이 안 열리던 원인).
 - 음성 채널은 iframe 준비(`onReady`) 때 `unMute` 를 시도하고, 막히면 **첫 터치·키 입력 순간** `unMute`+`playVideo` 로 소리를 켭니다(`armSoundUnlock`).
-- 기본 청취는 **2번 칸 연합뉴스TV**(`DEFAULT_AUDIO='yonhap24'`, `presetVer:4`). 순서는 모든 분할에서 **YTN → 연합뉴스TV → KBS** 입니다.
+- 기본 청취는 **1번 칸 YTN**(`DEFAULT_AUDIO='ytn24'`, `selSlot=0`, `presetVer:5`) — YTN을 공식 HLS로 바꾼 뒤 유튜브처럼 끊길 일이 없어, 2026-11-24 사용자 지시(“YTN이 유튜브 소스가 아니라 끊길일 없으니 그걸 첫 재생으로 하면 되겠네”)에 따라 기본 소리를 YTN으로 옮겼습니다. 순서는 모든 분할에서 **YTN → 연합뉴스TV → KBS** 입니다.
 
 ---
 
@@ -88,7 +88,7 @@
 - **2026-11-24 두 번째 지시(원문)**: “월드뉴스 첫번째는 모든 분할화면에서 YTN 연합뉴스 KBS순서로 바꿔줘. KBS가 실시간이 아니네” → **모든 분할의 앞 3칸을 `ytn24` → `yonhap24` → `kbs24`** 로 바꾸고, `presetVer`를 **3**으로 올려 기존 저장 배치도 1회 갱신했습니다(이후 사용자 변경은 유지).
 - **4분할 기본값** (`DEFAULT_SETS['4']`): `ytn24` · `yonhap24` · `kbs24` · `cnn`(= CNN INTERNATIONAL HLS). 시작 레이아웃도 `4`로 바꿔, 처음 여는 화면이 4분할입니다. 사용자가 다른 분할로 바꾸면 그 화면이 저장되어 다음에 그대로 시작합니다(‘첫 화면’ 메뉴에서 특정 화면 고정도 가능).
 - **9분할 기본값** (`DEFAULT_SETS['9']`): `ytn24` · `yonhap24` · `kbs24` · `cnn` · `bbc` · `abc` · `aj`(Al Jazeera English) · `iranintl`(IRAN INTERNATIONAL — 사용자가 말한 ‘이란TV’, 카탈로그에 이미 있던 이란 뉴스 채널) · `f24`(FRANCE 24 ENGLISH — ‘프랑스’). 6분할 기본값도 앞 6개(YTN·연합·KBS·CNN·BBC·ABC)로 맞췄습니다.
-- **기본 오디오**: `audioId:'ytn24'`·`muted:false`·선택 칸 1번 — 첫 화면에서 **YTN 타일에 흰색 테두리(탤리)가 켜지고 하단 `AUDIO — YTN 24시간 라이브`**로 시작합니다. 단, 브라우저 자동재생 정책상 소리 켜진 자동재생이 차단되면(모바일 크롬 등) 그 채널은 **음소거 상태로 화면을 계속 보여 주고**, 첫 터치·키 입력 순간 자동으로 소리를 켭니다(`playWithSound`·`armSoundUnlock`). UI 상태(YTN 음성 ON)와 실제 `muted` 설정은 처음부터 YTN 기준입니다.
+- **기본 오디오**: `audioId:'ytn24'`·`muted:false`·선택 칸 0번 — 첫 화면에서 **YTN 타일에 흰색 테두리(탤리)가 켜지고 하단 `AUDIO — YTN 24시간 라이브`**로 시작합니다. HLS이므로 유튜브 iframe과 달리 첫 터치 없이 소리까지 바로 나옵니다(브라우저 자동재생 정책상 막히면 `playWithSound`·`armSoundUnlock`가 첫 터치에 소리를 켭니다).
 - **저장 상태 1회 갱신(`presetVer:3`)**: `localStorage('worldlive.v3')`에 `presetVer`를 함께 저장합니다. 버전이 없는 예전 배치(이미 폰에서 열어 본 사용자 포함)는 **딱 한 번** 새 기본값으로 맞추고, 그 뒤로는 사용자가 바꾼 분할·채널·순서·음성이 그대로 저장·복원됩니다. 초기화에서도 직접 추가한 커스텀 소스와 전체 스크롤 ‘내 순서’는 지우지 않습니다.
 - **기본값 복원**: 상단 `★ 첫 화면` 메뉴 맨 아래 **`기본 배치로 초기화`** 항목(및 `?reset=1`)이 위 4분할 기본값으로 되돌립니다.
 - **스마트폰 상단 버튼 순서(v8.9.1)**: 스마트폰 폭(`max-width:820px` 또는 세로 화면)에서는 분할 버튼이 **`4분할 → 9분할 → 전체 스크롤`** 순으로 앞에 오고 6분할·전체화면은 뒤로 밀립니다(CSS `order`). 데스크톱은 `9분할 · 6분할 · 4분할 · 전체화면 · 전체 스크롤` 그대로입니다.
@@ -178,7 +178,8 @@
 - **적용**: `js/channels.js`의 `ytn24`를 `kind:'hls'`, `src:'https://ylive.ytn.co.kr/live/20221013_ytnlive/playlist.m3u8'`, `web:`(YTN 라이브 페이지)로 교체하고, 유튜브(`aZyD6EPl6KU`)는 **대체 소스 `ytn_yt`(`alt:true`)** 로 남겼습니다. 채널 ID(`ytn24`)는 그대로라 저장된 배치·커스텀 소스가 그대로 이어집니다. 카드 배지도 `HLS`.
 - **연합뉴스TV 조사 결과 — 공식 홈페이지에 HLS 없음(YouTube 유지)**: `www.yonhapnewstv.co.kr/live`와 `m.yonhapnewstv.co.kr/live` 모두 **`https://www.youtube.com/embed/6QZ_qc75ihU`** 만 삽입하고(모바일은 `autoplay=0`), 사이트·모바일 페이지·`feCommon.js`·`common.js` 어디에도 `.m3u8`/HLS 참조가 없습니다. `/onair`·`/api/live`·`/api/v1/live`·`/live/api`·`/onair.json` 은 모두 404, `tv.kakao.com` livelink(옛 IE용)는 서비스 종료로 `tv.kakao.com` 홈으로 리다이렉트. iptv-org 등 공개 목록에도 연합뉴스TV의 방송사 공식 스트림은 없고(제3자 재송신만 존재) 그런 주소는 쓰지 않았습니다. 그래서 **기존 YouTube 소스(`6QZ_qc75ihU`)를 그대로 유지**합니다.
 - **iframe 가능성(참고)**: `www.yonhapnewstv.co.kr`·`www.ytn.co.kr` 응답 모두 `X-Frame-Options`·CSP `frame-ancestors` 없음 → 필요하면 공식 페이지 iframe도 기술적으로는 가능(현재 미사용).
-- **캐시·자산**: 빌드 표식 `SRC 11-24c → SRC 11-24d`, `index.html` `channels.js?v=36 → ?v=37`, APK 자산(`android/app/src/main/assets/public/js/channels.js`·`index.html`) 동기화(저장된 APK 바이너리는 재빌드 전까지 옛 소스).
+- **기본 오디오도 YTN으로**: YTN이 공식 HLS로 바뀌어 유튜브처럼 끊길 일이 없어졌으므로, 사용자 지시(“YTN이 유튜브 소스가 아니라 끊길일 없으니 그걸 첫 재생으로 하면 되겠네”)에 따라 `DEFAULT_AUDIO='ytn24'`·`selSlot=0`·`presetVer 4→5`로 올렸습니다(기존 저장 배치도 1회 갱신 → 첫 화면 1번 칸 YTN에 흰 테두리·소리 ON).
+- **캐시·자산**: 빌드 표식 `SRC 11-24c → SRC 11-24d`, `index.html` `channels.js?v=36 → ?v=37`·`app.js?v=97 → ?v=99`, APK 자산(`android/app/src/main/assets/public/js/channels.js`·`index.html`) 동기화(저장된 APK 바이너리는 재빌드 전까지 옛 소스).
 - **검증 (운영 페이지 `https://jongringer.github.io/world_live/?v=ytn-hls`, 2026-11-24 09:18 KST)**: 4분할 1번 칸 YTN이 **1920×1080·`readyState 4`·`currentTime` 증가·`error null`**로 클릭 없이 LIVE 재생(첫 로드는 세그먼트 버퍼링으로 약 15~20초 `SYNC`), 타일 클릭 시 `muted:false`·`volume:1`·흰 테두리(탤리) + 하단 `AUDIO — YTN 24시간 라이브` 전환 확인, 연합뉴스TV는 자동 음소거. 4/4 FEEDS NOMINAL. 스크린샷 `downloads/world_live_kr_hls_20261124.png`.
 
 ## KBS NEWS 24 소스 교체 (2026-11-23 KST)
