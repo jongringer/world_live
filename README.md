@@ -61,7 +61,7 @@
 
 ### ▶︎ 첫 화면 자동재생 (2026-11-24 · v9.2)
 
-- 모든 유튜브 타일(KBS NEWS 24는 HLS)은 **`autoplay=1&mute=1&playsinline=1&enablejsapi=1`** 로 생성합니다. `mute=0` 이면 브라우저 정책이 자동재생을 막아 타일이 멈춘 화면으로 남기 때문입니다(첫 화면 YTN이 안 열리던 원인).
+- 모든 유튜브 타일(KBS NEWS 24·YTN 24시간 라이브는 HLS)은 **`autoplay=1&mute=1&playsinline=1&enablejsapi=1`** 로 생성합니다. `mute=0` 이면 브라우저 정책이 자동재생을 막아 타일이 멈춘 화면으로 남기 때문입니다(첫 화면 YTN이 안 열리던 원인).
 - 음성 채널은 iframe 준비(`onReady`) 때 `unMute` 를 시도하고, 막히면 **첫 터치·키 입력 순간** `unMute`+`playVideo` 로 소리를 켭니다(`armSoundUnlock`).
 - 기본 청취는 **2번 칸 연합뉴스TV**(`DEFAULT_AUDIO='yonhap24'`, `presetVer:4`). 순서는 모든 분할에서 **YTN → 연합뉴스TV → KBS** 입니다.
 
@@ -154,7 +154,8 @@
 
 ## KOREA · 국내 뉴스 (3사만 유지)
 
-- **KBS NEWS 24** (KBS 공식 온에어 `kind:'kbs'`, 2026-11-24 교체) · **YTN 24시간 라이브** (`aZyD6EPl6KU`) · **연합뉴스TV 라이브** (`6QZ_qc75ihU`) — 24시간 고정 라이브, 클릭 없이 즉시 자동재생. KBS는 유튜브 라이브 ID가 매일 바뀌므로 공식 온에어 스트림을 직접 받아 재생합니다(아래 2026-11-24 항목).
+- **KBS NEWS 24** (KBS 공식 온에어 `kind:'kbs'`) · **YTN 24시간 라이브** (YTN 공식 온에어 1080p HLS `kind:'hls'`) · **연합뉴스TV 라이브** (YouTube `6QZ_qc75ihU`) — 24시간 라이브, 클릭 없이 즉시 자동재생. KBS는 유튜브 라이브 ID가 매일 바뀌고 YTN은 유튜브에서 재생 버튼을 눌러야 할 때가 있어 **방송사 공식 온에어 스트림**으로 바꿨습니다(아래 2026-11-24 항목). 연합뉴스TV는 공식 홈페이지가 HLS를 제공하지 않아 YouTube를 유지합니다.
+- **YTN · YouTube** (`ytn_yt`, `aZyD6EPl6KU`, `alt:true`) — YTN 공식 HLS가 막힐 때 소스 라이브러리에서 골라 쓰는 대체 소스(기본 배치에는 들어가지 않음).
 - MBC·SBS·JTBC·MBN·채널A·TV조선·아리랑 TV·TBS는 카탈로그에서 제거했습니다. 저장된 옛 배치에 그 ID가 남아 있으면 불러올 때 걸러지고 기본 채널로 대체됩니다(`localStorage` `worldlive.v3` 마이그레이션).
 
 ## KBS NEWS 24 → KBS 공식 온에어 소스로 교체 (2026-11-24 KST)
@@ -167,6 +168,18 @@
 - **캐시·저장 배치**: `index.html` `channels.js?v=32→33`·`app.js?v=89→90`, 빌드 표식 `SRC 11-23a → SRC 11-24a`. 저장 배치(`localStorage worldlive.v3`)에는 채널 ID(`kbs24`)만 남으므로 기존 사용자도 새 파일을 받으면 그대로 새 소스로 재생됩니다. 저장된 커스텀 소스에 죽은 ID(`nfnWxzTVJA4`)가 남아 있으면 불러올 때 제거합니다(`DEAD_SOURCES`).
 - **APK 자산 동기화**: `android/app/src/main/assets/public/`의 `index.html`·`js/app.js`·`js/channels.js`·`css/style.css`를 같은 내용으로 갱신했습니다(저장된 APK 바이너리 `apk/worldnews.apk`는 2026-11-23 빌드라 **재빌드 전까지 앱 안에서는 옛 소스**).
 - **검증 (운영 페이지 `https://jongringer.github.io/world_live/`, 2026-11-24 07:47 KST)**: 4분할 1번 칸 KBS NEWS 24가 **KBS 24 로고가 있는 실제 방송 화면**으로 재생(1280×720, `readyState 4`, `currentTime` 66초까지 증가, `error null`), 타일 클릭 시 `muted:false`·`volume:1`로 음성 청취, 같은 화면 NHK·CNN FAST·BBC 모두 LIVE(4/4). 1×1 FULL 전환 후에도 재생 유지. 채널 찾기 미리보기도 `LIVE` 배지로 재생. 스크린샷 `downloads/world_live_kbs24_20261124.png`.
+
+## YTN → YTN 공식 온에어 1080p HLS로 교체 · 연합뉴스TV 조사 결과 (2026-11-24 KST)
+
+- **사용자 요청(원문)**: “KBS처럼 YTN과 연합뉴스도 유튜브 말고 홈페이지에서 실시간 받아올 수 없나? 유튜브 자꾸 플레이 눌러줄 때가 있어서 불편하네.” / 이어서 “화질도 중요해. 저화질은 안된다.”
+- **YTN 공식 소스**: `www.ytn.co.kr` 라이브 페이지(`/_hd/hd_live.html`)가 크롬에서 `livestream.ytn.co.kr/ytn/_hd/globalin.html`을 넣고, 그 안의 IE11 경로가 쓰는 자사 HLS 플레이어 페이지가 `https://www.ytn.co.kr/_comm/vod_frame_n2_hls.php?cd=live`입니다. 이 페이지의 flowplayer `source`가 **`https://ylive.ytn.co.kr/live/20221013_ytnlive/playlist.m3u8`**. (크롬은 YTN이 자사 사이트에서도 YouTube 임베드를 쓰기 때문에, 이 m3u8은 YTN 플레이어 페이지에서 직접 꺼낸 공식 주소입니다.)
+- **화질**: 마스터가 단일 화질 **`RESOLUTION=1920x1080` · 30fps · BANDWIDTH≈5.3Mbps · `avc1.4d4029,mp4a.40.2`**(ABR 다중 화질이 아니라 내려갈 저화질 트랙이 없음). 운영 페이지 재생 실측 `videoWidth×videoHeight = 1920×1080`. 참고로 같은 화면의 KBS는 1280×720, CNN INTERNATIONAL은 640×360입니다.
+- **CORS 실측(2026-11-24)**: 마스터·미디어 플레이리스트·`.ts` 세그먼트 모두 `access-control-allow-origin: *` + `allow-methods: OPTIONS, GET, HEAD`, `OPTIONS` 프리플라이트 200. **키 파일 없음**(AES 미적용). `Referer` 검사 없음(Referer 없이 200), 세션 쿠키·일회성 토큰 없음, **해외 IP에서도 200**(미국 IP로도 매니페스트·세그먼트 수신 확인 — 국내 전용 차단 없음).
+- **적용**: `js/channels.js`의 `ytn24`를 `kind:'hls'`, `src:'https://ylive.ytn.co.kr/live/20221013_ytnlive/playlist.m3u8'`, `web:`(YTN 라이브 페이지)로 교체하고, 유튜브(`aZyD6EPl6KU`)는 **대체 소스 `ytn_yt`(`alt:true`)** 로 남겼습니다. 채널 ID(`ytn24`)는 그대로라 저장된 배치·커스텀 소스가 그대로 이어집니다. 카드 배지도 `HLS`.
+- **연합뉴스TV 조사 결과 — 공식 홈페이지에 HLS 없음(YouTube 유지)**: `www.yonhapnewstv.co.kr/live`와 `m.yonhapnewstv.co.kr/live` 모두 **`https://www.youtube.com/embed/6QZ_qc75ihU`** 만 삽입하고(모바일은 `autoplay=0`), 사이트·모바일 페이지·`feCommon.js`·`common.js` 어디에도 `.m3u8`/HLS 참조가 없습니다. `/onair`·`/api/live`·`/api/v1/live`·`/live/api`·`/onair.json` 은 모두 404, `tv.kakao.com` livelink(옛 IE용)는 서비스 종료로 `tv.kakao.com` 홈으로 리다이렉트. iptv-org 등 공개 목록에도 연합뉴스TV의 방송사 공식 스트림은 없고(제3자 재송신만 존재) 그런 주소는 쓰지 않았습니다. 그래서 **기존 YouTube 소스(`6QZ_qc75ihU`)를 그대로 유지**합니다.
+- **iframe 가능성(참고)**: `www.yonhapnewstv.co.kr`·`www.ytn.co.kr` 응답 모두 `X-Frame-Options`·CSP `frame-ancestors` 없음 → 필요하면 공식 페이지 iframe도 기술적으로는 가능(현재 미사용).
+- **캐시·자산**: 빌드 표식 `SRC 11-24c → SRC 11-24d`, `index.html` `channels.js?v=36 → ?v=37`, APK 자산(`android/app/src/main/assets/public/js/channels.js`·`index.html`) 동기화(저장된 APK 바이너리는 재빌드 전까지 옛 소스).
+- **검증 (운영 페이지 `https://jongringer.github.io/world_live/?v=ytn-hls`, 2026-11-24 09:18 KST)**: 4분할 1번 칸 YTN이 **1920×1080·`readyState 4`·`currentTime` 증가·`error null`**로 클릭 없이 LIVE 재생(첫 로드는 세그먼트 버퍼링으로 약 15~20초 `SYNC`), 타일 클릭 시 `muted:false`·`volume:1`·흰 테두리(탤리) + 하단 `AUDIO — YTN 24시간 라이브` 전환 확인, 연합뉴스TV는 자동 음소거. 4/4 FEEDS NOMINAL. 스크린샷 `downloads/world_live_kr_hls_20261124.png`.
 
 ## KBS NEWS 24 소스 교체 (2026-11-23 KST)
 
