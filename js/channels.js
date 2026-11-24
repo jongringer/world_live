@@ -235,31 +235,19 @@ const CHANNELS = [
        · OBS   : 온에어 CDN vod.obs.co.kr:444 접속 불가, 공식 페이지 X-Frame-Options: SAMEORIGIN
        · 채널A : 온에어 페이지가 유튜브 iframe 플레이어라 결국 유튜브 라이브가 원천 */
   { id:'mbcnews', name:'MBC 뉴스', short:'MBC', country:'한국', cc:'KR', zone:'KOREA',
-    kind:'youtube-video', src:'q9bM12ucTIY', status:'live',
+    kind:'youtube', src:'UCF4Wxdo3inmxP-Y59wXDsFw', status:'live',
     web:'https://onair.imbc.com/',
-    note:'MBCNEWS가 24시간 내보내는 생방송([ON AIR] 24시간 최신 MBC뉴스)을 고정 영상으로 연결합니다 — 2026-11-24 23:2x 실측 재생·임베드 허용 확인. 방송사가 이 스트림을 새로 열면 소스 라이브러리의 ‘MBC 뉴스 · 자동’으로 바꿔 주세요.' },
-
-  { id:'mbcnews_auto', name:'MBC 뉴스 · 자동', short:'MBC', country:'한국', cc:'KR', zone:'KOREA',
-    kind:'youtube', src:'UCF4Wxdo3inmxP-Y59wXDsFw', status:'live', alt:true,
-    note:'MBCNEWS 채널의 그때그때 라이브를 따라갑니다(채널 ID 방식). 고정 스트림이 끊겼을 때 대체 소스로 쓰세요.' },
+    note:'MBC 공식 뉴스 유튜브(MBCNEWS) 라이브입니다. MBC 온에어 본방은 외부 페이지 삽입이 막혀 있어(API CORS 고정) 뉴스 라이브로 연결합니다.' },
 
   { id:'sbsnews', name:'SBS 뉴스', short:'SBS', country:'한국', cc:'KR', zone:'KOREA',
     kind:'youtube', src:'UCkinYTS9IHqOEwR1Sze2JTw', status:'live',
     web:'https://www.sbs.co.kr/live/S01',
     note:'SBS 공식 뉴스 유튜브 라이브입니다. SBS play 온에어는 60초 미리보기 뒤 로그인을 요구해 자동 시청 화면에 쓸 수 없습니다.' },
 
-  { id:'sbsbiz', name:'SBS Biz 뉴스 · YouTube', short:'SBS', country:'한국', cc:'KR', zone:'KOREA',
-    kind:'youtube', src:'UCbMjg2EvXs_RUGW-KrdM3pw', status:'live', alt:true,
-    note:'SBS 계열 24시간 경제뉴스 채널(SBS Biz) 유튜브 라이브 — SBS 뉴스가 비어 있을 때 대체 소스' },
-
   { id:'obsnews', name:'OBS 뉴스', short:'OBS', country:'한국', cc:'KR', zone:'KOREA',
     kind:'youtube', src:'UComhAmtkBwTPF_PvwN8Gc6w', status:'live',
     web:'https://www.obs.co.kr/tv/',
     note:'OBS 공식 뉴스 유튜브 라이브입니다. OBS 온에어는 페이지 삽입이 막혀 있습니다(X-Frame-Options).' },
-
-  { id:'obstv', name:'OBS TV · YouTube', short:'OBS', country:'한국', cc:'KR', zone:'KOREA',
-    kind:'youtube', src:'UCKRzvNMudg0lZQ41lafuahg', status:'live', alt:true,
-    note:'OBS경인TV 본방 채널의 유튜브 라이브(방송 중일 때만) — OBS 뉴스가 비어 있을 때 대체 소스' },
 
   { id:'jtbcnews', name:'JTBC 뉴스', short:'JTBC', country:'한국', cc:'KR', zone:'KOREA',
     kind:'youtube', src:'UCsU-I-vHLiaMfV_ceaYz5rQ', status:'live',
@@ -337,8 +325,8 @@ const CHANNEL_BY_ID = CHANNELS.reduce((m, c) => (m[c.id] = c, m), {});
 /* 이 카탈로그의 빌드 표식 — 화면 하단 신호 스트립에 표시됩니다.
    휴대폰이 옛 파일(브라우저 캐시)을 불러왔는지 이 한 줄로 확인할 수 있고,
    채널·소스를 고칠 때마다 이 값과 index.html의 ?v= 를 함께 올려 주세요. */
-const CHANNELS_BUILD = 'SRC 11-24f';
-const CHANNELS_BUILD_DETAIL = '국내뉴스 9분할 추가 — KBS·MBC·SBS·OBS·YTN·연합뉴스TV·JTBC·TV조선·채널A (MBC·SBS·OBS·JTBC·TV조선·채널A는 공식 뉴스 유튜브 라이브) · 2026-11-24 23:35 갱신';
+const CHANNELS_BUILD = 'SRC 11-24e';
+const CHANNELS_BUILD_DETAIL = '국내뉴스 9분할 추가 — KBS·MBC·SBS·OBS·YTN·연합뉴스TV·JTBC·TV조선·채널A (MBC·SBS·OBS·JTBC·TV조선·채널A는 공식 뉴스 유튜브 라이브) · 2026-11-24 23:40 갱신';
 
 /* 다시 재생되지 않는 예전 소스 ID → 지금 쓰는 소스로 자동 교체
    (브라우저에 저장된 커스텀 소스에 옛 ID가 남아 있어도 되살아나지 않게) */
