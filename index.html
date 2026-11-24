@@ -453,8 +453,22 @@
 
 <div id="install-tip" hidden role="dialog" aria-live="polite"></div>
 
-<script src="js/channels.js?v=46"></script>
-<script src="js/app.js?v=110"></script>
+<!-- 채널별 볼륨 팝오버 (2026-11-25) — 타일 하단 VOL 버튼으로 연다 -->
+<div class="vol-pop" id="vol-pop" role="dialog" aria-label="채널 볼륨" hidden>
+  <div class="vol-top">
+    <span class="vol-name" id="vol-name">채널</span>
+    <button class="vol-x" id="vol-x" type="button" aria-label="볼륨 창 닫기">✕</button>
+  </div>
+  <div class="vol-bar">
+    <input type="range" id="vol-range" min="0" max="200" step="5" value="100" aria-label="채널 볼륨">
+  </div>
+  <div class="vol-num"><b id="vol-pct">100%</b><span id="vol-db">0.0 dB</span></div>
+  <div class="vol-presets" id="vol-presets"></div>
+  <div class="vol-note" id="vol-note">공식 HLS 채널은 최대 200%까지 직접 올릴 수 있습니다.</div>
+</div>
+
+<script src="js/channels.js?v=47"></script>
+<script src="js/app.js?v=111"></script>
 <script src="js/pwa.js?v=4"></script>
 </body>
 </html>
