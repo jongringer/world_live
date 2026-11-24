@@ -18,6 +18,8 @@ const PRESET_VER = 5;
    (1 = 2026-11-25 03:30 초기값 · 2 = YTN → 연합뉴스TV → KBS → MBC → SBS → JTBC → TV조선 → MBN → 채널A
     ※ 9분할·6분할·4분할 프리셋과 사용자가 바꿔 둔 배치는 건드리지 않는다) */
 const KR_PRESET_VER = 2;
+/* 경제뉴스 9분할 전용 프리셋 버전 — 오르면 저장된 ‘경제뉴스’ 배치만 새 기본 순서로 맞춘다(1 = 2026-11-25 신설) */
+const ECON_PRESET_VER = 1;
 const DEFAULT_AUDIO = 'ytn24';       // 기본 청취 채널 — 1번 칸 YTN(공식 HLS, 끊김 없음)
 const DEFAULT_LAYOUT = '4';          // 시작 화면 = 4분할
 const LAYOUTS = {
@@ -25,6 +27,7 @@ const LAYOUTS = {
   '4':  { cols: 2, rows: 2, count: 4, label: '4분할' },
   '6':  { cols: 3, rows: 2, count: 6, label: '6분할' },
   'kr': { cols: 3, rows: 3, count: 9, label: '국내뉴스', kr: true },
+  'econ': { cols: 3, rows: 3, count: 9, label: '경제뉴스', econ: true },
   '1':  { cols: 1, rows: 1, count: 1, label: '전체화면' },
   'all':{ scroll: true, count: 0, label: '전체 스크롤' }
 };
@@ -149,6 +152,7 @@ function freshSets() {
     '4': DEFAULT_SETS['4'].slice(),
     '6': DEFAULT_SETS['6'].slice(),
     'kr': DEFAULT_SETS['kr'].slice(),
+    'econ': DEFAULT_SETS['econ'].slice(),
     '1': DEFAULT_SETS['1'].slice()
   };
 }
@@ -189,6 +193,7 @@ function save() {
     localStorage.setItem(LS_KEY, JSON.stringify({
       presetVer: PRESET_VER,
       krVer: KR_PRESET_VER,
+      econVer: ECON_PRESET_VER,
       layout: state.layout, start: state.start, startPinned: state.startPinned, sort: state.sort, sets: state.sets,
       allOrder: state.allOrder,
       custom: state.custom, audioId: state.audioId, muted: state.muted
@@ -281,6 +286,11 @@ function load() {
        국내뉴스 프리셋이 오르면 그 배치 하나만 새 기본 순서로 맞춘다. */
     if (!(d && Number(d.krVer) >= KR_PRESET_VER)) {
       state.sets['kr'] = DEFAULT_SETS['kr'].slice();
+      save();
+    }
+    /* 경제뉴스도 같은 방식 — 이 카테고리를 처음 받는 기기는 기본 순서로 채운다 */
+    if (!(d && Number(d.econVer) >= ECON_PRESET_VER)) {
+      state.sets['econ'] = DEFAULT_SETS['econ'].slice();
       save();
     }
     return;
@@ -949,7 +959,7 @@ function sizeGrid() {
     grid.style.height = 'auto';
     /* 국내뉴스도 세로 화면에서는 다른 분할과 같게 1열 — 화면 하나(16:9)씩 위에서 아래로
        9개가 순서대로 나온다(2026-11-25 사용자 요청). 두 칸씩 보고 싶으면 모바일 뷰 버튼으로 2열. */
-    grid.style.gridTemplateColumns = (LAYOUTS[state.layout] && LAYOUTS[state.layout].kr &&
+    grid.style.gridTemplateColumns = (LAYOUTS[state.layout] && (LAYOUTS[state.layout].kr || LAYOUTS[state.layout].econ) &&
       document.body.classList.contains('is-mobile-quad'))
       ? 'repeat(2, minmax(0, 1fr))'
       : '1fr';
@@ -1205,7 +1215,7 @@ function updateStrip() {
 }
 
 /* ── start layout menu ─────────────────────────────────────── */
-const START_NAMES = { '9':'9분할', '6':'6분할', '4':'4분할', 'kr':'국내뉴스', '1':'전체화면', 'all':'전체 스크롤' };
+const START_NAMES = { '9':'9분할', '6':'6분할', '4':'4분할', 'kr':'국내뉴스', 'econ':'경제뉴스', '1':'전체화면', 'all':'전체 스크롤' };
 function refreshStartUI() {
   $('#start-label').textContent = state.startPinned ? (START_NAMES[state.start] || '9분할') : '마지막 화면';
   document.querySelectorAll('#start-menu [data-start]').forEach(b => {
@@ -1219,6 +1229,7 @@ function refreshStartUI() {
 function setStart(layout) {
   if (layout === 'reset') { resetPreset(); return; }
   if (layout === 'krreset') { setStart('kr'); resetKrNews(); return; }
+  if (layout === 'econreset') { setStart('econ'); resetEconNews(); return; }
   if (layout === 'auto') {
     state.startPinned = false;
     save();
@@ -1256,6 +1267,13 @@ function resetKrNews() {
   save();
   applyLayout('kr');
   toast('국내뉴스 9분할 — YTN / 연합뉴스TV / KBS / MBC / SBS / JTBC / TV조선 / MBN / 채널A');
+}
+/* 경제뉴스 9분할 — 사용자가 바꿔 둔 경제뉴스 배치만 기본 순서로 되돌린다 */
+function resetEconNews() {
+  state.sets['econ'] = DEFAULT_SETS['econ'].slice();
+  save();
+  applyLayout('econ');
+  toast('경제뉴스 9분할 — 한국경제TV / 매일경제TV / 삼프로TV / 오선의 미증시 / Bloomberg / CNBC / Yahoo Finance / Fox Business / Euronews Business');
 }
 
 function refreshSortUI() {
@@ -2598,6 +2616,7 @@ function bindEvents() {
     else if (k === '4') showCleanFull();
     else if (k === '5' || k === 'a') applyLayout('all');
     else if (k === 'k') applyLayout('kr');
+    else if (k === 'e') applyLayout('econ');
     else if (k === 'f') toggleFullscreen();
     else if (k === 'h' && isFull()) toggleHud();
     else if (k === 'm') $('#btn-mute').click();

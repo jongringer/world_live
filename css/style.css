@@ -247,6 +247,25 @@ svg { display: block; }
 .layout-btn-kr .lb-txt { letter-spacing: -0.02em; }
 .layout-btn-kr .lb-dim { color: rgba(245, 229, 192, 0.72); }
 
+/* 경제뉴스 9분할 — 국내뉴스와 구분되는 전용 모드(딥 틸 + 시안 포인트) */
+.layout-btn-econ {
+  border-color: rgba(103, 232, 249, 0.32);
+  background: linear-gradient(180deg, rgba(56, 189, 248, 0.13) 0%, rgba(15, 29, 50, 0.35) 100%);
+  color: #D8F6FF;
+}
+.layout-btn-econ:hover {
+  color: #FFFFFF;
+  border-color: rgba(167, 243, 255, 0.7);
+  background: linear-gradient(180deg, rgba(56, 189, 248, 0.24) 0%, rgba(15, 29, 50, 0.4) 100%);
+}
+.layout-btn-econ .lb-txt { letter-spacing: -0.02em; }
+.layout-btn-econ .lb-dim { color: rgba(184, 240, 255, 0.72); }
+
+/* 상단 바 버튼 정리 (2026-11-25 사용자 요청)
+   · PC 웹: 6분할 버튼을 상단 바에서 뺀다 — 주소로 ?layout=6 이나 단축키 2 를 쓰면 그 화면은 그대로 동작
+   · 스마트폰: 칸이 좀아 9분할 버튼을 뺀다(아래 모바일 미디어 쿼리) */
+.layout-btn[data-layout="6"] { display: none; }
+
 /* ─────────── ACTIONS & BUTTONS ─────────── */
 .actions { display: flex; align-items: center; gap: 5px; margin-left: auto; flex: 0 0 auto; }
 .icon-btn {
@@ -1146,8 +1165,15 @@ body.is-full.is-hud .order-ctl { opacity: 1 !important; pointer-events: auto !im
   .brand-sub { display: none; }
   .brand-mark { width: 32px; height: 32px; }
 
-  /* 모바일 상단 바 컨트롤: 홈(로고) / 9분할 / 4분할 / 전체 스위처 상시 고정 */
+  /* 모바일 상단 바 컨트롤: 홈(로고) / 경제뉴스 / 국내뉴스 / 4분할 / 전체 스크롤 상시 고정 */
   .clocks, .sort-wrap, .nav-sep, .start-wrap, #btn-apk { display: none !important; }
+  /* 칸이 좁아 9분할 버튼은 뺀다(2026-11-25 사용자 요청) — 6분할·전체화면은 위 기본 규칙에서 이미 숨김 */
+  .layout-btn[data-layout="9"] { display: none !important; }
+  /* 핵심 버튼만 한 줄에: 경제뉴스 → 국내뉴스 → 4분할 → 전체 스크롤 */
+  .layout-btn[data-layout="econ"] { order: 1; }
+  .layout-btn[data-layout="kr"] { order: 2; }
+  .layout-btn[data-layout="4"] { order: 3; }
+  .layout-btn[data-layout="all"] { order: 4; }
   .layouts {
     display: inline-flex !important;
     gap: 2px !important;
@@ -1170,8 +1196,7 @@ body.is-full.is-hud .order-ctl { opacity: 1 !important; pointer-events: auto !im
   .layout-btn[data-layout="6"],
   .layout-btn[data-layout="1"] {
     display: none !important;
-  }
-  .layout-btn .lb-txt {
+  }  .layout-btn .lb-txt {
     display: inline !important;
     font-size: 11px !important;
   }

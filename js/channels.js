@@ -91,6 +91,17 @@ const CHANNELS = [
   { id:'cnbc', name:'CNBC', short:'CNBC', country:'미국', cc:'US', zone:'AMERICAS',
     kind:'youtube', src:'UCvJJ_dzjViJCoLf5uKUTwoA', status:'live' },
 
+  /* 경제뉴스 9분할 — 미국 경제 채널 (2026-11-25 03:40 실측: 모두 유튜브 임베드 재생 확인) */
+  { id:'yahoo_fin', name:'YAHOO FINANCE', short:'YHOO', country:'미국', cc:'US', zone:'AMERICAS',
+    kind:'youtube-video', src:'6MRyehWhrRM', ytChannel:'UCEAZeUIeJs0IjQiqTCdVSIg', status:'live',
+    web:'https://www.youtube.com/@YahooFinance/live',
+    note:'Yahoo Finance 라이브(공식 유튜브 @YahooFinance) — 미국 장 시간 중심으로 송출됩니다. 방송사가 새 라이브로 갈아 끼우면 채널 라이브로 자동 전환됩니다.' },
+
+  { id:'fox_biz', name:'FOX BUSINESS', short:'FBN', country:'미국', cc:'US', zone:'AMERICAS',
+    kind:'youtube-video', src:'P-SvyILdsYc', ytChannel:'UCCXoCcu9Rp7NPbTzIvogpZg', status:'live',
+    web:'https://www.youtube.com/@FoxBusiness/live',
+    note:'FOX Business 라이브(공식 유튜브 @FoxBusiness) — 미국 장 시간 중심으로 송출됩니다. 방송사가 새 라이브로 갈아 끼우면 채널 라이브로 자동 전환됩니다.' },
+
   { id:'scripps', name:'SCRIPPS NEWS', short:'SCR', country:'미국', cc:'US', zone:'AMERICAS',
     kind:'hls', src:'https://aka-live1050.delivery.roku.com/a48b72c9-5755-4ede-9dac-9e51e4ca5cc8/t2-origin/out/v1/live.m3u8', status:'live' },
 
@@ -125,6 +136,12 @@ const CHANNELS = [
 
   { id:'euronews', name:'EURONEWS ENGLISH', short:'EN', country:'유럽', cc:'EU', zone:'EUROPE',
     kind:'youtube', src:'UCSrZ3UV4jOidv8ppoVuvW9Q', status:'live' },
+
+  /* 경제뉴스 9분할 — 유럽 경제 채널 (2026-11-25 03:40 실측: 유튜브 임베드 재생 확인) */
+  { id:'euronewsbiz', name:'EURONEWS BUSINESS', short:'EN·BIZ', country:'유럽', cc:'EU', zone:'EUROPE',
+    kind:'youtube-video', src:'P9RhDCtXuww', ytChannel:'UCB8qu8bhAiV8BOJK9ERzZ3Q', status:'live',
+    web:'https://www.youtube.com/@euronewsbusiness/live',
+    note:'유로뉴스 비즈니스 라이브(공식 유튜브 @euronewsbusiness) — 유럽 경제·시장 소식 중심. 방송사가 새 라이브로 갈아 끼우면 채널 라이브로 자동 전환됩니다.' },
 
   { id:'reuters', name:'REUTERS TV', short:'RTR', country:'영국', cc:'GB', zone:'EUROPE',
     kind:'hls', src:'https://amg00453-reuters-amg00453c1-rakuten-uk-2110.playouts.now.amagi.tv/playlist/amg00453-reuters-reuters-rakutenuk/playlist.m3u8', status:'live' },
@@ -292,6 +309,34 @@ const CHANNELS = [
     web:'https://www.ichannela.com/com/cmm/onair.do',
     note:'채널A 뉴스가 내보내는 이슈를 켜라 실시간 라이브를 고정 영상으로 연결합니다(2026-11-25 00:55 실측 isLive 확인). 방송사가 새 라이브로 갈아 끼우면 새 주소로 바꿔 주세요.' },
 
+  /* ── 경제뉴스 9분할 전용 — 한국 경제 채널 (2026-11-25 실측)
+     사용자 지시(2026-11-25 03:33): "한국은 한국경제 매일경제 삼프로 같은 유튜브 매체부터 라이브하는
+     전세계 경제뉴스채널만 모아줘. 야간에는 오선의 미증시 활성화해주고."
+     · 한국경제TV / 매일경제TV / 삼프로TV : 공식 유튜브의 24시간·장중 라이브
+     · 오선의 미증시(@futuresnow) : 평일 밤 21:00~05:00(미국 장 시간)에만 라이브가 열린다
+       → 채널 ID(live_stream)로 걸어 두면 밤에 라이브가 열릴 때 자동으로 따라간다(낮에는 대기).
+     · 고정 영상(youtube-video)은 방송사가 새 라이브로 갈아 끼우면 끊기므로,
+       ytChannel(채널 ID)을 함께 적어 두어 끊긴 뒤에는 채널 라이브로 한 번 자동 전환된다. */
+  { id:'hktv', name:'한국경제TV', short:'한경', country:'한국', cc:'KR', zone:'KOREA',
+    kind:'youtube-video', src:'F86MAlGa5QI', ytChannel:'UCF8AeLlUbEpKju6v1H6p8Eg', status:'live',
+    web:'https://www.wowtv.co.kr/LiveCenter/Live/',
+    note:'한국경제TV 24시간 라이브(공식 유튜브)를 고정 영상으로 연결합니다 — 2026-11-25 03:40 실측 재생·임베드 허용 확인. 방송사가 새 라이브로 갈아 끼우면 채널 라이브로 자동 전환되고, 그래도 비면 소스 라이브러리에서 새 주소로 바꿔 주세요.' },
+
+  { id:'mktv', name:'매일경제TV', short:'매경', country:'한국', cc:'KR', zone:'KOREA',
+    kind:'youtube-video', src:'_as5avhckoM', ytChannel:'UCnfwIKyFYRuqZzzKBDt6JOA', status:'live',
+    web:'https://mbnmoney.mbn.co.kr/',
+    note:'매일경제TV 24시간 라이브(공식 유튜브 @mkeconomy_tv)를 고정 영상으로 연결합니다 — 2026-11-25 03:40 실측 재생·임베드 허용 확인.' },
+
+  { id:'sampro', name:'삼프로TV', short:'삼프로', country:'한국', cc:'KR', zone:'KOREA',
+    kind:'youtube-video', src:'Oio7hpYbi60', ytChannel:'UChlv4GSd7OQl3js-jkLOnFA', status:'live',
+    web:'https://www.youtube.com/@3protv/live',
+    note:'삼프로TV(경제의 신과 함께) 라이브를 고정 영상으로 연결합니다 — 2026-11-25 03:40 실측 재생·임베드 허용 확인. 장 마감 뒤에도 편성 라이브가 이어지고, 방송사가 새 라이브로 갈아 끼우면 채널 라이브로 자동 전환됩니다.' },
+
+  { id:'osun', name:'오선의 미증시', short:'오선', country:'한국', cc:'KR', zone:'KOREA',
+    kind:'youtube', src:'UC_JJ_NhRqPKcIOj5Ko3W_3w', status:'event',
+    web:'https://www.youtube.com/@futuresnow/live',
+    note:'오선의 미증시(@futuresnow) — 평일 밤 21:00~05:00 미국 장 시간에만 라이브가 열립니다. 채널 라이브를 그대로 따라가므로, 야간에 라이브가 시작되면 새로고침 없이 화면이 살아납니다(낮에는 \'라이브 신호 없음\' 대기).' },
+
   /* ── 외부 공식 링크 (페이지 내 재생 불가) ────────────────────── */
   { id:'bbc_web', name:'BBC NEWS · WATCH LIVE', short:'BBC', country:'영국', cc:'GB', zone:'EXTERNAL',
     kind:'web', src:'https://www.bbc.com/watch-live-news', status:'external',
@@ -340,7 +385,10 @@ const DEFAULT_SETS = {
   /* 국내뉴스 9분할 — 사용자가 정한 순서 그대로 (2026-11-25 03:40 변경):
      YTN → 연합뉴스TV → KBS → MBC → SBS → JTBC → TV조선 → MBN → 채널A
      (PC 3×3·스마트폰 1열 모두 이 순서 · 4번 칸 OBS는 MBN으로 교체됨) */
-  'kr': ['ytn24', 'yonhap24', 'kbs24', 'mbcnews', 'sbsnews', 'jtbcnews', 'tvchosun_news', 'mbnnews', 'channela_news']
+  'kr': ['ytn24', 'yonhap24', 'kbs24', 'mbcnews', 'sbsnews', 'jtbcnews', 'tvchosun_news', 'mbnnews', 'channela_news'],
+  /* 경제뉴스 9분할 — 2026-11-25 사용자 지시 순서 그대로:
+     한국 경제(한국경제TV → 매일경제TV → 삼프로TV → 오선의 미증시) → 미국 경제(Bloomberg → CNBC → Yahoo Finance → Fox Business) → 유럽(Euronews Business) */
+  'econ': ['hktv', 'mktv', 'sampro', 'osun', 'bloomberg', 'cnbc', 'yahoo_fin', 'fox_biz', 'euronewsbiz']
 };
 
 const KIND_LABEL = { youtube:'YT·LIVE', 'youtube-video':'YT·LIVE', hls:'HLS', kbs:'KBS·ONAIR', mbn:'MBN·ONAIR', iframe:'PAGE', web:'WEB' };
@@ -359,8 +407,8 @@ const CHANNEL_BY_ID = CHANNELS.reduce((m, c) => (m[c.id] = c, m), {});
 /* 이 카탈로그의 빌드 표식 — 화면 하단 신호 스트립에 표시됩니다.
    휴대폰이 옛 파일(브라우저 캐시)을 불러왔는지 이 한 줄로 확인할 수 있고,
    채널·소스를 고칠 때마다 이 값과 index.html의 ?v= 를 함께 올려 주세요. */
-const CHANNELS_BUILD = 'SRC 11-25d';
-const CHANNELS_BUILD_DETAIL = '국내뉴스 9분할 기본 순서 YTN·연합뉴스TV·KBS·MBC·SBS·JTBC·TV조선·MBN·채널A (OBS 삭제 → MBN 공식 온에어 HLS) · 모바일 1열 세로 피드 · 2026-11-25 03:40 갱신';
+const CHANNELS_BUILD = 'SRC 11-25e';
+const CHANNELS_BUILD_DETAIL = '경제뉴스 9분할 신설 — 한국경제TV·매일경제TV·삼프로TV·오선의 미증시(야간) → Bloomberg·CNBC·Yahoo Finance·Fox Business → Euronews Business · 상단 바 정리(PC 6분할 제거·모바일 9분할 제거) · 2026-11-25 04:00 갱신';
 
 /* 다시 재생되지 않는 예전 소스 ID → 지금 쓰는 소스로 자동 교체
    (브라우저에 저장된 커스텀 소스에 옛 ID가 남아 있어도 되살아나지 않게) */
