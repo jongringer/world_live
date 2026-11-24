@@ -615,6 +615,8 @@ body.is-swapping .tile { transition: none; }
 .ss-led.is-warn { background: var(--amber); box-shadow: 0 0 8px rgba(245, 158, 11, 0.85); }
 .ss-mid { color: #64748B; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .ss-mid b { color: #38BDF8; font-weight: 600; text-shadow: 0 0 8px rgba(56, 189, 248, 0.4); }
+.ss-gain { color: var(--gold); font-weight: 700; letter-spacing: 0.02em; opacity: 0.55; }
+.ss-gain.is-on { opacity: 1; text-shadow: 0 0 8px rgba(212, 175, 55, 0.55); }
 .ss-right { display: flex; align-items: center; gap: 8px; color: #64748B; white-space: nowrap; }
 .ss-div { opacity: 0.35; }
 .ss-version { color: #64748B; opacity: 0.85; }

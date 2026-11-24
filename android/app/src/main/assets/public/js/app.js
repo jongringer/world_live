@@ -26,6 +26,114 @@ const LAYOUTS = {
 const GAP = 6;
 const IO_MARGIN = '90% 0px 90% 0px';
 
+/* ── 전체 오디오 +3dB 증폭 (Web Audio) ──────────────────────
+   사용자 요청(2026-11-24): "월드 라이브 오디오 전소스를 3dB씩 올려줘. 소리가 다른 소스보다 작은거 같아"
+   · HLS·KBS 타일은 hls.js 가 MediaSource(blob:) 로 재생하므로 <video> 가 교차 출처로
+     오염되지 않는다 → createMediaElementSource 가 실제 소리를 낸다.
+     (운영 페이지 YTN 1080p 실측: gain 1 → 1.4125 에서 RMS ×1.34, 피크 0.235 → 0.408)
+   · 그래서 crossOrigin 을 걸지 않는다. CORS 를 주지 않는 스트림에 crossOrigin='anonymous' 를 걸면
+     영상 재생 자체가 깨지고, MSE 재생에는 애초에 필요 없다.
+   · Safari 처럼 native HLS(.m3u8 을 <video src> 에 직접)로 떨어지는 경로는 교차 출처 원본이라
+     Web Audio 에 붙이면 무음이 될 수 있으므로 붙이지 않고 원음 100% 로 둔다.
+   · YouTube iframe 은 브라우저 보안상 바깥에서 100% 를 넘겨 키울 수 없다 → setVolume(100) 최대치 유지.
+   · ?gain=0 (또는 ?gain=off) 으로 증폭을 끄고 원음으로 되돌릴 수 있다. */
+const GAIN_DB = 3;
+const GAIN_LINEAR = Math.pow(10, GAIN_DB / 20);          // +3dB ≈ ×1.4125
+const GAIN_ON = (function () {
+  try {
+    const g = new URLSearchParams(location.search).get('gain');
+    return !(g === '0' || g === 'off' || g === 'false');
+  } catch (e) { return true; }
+})();
+const AUDIO = { ctx: null, bus: null, tap: null, attached: 0, failed: false };
+function audioBus() {
+  if (AUDIO.bus) return AUDIO.bus;
+  if (AUDIO.failed) return null;
+  const AC = window.AudioContext || window.webkitAudioContext;
+  if (!AC) { AUDIO.failed = true; return null; }
+  try {
+    const ctx = new AC();
+    const gain = ctx.createGain();
+    gain.gain.value = GAIN_LINEAR;
+    /* +3dB 로 올린 순간 피크가 0dBFS 를 넘어 찍히지 않도록 리미터를 둔다
+       (평균 음량은 그대로 +3dB, 아주 센 순간만 눌러 왜곡을 막는다) */
+    const lim = ctx.createDynamicsCompressor();
+    lim.threshold.value = -1; lim.knee.value = 0; lim.ratio.value = 12;
+    lim.attack.value = 0.003; lim.release.value = 0.25;
+    gain.connect(lim).connect(ctx.destination);
+    /* 진단용 탭 — 실제 출력 레벨(RMS·피크)을 읽어 증폭 여부를 확인한다(소리에는 영향 없음) */
+    const tap = ctx.createAnalyser(); tap.fftSize = 2048;
+    lim.connect(tap);
+    AUDIO.ctx = ctx; AUDIO.bus = gain; AUDIO.tap = tap;
+    return gain;
+  } catch (e) { AUDIO.failed = true; return null; }
+}
+/* <video> 하나를 Web Audio 에 연결해 +3dB. 이미 붙였으면 true, 지원 없음/실패면 false */
+function attachGain(v) {
+  if (!GAIN_ON || !v) return false;
+  if (v._wlSrc) return true;
+  const bus = audioBus();
+  if (!bus) return false;
+  try {
+    const src = AUDIO.ctx.createMediaElementSource(v);
+    src.connect(bus);
+    v._wlSrc = src;
+    AUDIO.attached++;
+    v.addEventListener('playing', kickAudio);
+    try { updateStrip(); } catch (e) {}
+  } catch (e) { return false; }
+  return true;
+}
+/* 자동재생 정책 — 사용자가 화면을 누르기 전 AudioContext 가 'suspended' 이고,
+   그 상태로 소리를 보내면 무음이 된다. 첫 터치·키 입력에서 resume 하고
+   대기 중이던 <video> 들을 그때 연결한다. */
+function kickAudio() {
+  if (!GAIN_ON) return;
+  const ctx = AUDIO.ctx;
+  if (!ctx) return;
+  const go = function () { if (ctx.state === 'running') attachPendingGain(); };
+  if (ctx.state === 'suspended') { try { ctx.resume().then(go, function () {}); } catch (e) {} }
+  else go();
+}
+function attachPendingGain() {
+  if (!GAIN_ON) return;
+  Object.keys(live).forEach(function (k) {
+    const L = live[k];
+    if (L && L.video && !L.video._wlSrc) attachGain(L.video);
+  });
+  try { if (pvVideo && !pvVideo._wlSrc) attachGain(pvVideo); } catch (e) {}
+}
+/* 검증용 훅 — 브라우저 콘솔에서 WL_AUDIO.state() / videos() / measure(ms) 로 확인 */
+window.WL_AUDIO = {
+  db: GAIN_DB, linear: +GAIN_LINEAR.toFixed(4), enabled: GAIN_ON,
+  state: function () { return AUDIO.ctx ? AUDIO.ctx.state : 'none'; },
+  attached: function () { return AUDIO.attached; },
+  videos: function () {
+    return Object.keys(live).map(function (k) {
+      const L = live[k];
+      if (!L || !L.video) return null;
+      return { slot: +k, id: L.ch.id, gain: !!L.video._wlSrc, muted: L.video.muted, volume: L.video.volume, paused: L.video.paused };
+    }).filter(Boolean);
+  },
+  setGain: function (lin) { if (AUDIO.bus) AUDIO.bus.gain.value = Math.max(0, +lin || 0); return AUDIO.bus ? AUDIO.bus.gain.value : null; },
+  measure: function (ms) {
+    return new Promise(function (res) {
+      if (!AUDIO.tap) { res(null); return; }
+      const buf = new Float32Array(AUDIO.tap.fftSize);
+      let peak = 0, sum = 0, n = 0;
+      const t0 = performance.now();
+      const tick = function () {
+        AUDIO.tap.getFloatTimeDomainData(buf);
+        for (let i = 0; i < buf.length; i++) { const a = Math.abs(buf[i]); if (a > peak) peak = a; sum += buf[i] * buf[i]; }
+        n += buf.length;
+        if (performance.now() - t0 < (ms || 800)) setTimeout(tick, 30);
+        else res({ rms: Math.sqrt(sum / n), peak: peak, frames: n });
+      };
+      tick();
+    });
+  }
+};
+
 /* ── state ─────────────────────────────────────────────────── */
 function freshSets() {
   return {
@@ -532,6 +640,8 @@ function unmountSlot(i) {
   const L = live[i];
   if (!L) return;
   try { if (L.hls) L.hls.destroy(); } catch (e) {}
+  /* 해제되는 타일의 오디오 그래프도 떼어 낸다 — 칸을 비울 때 노드가 쌓이지 않도록 */
+  try { if (L.video && L.video._wlSrc) { L.video._wlSrc.disconnect(); L.video._wlSrc = null; if (AUDIO.attached > 0) AUDIO.attached--; } } catch (e) {}
   try { if (L.video) { L.video.pause(); L.video.removeAttribute('src'); L.video.load(); } } catch (e) {}
   try { if (L.iframe) L.iframe.src = 'about:blank'; } catch (e) {}
   const el = L.node;
@@ -627,6 +737,7 @@ function attachHls(i, v, primary, backup, refresh) {
       cur.hls = hls;
       hls.loadSource(url);
       hls.attachMedia(v);
+      attachGain(v);            // +3dB — MSE(blob:) 재생이라 교차 출처 오염 없음
       hls.on(window.Hls.Events.MANIFEST_PARSED, () => {
         const wantSound = !state.muted && !!live[i] && state.audioId === live[i].ch.id;
         if (wantSound) playWithSound(v);
@@ -913,6 +1024,7 @@ function setAudio(chId) {
   save();
 }
 function applyAudio() {
+  kickAudio();          // 첫 제스처(또는 재생 시작)에서 AudioContext resume + 증폭 연결
   Object.keys(live).forEach(k => {
     const i = parseInt(k, 10), L = live[k];
     const muted = state.muted || state.audioId !== L.ch.id;
@@ -962,6 +1074,14 @@ function markBuild() {
     ? '불러온 채널 목록 빌드(' + detail + ') — 휴대폰에 옛 화면이 남았는지 확인하는 표식'
     : '예전 채널 파일이 캐시에서 불러와졌습니다 — 새로고침해 주세요.';
 }
+/* 하단 신호 스트립의 증폭 표식 — +3dB 가 걸려 있으면 늘 보이게 */
+function gainTag() {
+  if (!GAIN_ON) return '';
+  const on = !!(AUDIO.ctx && AUDIO.ctx.state === 'running' && AUDIO.attached > 0);
+  return ' <span class="ss-gain' + (on ? ' is-on' : '') + '" title="'
+    + (on ? '오디오 +3dB 증폭 중 — YouTube 타일은 보안상 최대 100%' : '첫 터치에서 +3dB 증폭 연결')
+    + '">+3dB</span>';
+}
 function updateStrip() {
   const ids = slotIds();
   let ok = 0, warn = 0, ready = 0;
@@ -978,7 +1098,7 @@ function updateStrip() {
     : 'MASTER CONTROL — ' + ok + '/' + ids.length + ' FEEDS NOMINAL' + (warn ? ' · ' + warn + ' CHECK' : '');
   $('#ss-status').textContent = label;
   const ch = state.audioId ? byId(state.audioId) : null;
-  $('#ss-audio').innerHTML = (state.muted || !ch) ? 'AUDIO — ALL MUTED' : 'AUDIO — <b>' + esc(ch.name) + '</b>';
+  $('#ss-audio').innerHTML = (state.muted || !ch) ? 'AUDIO — ALL MUTED' + gainTag() : 'AUDIO — <b>' + esc(ch.name) + '</b>' + gainTag();
 }
 
 /* ── start layout menu ─────────────────────────────────────── */
@@ -1229,7 +1349,7 @@ function pvOnMessage(d) {
   if (!d) return;
   if (d.event === 'onReady') {
     pvCmd(pvAudioOn ? 'unMute' : 'mute');
-    if (pvAudioOn) pvCmd('setVolume', [85]);
+    if (pvAudioOn) pvCmd('setVolume', [100]);   // YouTube 는 100% 가 최대(외부 증폭 불가)
     setTimeout(() => pvCmd('playVideo'), 250);
   }
   if (d.event === 'infoDelivery' && d.info && typeof d.info.playerState === 'number') {
@@ -1260,6 +1380,7 @@ function pvAttachHls(v, ch) {
       pvHls = hls;
       hls.loadSource(url);
       hls.attachMedia(v);
+      attachGain(v);            // 미리보기도 같은 +3dB
       hls.on(window.Hls.Events.MANIFEST_PARSED, () => { pvSetBadge('live'); v.play().catch(() => {}); });
       hls.on(window.Hls.Events.ERROR, (ev, data) => {
         if (!data || !data.fatal) return;
@@ -1309,7 +1430,7 @@ function pvToggleAudio() {
   $('#pv-audio-txt').textContent = pvAudioOn ? '소리 끄기' : '소리 켜기';
   if (pvVideo) pvVideo.muted = !pvAudioOn;
   if (pvIframe) {
-    if (pvAudioOn) { pvCmd('unMute'); pvCmd('setVolume', [85]); }
+    if (pvAudioOn) { pvCmd('unMute'); pvCmd('setVolume', [100]); }
     else pvCmd('mute');
   }
 }
@@ -1843,6 +1964,8 @@ function swapSlots(a, b) {
 
 /* ── events ────────────────────────────────────────────────── */
 function bindEvents() {
+  // 오디오 +3dB 그래프 — 첫 터치·키 입력에서 AudioContext 를 깨우고 증폭을 연결한다
+  ['pointerdown', 'touchstart', 'keydown'].forEach(t => window.addEventListener(t, kickAudio, true));
   document.querySelectorAll('.layout-btn').forEach(b => {
     // 전체화면 버튼 = 선택 채널 1×1 + 클린 FULL (ESC → 이전 화면)
     b.addEventListener('click', () => b.dataset.layout === '1' ? showCleanFull() : applyLayout(b.dataset.layout));
