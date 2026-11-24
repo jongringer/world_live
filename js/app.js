@@ -197,8 +197,11 @@ function normalizeSet(arr, key) {
   const seeds = (DEFAULT_SETS[key] || DEFAULT_SETS['9']).slice();
   const n = seeds.length;
   const out = [];
+  const swap = (typeof SLOT_REPLACE === 'object' && SLOT_REPLACE) || {};
   arr.slice(0, n).forEach(id => {
     if (typeof id !== 'string') return;
+    /* 자리가 바뀐 채널(OBS→MBN)은 같은 칸에서 새 채널로 교체한다 */
+    if (swap[id] && byId(swap[id])) id = swap[id];
     if (RETIRED_IDS.indexOf(id) >= 0) return;
     if (!byId(id) || out.indexOf(id) >= 0) return;
     out.push(id);
@@ -649,6 +652,19 @@ function mountSlot(i) {
     setTileState(i, 'sync');
     mountKbs(i, v, ch);
 
+  } else if (ch.kind === 'mbn') {
+    // MBN 공식 온에어 — 인증 API가 내려주는 서명 .m3u8을 hls.js로 재생
+    const v = document.createElement('video');
+    v.muted = muted; v.autoplay = true; v.playsInline = true; v.controls = false;
+    v.setAttribute('playsinline', '');
+    v.title = ch.name + ' live';
+    media.appendChild(v);
+    live[i].video = v;
+    v.addEventListener('playing', () => { setTileState(i, 'live'); v.dataset.ok = '1'; });
+    v.addEventListener('waiting', () => { if (!v.dataset.ok) setTileState(i, 'sync'); });
+    setTileState(i, 'sync');
+    mountMbn(i, v, ch);
+
   } else if (ch.kind === 'iframe') {
     // 방송사 공식 페이지를 그대로 삽입 (자사 플레이어로만 재생되는 채널)
     const f = document.createElement('iframe');
@@ -717,6 +733,41 @@ function mountKbs(i, v, ch) {
 function kbsNoFeed(i, ch) {
   setTileState(i, 'external');
   showVeil(i, 'KBS 공식 온에어', 'KBS가 이 네트워크(해외 IP로 보임)에는 실시간 주소를 내려주지 않습니다. KBS 공식 온에어 페이지에서 시청하세요.', 'KBS 온에어 열기', 'open');
+}
+
+/* MBN 공식 온에어 — mbn.co.kr 플레이어가 쓰는 인증 API가 원본 .m3u8에 CloudFront 서명을 붙여 돌려준다.
+   (CORS `*` · 서명 만료 후 다시 받으면 새 주소 · IP 제한 없음 · 2026-11-25 실측)
+   화면을 열 때 한 번 받고, 재생이 끊기면(서명 만료·일시 장애) 새 주소를 한 번 더 받아 스스로 회복한다.
+   백업(600k) 주소도 같은 인증 API를 거친다. */
+function mbnFetchUrl(ch, rawUrl) {
+  const base = (ch && ch.api) || '';
+  const target = rawUrl || (ch && ch.src) || '';
+  if (!base || !target) return Promise.resolve('');
+  const u = base + '?vod_url=' + encodeURIComponent(target) + '&_=' + Date.now();
+  return fetch(u, { cache: 'no-store', credentials: 'omit' })
+    .then(r => (r.ok ? r.text() : Promise.reject(new Error('HTTP ' + r.status))))
+    .then(t => {
+      const s = String(t || '').trim();
+      return /^https?:\/\//.test(s) ? s : '';
+    });
+}
+function mountMbn(i, v, ch) {
+  mbnFetchUrl(ch).then(url => {
+    const cur = live[i];
+    if (!cur || cur.ch.id !== ch.id) return;
+    if (!url) { mbnNoFeed(i, ch); return; }
+    const backupUrl = ch.backup ? url.replace('/1000k/', '/600k/') : null;
+    attachHls(i, v, url, (backupUrl && backupUrl !== url) ? backupUrl : null,
+      () => mbnFetchUrl(ch));
+  }).catch(() => {
+    if (!live[i] || live[i].ch.id !== ch.id) return;
+    setTileState(i, 'error');
+    showVeil(i, 'MBN 온에어 연결 실패', ch.name + ' — MBN 온에어 주소를 받아오지 못했습니다. 잠시 후 다시 시도해 주세요.', '다시 시도', 'retry');
+  });
+}
+function mbnNoFeed(i, ch) {
+  setTileState(i, 'external');
+  showVeil(i, 'MBN 공식 온에어', 'MBN이 이 네트워크에는 실시간 주소를 내려주지 않습니다. MBN 공식 온에어 페이지에서 시청하세요.', 'MBN 온에어 열기', 'open');
 }
 
 /* HLS 재생 — 1차 주소가 치명적 오류(매니페스트/세그먼트 실패)를 내면
@@ -882,9 +933,10 @@ function sizeGrid() {
   if (isPortrait()) {
     grid.style.width = '100%';
     grid.style.height = 'auto';
-    /* 국내뉴스는 세로 화면에서 2열 — 9채널을 3×3으로 짜부리지 않고 2열×5행 스크롤로
-       채널명·상태 배지가 읽히는 크기를 유지한다(터치·오디오 전환도 편함). */
-    grid.style.gridTemplateColumns = (LAYOUTS[state.layout] && LAYOUTS[state.layout].kr)
+    /* 국내뉴스도 세로 화면에서는 다른 분할과 같게 1열 — 화면 하나(16:9)씩 위에서 아래로
+       9개가 순서대로 나온다(2026-11-25 사용자 요청). 두 칸씩 보고 싶으면 모바일 뷰 버튼으로 2열. */
+    grid.style.gridTemplateColumns = (LAYOUTS[state.layout] && LAYOUTS[state.layout].kr &&
+      document.body.classList.contains('is-mobile-quad'))
       ? 'repeat(2, minmax(0, 1fr))'
       : '1fr';
     grid.style.gridTemplateRows = '';
@@ -1024,7 +1076,7 @@ function selectSlot(i) {
     ytCmd(i, 'unMute');
     ytCmd(i, 'setVolume', [100]);
     ytCmd(i, 'playVideo');
-  } else if ((ch.kind === 'hls' || ch.kind === 'kbs') && L.video) {
+  } else if ((ch.kind === 'hls' || ch.kind === 'kbs' || ch.kind === 'mbn') && L.video) {
     try { L.video.volume = 1; } catch (e) {}
     if (L.video.paused) L.video.play().catch(() => {});
   }
@@ -1189,7 +1241,7 @@ function resetKrNews() {
   state.allOrder = [];
   save();
   applyLayout('kr');
-  toast('국내뉴스 9분할 — KBS / MBC / SBS / OBS / YTN / 연합뉴스TV / JTBC / TV조선 / 채널A');
+  toast('국내뉴스 9분할 — KBS / MBC / SBS / MBN / YTN / 연합뉴스TV / JTBC / TV조선 / 채널A');
 }
 
 function refreshSortUI() {
@@ -1405,8 +1457,8 @@ function pvExternalUrl(ch) {
   if (!ch) return '#';
   if (ch.kind === 'youtube') return 'https://www.youtube.com/channel/' + ch.src + '/live';
   if (ch.kind === 'youtube-video') return 'https://www.youtube.com/watch?v=' + ch.src;
-  if (ch.kind === 'kbs') return ch.web || '#';
-  if (ch.web) return ch.web;            // HLS라도 방송사 공식 페이지가 있으면 그쪽으로(YTN 등)
+  if (ch.kind === 'kbs' || ch.kind === 'mbn') return ch.web || '#';
+  if (ch.web) return ch.web;            // HLS·MBN이라도 방송사 공식 페이지가 있으면 그쪽으로(YTN 등)
   return ch.src || '#';
 }
 function pvSetBadge(kind) {
@@ -1533,7 +1585,7 @@ function openPreview(ch) {
   $('#pv-pop').href = pvExternalUrl(ch);
   $('#pv-audio').classList.remove('is-on');
   $('#pv-audio-txt').textContent = '소리 켜기';
-  $('#pv-audio').hidden = !(ch.kind === 'youtube' || ch.kind === 'youtube-video' || ch.kind === 'hls' || ch.kind === 'kbs');
+  $('#pv-audio').hidden = !(ch.kind === 'youtube' || ch.kind === 'youtube-video' || ch.kind === 'hls' || ch.kind === 'kbs' || ch.kind === 'mbn');
   pvSetBadge('preview');
 
   const st = $('#pv-stage');
@@ -1583,6 +1635,25 @@ function openPreview(ch) {
     ensureHls().then(() => {
       if (pvVideo !== v) return;
       kbsFetchUrl(ch).then(url => {
+        if (pvVideo !== v) return;
+        if (!url) { pvSetBadge('error'); return; }
+        pvAttachHls(v, Object.assign({}, ch, { src: url, backup: null }));
+      }).catch(() => { if (pvVideo === v) pvSetBadge('error'); });
+    });
+
+  } else if (ch.kind === 'mbn') {
+    const v = document.createElement('video');
+    v.muted = true; v.autoplay = true; v.playsInline = true; v.controls = true;
+    v.setAttribute('playsinline', '');
+    v.title = ch.name + ' 미리보기';
+    st.appendChild(v);
+    pvVideo = v;
+    v.addEventListener('playing', () => pvSetBadge('live'));
+    v.addEventListener('error', () => pvSetBadge('error'));
+    pvSetBadge('sync');
+    ensureHls().then(() => {
+      if (pvVideo !== v) return;
+      mbnFetchUrl(ch).then(url => {
         if (pvVideo !== v) return;
         if (!url) { pvSetBadge('error'); return; }
         pvAttachHls(v, Object.assign({}, ch, { src: url, backup: null }));
@@ -1714,7 +1785,7 @@ function openExternal(i) {
   let url;
   if (ch.kind === 'youtube') url = 'https://www.youtube.com/channel/' + ch.src + '/live';
   else if (ch.kind === 'youtube-video') url = 'https://www.youtube.com/watch?v=' + ch.src;
-  else if (ch.kind === 'kbs') url = ch.web || '#';
+  else if (ch.kind === 'kbs' || ch.kind === 'mbn') url = ch.web || '#';
   else if (ch.web) url = ch.web;         // HLS라도 방송사 공식 페이지가 있으면 그쪽으로(YTN 등)
   else url = ch.src;
   window.open(url, '_blank', 'noopener');
@@ -2433,18 +2504,21 @@ function bindEvents() {
     if (e.target.closest('[data-pv-close]')) closePreview(true);
   });
 
-  // 모바일 뷰 전환 (2열 4분할 <-> 1열 와이드)
+  // 모바일 뷰 전환 (1열 와이드 <-> 2열) — 국내뉴스는 기본이 1열 세로 피드라
+  // 버튼을 누르면 두 칸씩 보는 2열로 바뀐다.
   const btnMobileView = $('#btn-mobile-view');
   if (btnMobileView) {
     btnMobileView.addEventListener('click', () => {
-      const isSingle = document.body.classList.toggle('is-mobile-single');
+      const isQuad = document.body.classList.toggle('is-mobile-quad');
+      document.body.classList.remove('is-mobile-single');
       const ic2 = btnMobileView.querySelector('.ic-grid-2');
       const ic1 = btnMobileView.querySelector('.ic-grid-1');
       if (ic2 && ic1) {
-        ic2.style.display = isSingle ? 'none' : 'block';
-        ic1.style.display = isSingle ? 'block' : 'none';
+        ic2.style.display = isQuad ? 'block' : 'none';
+        ic1.style.display = isQuad ? 'none' : 'block';
       }
       sizeGrid();
+      toast(isQuad ? '모바일 뷰 — 2열로 보기' : '모바일 뷰 — 1열(한 화면씩) 보기');
     });
   }
 

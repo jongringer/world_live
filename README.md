@@ -411,17 +411,18 @@ hls-multi.html      (개발용) HLS 다중 재생 프로브
 yt-test.html        (개발용) YouTube 임베드 다채널 프로브
 ```
 
-## 국내뉴스 9분할 (v9.7.5, 2026-11-25)
+## 국내뉴스 9분할 (v9.8, 2026-11-25)
 
 상단 바의 **`국내뉴스`** 버튼(단축키 `K`) 하나로 국내 9개 채널을 9분할로 띄웁니다.
-PC는 3×3 16:9, 스마트폰 세로 화면은 **2열×5행 스크롤**(채널명·LIVE 배지가 읽히는 크기 유지, 1열로 바꾸려면 모바일 뷰 버튼).
+PC는 3×3 16:9, 스마트폰 세로 화면은 **1열 세로 피드** — 화면 하나(16:9)씩 위에서 아래로 9개가 순서대로 나옵니다
+(2026-11-25 사용자 요청). 두 칸씩 보려면 상단 **모바일 뷰** 버튼으로 2열 전환.
 
 | 칸 | 채널 | 소스 | 검증 |
 |---|---|---|---|
 | 1 | KBS NEWS 24 | `kind:'kbs'` — KBS 공식 온에어 API(`cfpwwwapi.kbs.co.kr`, 채널코드 81) | 2026-11-25 01:10 LIVE |
 | 2 | MBC 뉴스 | 유튜브 고정 영상 `q9bM12ucTIY` (MBCNEWS 「[ON AIR] 24시간 최신 MBC뉴스」) | 01:10 LIVE |
 | 3 | SBS 뉴스 | 유튜브 고정 `OcND87a_81M` (SBS 실시간 라이브) | 01:10 LIVE |
-| 4 | OBS 뉴스 | 유튜브 채널 `UComhAmtkBwTPF_PvwN8Gc6w` (채널 라이브) | 현재 라이브 없음 → OFFLINE |
+| 4 | **MBN 뉴스** | `kind:'mbn'` — MBN 공식 온에어 인증 API(`mbnStreamAuth_new_live.mbn?vod_url=…`)가 내려주는 서명 HLS 1280×720 (`hls-live.mbn.co.kr/mbn-on-air/1000k/playlist.m3u8`, 백업 600k) | 2026-11-25 03:2x LIVE |
 | 5 | YTN | 공식 HLS `ylive.ytn.co.kr` | LIVE |
 | 6 | 연합뉴스TV | 유튜브 고정 `6QZ_qc75ihU` (24시간 생방송) | LIVE |
 | 7 | JTBC 뉴스 | 유튜브 고정 `cHX4x5a3KTI` | 01:10 LIVE |
@@ -436,10 +437,15 @@ PC는 3×3 16:9, 스마트폰 세로 화면은 **2열×5행 스크롤**(채널�
 | SBS | `apis.sbs.co.kr` 는 CORS `*` 로 열려 있으나 스트림이 **60초 미리보기 후 로그인 요구** |
 | JTBC | `api.jtbc.co.kr/v1/onair` → `Invalid CORS request` (외부 출처 거부) |
 | TV조선 | 온에어 CDN `onair.cdn.tvchosun.com` 이 **http 전용 + 인증서 불일치**, 공식 페이지 `X-Frame-Options: SAMEORIGIN` |
-| OBS | `vod.obs.co.kr:444` 접속 불가, 공식 페이지 `X-Frame-Options: SAMEORIGIN` |
 | 채널A | 온에어 페이지 자체가 유튜브 iframe 플레이어 |
+| OBS | `vod.obs.co.kr:444` 접속 불가 + 유튜브 라이브 편성 없음 → 2026-11-25 국내뉴스 4번 칸에서 **삭제**(MBN으로 교체) |
 
-그래서 각 사가 공식 뉴스 채널로 운영하는 유튜브 라이브를 연결했습니다. `embed/live_stream?channel=` 방식은
+MBN은 예외로 **공식 온에어 HLS를 그대로** 씁니다. `https://www.mbn.co.kr/player/mbnStreamAuth_new_live.mbn?vod_url=<원본 m3u8>`이
+CloudFront 서명이 붙은 `.m3u8` 주소를 `text/plain`으로 돌려주고(CORS `*`), 그 주소로 받은 매니페스트·세그먼트도 CORS `*`입니다.
+서명은 `DateLessThan` 만료가 있어 화면을 열 때마다 새로 받고, 재생이 끊기면 한 번 더 받아 스스로 회복합니다(`kind:'mbn'`).
+같은 인증 API로 600k 백업 주소도 발급됩니다.
+
+그 밖의 방송사는 각 사가 공식 뉴스 채널로 운영하는 유튜브 라이브를 연결했습니다. `embed/live_stream?channel=` 방식은
 이 방송사들에서 「이 동영상은 볼 수 없습니다」로 막혀 **개별 라이브 videoId 고정** 방식을 씁니다.
 방송사가 라이브를 새 영상으로 갈아 끼우면 그 칸이 OFFLINE이 되므로, 소스 라이브러리(`S`)에서
 `국내뉴스` 그룹의 새 주소로 바꾸면 됩니다. 고정 영상이 끝나면 같은 채널의 채널 라이브로 한 번 자동 전환하고,

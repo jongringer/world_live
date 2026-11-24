@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<title>WORLD LIVE — 뷰포트 검증용(임시)</title>
+<style>
+  html,body{margin:0;padding:0;background:#000;}
+  .row{display:flex;gap:10px;align-items:flex-start;padding:6px;}
+  iframe{border:0;display:block;background:#000;}
+  #pc{width:1440px;height:900px;}
+  #mo{width:390px;height:844px;}
+</style>
+</head>
+<body>
+<!-- 임시 검증 페이지: 운영 화면을 PC(1440×900) / 스마트폰(390×844) 뷰포트로 띄워 실측하기 위한 파일. 검증 후 삭제합니다. -->
+<div class="row">
+  <iframe id="pc" src="./?layout=kr&probe=pc" title="PC 1440x900"></iframe>
+  <iframe id="mo" src="./?layout=kr&probe=mo" title="Mobile 390x844"></iframe>
+</div>
+</body>
+</html>

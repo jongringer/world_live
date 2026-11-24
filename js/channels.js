@@ -6,6 +6,7 @@
          'youtube'  = 채널 ID → embed/live_stream (현재 라이브 자동 추적)
          'youtube-video' = 영상 ID 고정
          'kbs'      = KBS 공식 온에어 API가 내려주는 서명 .m3u8 (매일 바뀌지 않음)
+         'mbn'      = MBN 공식 온에어 서명 .m3u8 — mbn.co.kr 인증 API가 매번 새 서명을 내려줌
          'web'      = 방송사 정책상 삽입 불가 → 공식 페이지 새 창
    status: 'live'     = 24시간 상시 송출 (검증)
            'event'    = 뉴스 편성·속보 때만 라이브 (평소 OFFLINE)
@@ -223,8 +224,8 @@ const CHANNELS = [
   { id:'yonhap24', name:'연합뉴스TV 라이브', short:'YTV', country:'한국', cc:'KR', zone:'KOREA',
     kind:'youtube-video', src:'6QZ_qc75ihU', status:'live' },
 
-  /* ── 국내뉴스 9분할 전용 — 각 방송사 공식 뉴스 채널 (2026-11-24 실측) ────────
-     MBC·SBS·OBS·JTBC·TV조선·채널A의 '방송 채널 자체' 온에어는 다음 이유로
+  /* ── 국내뉴스 9분할 전용 — 각 방송사 공식 뉴스 채널 (2026-11-24 실측)
+     MBC·SBS·JTBC·TV조선·채널A의 '방송 채널 자체' 온에어는 다음 이유로
      페이지 안(hls.js)에서 돌릴 수 없어, 각 사가 공식 뉴스 채널로 운영하는
      유튜브 라이브를 채널 ID(kind:'youtube')로 연결했다. 채널 ID 방식이라
      방송사가 라이브 영상을 새로 열어도 자동으로 따라간다.
@@ -232,8 +233,11 @@ const CHANNELS = [
        · SBS  : apis.sbs.co.kr 는 열려 있으나 실시간 스트림이 60초 미리보기 후 로그인 요구
        · JTBC : onair API(api.jtbc.co.kr)가 'Invalid CORS request'로 외부 출처 거부
        · TV조선: 온에어 CDN이 http 전용·인증서 불일치, 공식 페이지는 X-Frame-Options: SAMEORIGIN
-       · OBS   : 온에어 CDN vod.obs.co.kr:444 접속 불가, 공식 페이지 X-Frame-Options: SAMEORIGIN
-       · 채널A : 온에어 페이지가 유튜브 iframe 플레이어라 결국 유튜브 라이브가 원천 */
+       · 채널A : 온에어 페이지가 유튜브 iframe 플레이어라 결국 유튜브 라이브가 원천
+     OBS는 2026-11-25 사용자 요청으로 국내뉴스 9분할에서 빼고 MBN으로 교체했다
+     (OBS는 유튜브 라이브 편성이 없어 상시 OFFLINE이었고, 온에어는 vod.obs.co.kr:444 접속 불가 +
+      공식 페이지 X-Frame-Options: SAMEORIGIN). */
+
   { id:'mbcnews', name:'MBC 뉴스', short:'MBC', country:'한국', cc:'KR', zone:'KOREA',
     kind:'youtube-video', src:'q9bM12ucTIY', status:'live',
     web:'https://onair.imbc.com/',
@@ -256,14 +260,22 @@ const CHANNELS = [
     kind:'youtube', src:'UCbMjg2EvXs_RUGW-KrdM3pw', status:'live', alt:true,
     note:'SBS 계열 24시간 경제뉴스 채널(SBS Biz) 유튜브 라이브 — SBS 뉴스가 비어 있을 때 대체 소스' },
 
-  { id:'obsnews', name:'OBS 뉴스', short:'OBS', country:'한국', cc:'KR', zone:'KOREA',
-    kind:'youtube', src:'UComhAmtkBwTPF_PvwN8Gc6w', status:'live',
-    web:'https://www.obs.co.kr/tv/',
-    note:'OBS 공식 뉴스 유튜브 라이브입니다. OBS 온에어는 페이지 삽입이 막혀 있습니다(X-Frame-Options).' },
+  /* MBN — 공식 온에어(mbn.co.kr/vod/onair)의 HLS를 그대로 쓴다.
+     · 인증 API  https://www.mbn.co.kr/player/mbnStreamAuth_new_live.mbn?vod_url=<원본 m3u8>
+       → CloudFront 서명이 붙은 .m3u8 주소를 text/plain으로 돌려준다(CORS `*` · 서명 만료 후 재요청)
+     · 원본 1000k(1280×720) / 600k 두 화질 — 1000k가 1차, 600k가 백업
+     · 실제 방송 채널(MBN 종합편성)의 24시간 온에어라 뉴스 편성 여부와 상관없이 계속 나온다
+     · 2026-11-25 실측: 인증 API 200 + 서명 주소로 playlist.m3u8 200(m3u8·세그먼트 CORS `*`) */
+  { id:'mbnnews', name:'MBN 뉴스', short:'MBN', country:'한국', cc:'KR', zone:'KOREA',
+    kind:'mbn', src:'https://hls-live.mbn.co.kr/mbn-on-air/1000k/playlist.m3u8', status:'live',
+    api:'https://www.mbn.co.kr/player/mbnStreamAuth_new_live.mbn',
+    backup:'https://hls-live.mbn.co.kr/mbn-on-air/600k/playlist.m3u8',
+    web:'https://www.mbn.co.kr/vod/onair',
+    note:'MBN 공식 온에어(1280×720 HLS)를 그때그때 받은 서명 주소로 재생합니다. 서명이 만료되거나 끊기면 자동으로 새 주소를 받아 다시 붙습니다.' },
 
-  { id:'obstv', name:'OBS TV · YouTube', short:'OBS', country:'한국', cc:'KR', zone:'KOREA',
-    kind:'youtube', src:'UCKRzvNMudg0lZQ41lafuahg', status:'live', alt:true,
-    note:'OBS경인TV 본방 채널의 유튜브 라이브(방송 중일 때만) — OBS 뉴스가 비어 있을 때 대체 소스' },
+  { id:'mbnnews_yt', name:'MBN 뉴스 · YouTube', short:'MBN', country:'한국', cc:'KR', zone:'KOREA',
+    kind:'youtube', src:'UCG9aFJTZ-lMCHAiO1KJsirg', status:'live', alt:true,
+    note:'MBN News 공식 유튜브 채널의 그때그때 라이브(채널 ID 방식). 온에어 HLS가 막힐 때 대체 소스로 쓰세요.' },
 
   { id:'jtbcnews', name:'JTBC 뉴스', short:'JTBC', country:'한국', cc:'KR', zone:'KOREA',
     kind:'youtube-video', src:'cHX4x5a3KTI', status:'live', ytChannel:'UCsU-I-vHLiaMfV_ceaYz5rQ',
@@ -308,8 +320,13 @@ const CHANNELS = [
 
 /* 로컬스토리지에 남아 있던, 더 이상 쓰지 않는 채널 ID — 불러올 때 걸러집니다 */
 const RETIRED_IDS = [
-  'ytn', 'yonhap', 'mbc', 'sbs', 'jtbc', 'mbn', 'channela', 'tvchosun', 'arirang', 'tbs', 'nhk_hls'
+  'ytn', 'yonhap', 'mbc', 'sbs', 'jtbc', 'mbn', 'channela', 'tvchosun', 'arirang', 'tbs', 'nhk_hls',
+  'obsnews', 'obstv'   // 2026-11-25 OBS 삭제(사용자 요청) — 국내뉴스 4번 칸은 MBN으로 교체
 ];
+
+/* 저장된 배치에 남아 있는 옛 채널을 같은 자리의 새 채널로 바꿔 준다.
+   (OBS를 빼고 MBN을 넣을 때 4번 칸이 밀리지 않고 그대로 MBN이 되도록) */
+const SLOT_REPLACE = { obsnews: 'mbnnews', obstv: 'mbnnews' };
 
 /* 레이아웃별 기본 배치 — 4분할과 9분할은 서로 독립적으로 저장됩니다
    ※ 2026-11-24 사용자가 확정한 기본 순서(DEFAULT_SETS) — 모든 분할에서 YTN → 연합뉴스TV → KBS 순
@@ -321,11 +338,12 @@ const DEFAULT_SETS = {
   '6': ['ytn24', 'yonhap24', 'kbs24', 'cnn', 'bbc', 'abc'],
   '1': ['ytn24'],
   /* 국내뉴스 9분할 — 사용자가 정한 순서 그대로:
-     KBS → MBC → SBS → OBS → YTN → 연합뉴스TV → JTBC → TV조선 → 채널A */
-  'kr': ['kbs24', 'mbcnews', 'sbsnews', 'obsnews', 'ytn24', 'yonhap24', 'jtbcnews', 'tvchosun_news', 'channela_news']
+     KBS → MBC → SBS → MBN → YTN → 연합뉴스TV → JTBC → TV조선 → 채널A
+     (2026-11-25 사용자 요청으로 4번 칸 OBS를 빼고 MBN으로 교체) */
+  'kr': ['kbs24', 'mbcnews', 'sbsnews', 'mbnnews', 'ytn24', 'yonhap24', 'jtbcnews', 'tvchosun_news', 'channela_news']
 };
 
-const KIND_LABEL = { youtube:'YT·LIVE', 'youtube-video':'YT·LIVE', hls:'HLS', kbs:'KBS·ONAIR', iframe:'PAGE', web:'WEB' };
+const KIND_LABEL = { youtube:'YT·LIVE', 'youtube-video':'YT·LIVE', hls:'HLS', kbs:'KBS·ONAIR', mbn:'MBN·ONAIR', iframe:'PAGE', web:'WEB' };
 const ZONE_LABEL = {
   KOREA:'KOREA · 국내 뉴스',
   ASIA:'ASIA · 일본·중국·아시아', AMERICAS:'AMERICAS · 미주',
@@ -341,8 +359,8 @@ const CHANNEL_BY_ID = CHANNELS.reduce((m, c) => (m[c.id] = c, m), {});
 /* 이 카탈로그의 빌드 표식 — 화면 하단 신호 스트립에 표시됩니다.
    휴대폰이 옛 파일(브라우저 캐시)을 불러왔는지 이 한 줄로 확인할 수 있고,
    채널·소스를 고칠 때마다 이 값과 index.html의 ?v= 를 함께 올려 주세요. */
-const CHANNELS_BUILD = 'SRC 11-25b';
-const CHANNELS_BUILD_DETAIL = '국내뉴스 9분할 추가 — KBS·MBC·SBS·OBS·YTN·연합뉴스TV·JTBC·TV조선·채널A (MBC·SBS·OBS·JTBC·TV조선·채널A는 공식 뉴스 유튜브 라이브) · JTBC·TV조선·채널A·SBS 라이브 고정 연결 · 2026-11-25 01:00 갱신';
+const CHANNELS_BUILD = 'SRC 11-25c';
+const CHANNELS_BUILD_DETAIL = '국내뉴스 9분할 — KBS·MBC·SBS·MBN·YTN·연합뉴스TV·JTBC·TV조선·채널A (4번 칸 OBS 삭제 → MBN 공식 온에어 HLS) · 모바일 국내뉴스 1열 세로 피드 · 2026-11-25 03:20 갱신';
 
 /* 다시 재생되지 않는 예전 소스 ID → 지금 쓰는 소스로 자동 교체
    (브라우저에 저장된 커스텀 소스에 옛 ID가 남아 있어도 되살아나지 않게) */
