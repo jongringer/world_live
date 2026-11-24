@@ -425,8 +425,8 @@ const CHANNEL_BY_ID = CHANNELS.reduce((m, c) => (m[c.id] = c, m), {});
 /* 이 카탈로그의 빌드 표식 — 화면 하단 신호 스트립에 표시됩니다.
    휴대폰이 옛 파일(브라우저 캐시)을 불러왔는지 이 한 줄로 확인할 수 있고,
    채널·소스를 고칠 때마다 이 값과 index.html의 ?v= 를 함께 올려 주세요. */
-const CHANNELS_BUILD = 'SRC 11-25h';
-const CHANNELS_BUILD_DETAIL = '오디오 라우드니스 평준화 — HLS·KBS·MBN 타일을 목표 -14 LUFS(유튜브 정규화 수준)로 자동 평준화하고 채널별 VOL 슬라이더(저장) 추가 · 고정 +3dB 증폭과 +3dB 표식은 제거 · NBC NEWS NOW 고정 영상 유지 · 2026-11-25 05:5x 갱신';
+const CHANNELS_BUILD = 'SRC 11-25i';
+const CHANNELS_BUILD_DETAIL = '오디오 라우드니스 평준화 목표를 -14 → -20 LUFS 로 하향(2026-11-25 사용자 요청: 너무 크고 노이즈가 들림) · 채널별 VOL 슬라이더는 그대로 · NBC NEWS NOW 고정 영상 유지 · 2026-11-25 06:0x 갱신';
 
 /* 다시 재생되지 않는 예전 소스 ID → 지금 쓰는 소스로 자동 교체
    (브라우저에 저장된 커스텀 소스에 옛 ID가 남아 있어도 되살아나지 않게) */
