@@ -410,3 +410,37 @@ icons/              PWA 아이콘 192/512 · maskable · apple-touch-icon (+ bui
 hls-multi.html      (개발용) HLS 다중 재생 프로브
 yt-test.html        (개발용) YouTube 임베드 다채널 프로브
 ```
+
+## 국내뉴스 9분할 (v9.7.5, 2026-11-25)
+
+상단 바의 **`국내뉴스`** 버튼(단축키 `K`) 하나로 국내 9개 채널을 9분할로 띄웁니다.
+PC는 3×3 16:9, 스마트폰 세로 화면은 **2열×5행 스크롤**(채널명·LIVE 배지가 읽히는 크기 유지, 1열로 바꾸려면 모바일 뷰 버튼).
+
+| 칸 | 채널 | 소스 | 검증 |
+|---|---|---|---|
+| 1 | KBS NEWS 24 | `kind:'kbs'` — KBS 공식 온에어 API(`cfpwwwapi.kbs.co.kr`, 채널코드 81) | 2026-11-25 01:10 LIVE |
+| 2 | MBC 뉴스 | 유튜브 고정 영상 `q9bM12ucTIY` (MBCNEWS 「[ON AIR] 24시간 최신 MBC뉴스」) | 01:10 LIVE |
+| 3 | SBS 뉴스 | 유튜브 고정 `OcND87a_81M` (SBS 실시간 라이브) | 01:10 LIVE |
+| 4 | OBS 뉴스 | 유튜브 채널 `UComhAmtkBwTPF_PvwN8Gc6w` (채널 라이브) | 현재 라이브 없음 → OFFLINE |
+| 5 | YTN | 공식 HLS `ylive.ytn.co.kr` | LIVE |
+| 6 | 연합뉴스TV | 유튜브 고정 `6QZ_qc75ihU` (24시간 생방송) | LIVE |
+| 7 | JTBC 뉴스 | 유튜브 고정 `cHX4x5a3KTI` | 01:10 LIVE |
+| 8 | TV조선 뉴스 | 유튜브 고정 `Kfs13vKV8xM` (뉴스TVCHOSUN 이슈PLAY) | 01:10 LIVE |
+| 9 | 채널A 뉴스 | 유튜브 고정 `s20KqsSKv3g` (이슈를 켜라) | 01:10 LIVE |
+
+### 왜 '방송 채널 본방'이 아니라 뉴스 채널인가 (2026-11-24~25 실측)
+
+| 방송사 | 공식 온에어를 페이지 안에서 못 쓰는 이유 |
+|---|---|
+| MBC | `mediaapi.imbc.com` 이 `Access-Control-Allow-Origin: https://onair.imbc.com` 고정 → 외부 출처 호출 차단 |
+| SBS | `apis.sbs.co.kr` 는 CORS `*` 로 열려 있으나 스트림이 **60초 미리보기 후 로그인 요구** |
+| JTBC | `api.jtbc.co.kr/v1/onair` → `Invalid CORS request` (외부 출처 거부) |
+| TV조선 | 온에어 CDN `onair.cdn.tvchosun.com` 이 **http 전용 + 인증서 불일치**, 공식 페이지 `X-Frame-Options: SAMEORIGIN` |
+| OBS | `vod.obs.co.kr:444` 접속 불가, 공식 페이지 `X-Frame-Options: SAMEORIGIN` |
+| 채널A | 온에어 페이지 자체가 유튜브 iframe 플레이어 |
+
+그래서 각 사가 공식 뉴스 채널로 운영하는 유튜브 라이브를 연결했습니다. `embed/live_stream?channel=` 방식은
+이 방송사들에서 「이 동영상은 볼 수 없습니다」로 막혀 **개별 라이브 videoId 고정** 방식을 씁니다.
+방송사가 라이브를 새 영상으로 갈아 끼우면 그 칸이 OFFLINE이 되므로, 소스 라이브러리(`S`)에서
+`국내뉴스` 그룹의 새 주소로 바꾸면 됩니다. 고정 영상이 끝나면 같은 채널의 채널 라이브로 한 번 자동 전환하고,
+그래도 비면 4분 간격으로 다시 붙여 봅니다(최대 3시간).
