@@ -244,7 +244,7 @@ const CHANNELS = [
     note:'MBCNEWS 채널의 그때그때 라이브를 따라갑니다(채널 ID 방식). 고정 스트림이 끊겼을 때 대체 소스로 쓰세요.' },
 
   { id:'sbsnews', name:'SBS 뉴스', short:'SBS', country:'한국', cc:'KR', zone:'KOREA',
-    kind:'youtube-video', src:'OcND87a_81M', status:'live',
+    kind:'youtube-video', src:'OcND87a_81M', status:'live', ytChannel:'UCkinYTS9IHqOEwR1Sze2JTw',
     web:'https://www.sbs.co.kr/live/S01',
     note:'SBS 뉴스가 내보내는 \'SBS 실시간 라이브\'를 고정 영상으로 연결합니다(2026-11-24 23:58 실측 재생·임베드 허용 확인). SBS는 실시간 라이브를 수시로 새 영상으로 갈아 끼우므로, 끊기면 소스 라이브러리에서\nSBS 실시간 라이브의 새 주소로 바꿔 주세요. SBS play 온에어 페이지는 60초 미리보기 뒤 로그인을 요구해 쓸 수 없습니다.' },
 
@@ -266,19 +266,19 @@ const CHANNELS = [
     note:'OBS경인TV 본방 채널의 유튜브 라이브(방송 중일 때만) — OBS 뉴스가 비어 있을 때 대체 소스' },
 
   { id:'jtbcnews', name:'JTBC 뉴스', short:'JTBC', country:'한국', cc:'KR', zone:'KOREA',
-    kind:'youtube', src:'UCsU-I-vHLiaMfV_ceaYz5rQ', status:'live',
+    kind:'youtube-video', src:'cHX4x5a3KTI', status:'live', ytChannel:'UCsU-I-vHLiaMfV_ceaYz5rQ',
     web:'https://onair.jtbc.co.kr/',
-    note:'JTBC 공식 뉴스 유튜브 라이브입니다. JTBC 온에어 API는 외부 출처(CORS)를 거부합니다.' },
+    note:'JTBC 뉴스가 내보내는 실시간 라이브를 고정 영상으로 연결합니다(2026-11-25 00:55 실측 isLive 확인). JTBC 온에어 API는 외부 출처(CORS)를 거부해 페이지 안 재생이 불가합니다. 방송사가 새 라이브로 갈아 끼우면 소스 라이브러리에서 새 주소로 바꿔 주세요.' },
 
   { id:'tvchosun_news', name:'TV조선 뉴스', short:'TV조선', country:'한국', cc:'KR', zone:'KOREA',
-    kind:'youtube', src:'UCWlV3Lz_55UaX4JsMj-z__Q', status:'live',
+    kind:'youtube-video', src:'Kfs13vKV8xM', status:'live', ytChannel:'UCWlV3Lz_55UaX4JsMj-z__Q',
     web:'https://broadcast.tvchosun.com/onair/on.cstv',
-    note:'TV조선 공식 뉴스 유튜브(뉴스TVCHOSUN) 라이브입니다. TV조선 온에어 스트림은 http 전용·인증서 불일치로 https 화면에서 재생되지 않습니다.' },
+    note:'뉴스TVCHOSUN이 내보내는 이슈PLAY 실시간 라이브를 고정 영상으로 연결합니다(2026-11-25 00:55 실측 isLive 확인). TV조선 온에어 스트림은 http 전용·인증서 불일치로 https 화면에서 재생되지 않습니다. 방송사가 새 라이브로 갈아 끼우면 새 주소로 바꿔 주세요.' },
 
   { id:'channela_news', name:'채널A 뉴스', short:'채널A', country:'한국', cc:'KR', zone:'KOREA',
-    kind:'youtube', src:'UCfq4V1DAuaojnr2ryvWNysw', status:'live',
+    kind:'youtube-video', src:'s20KqsSKv3g', status:'live', ytChannel:'UCfq4V1DAuaojnr2ryvWNysw',
     web:'https://www.ichannela.com/com/cmm/onair.do',
-    note:'채널A 공식 뉴스 유튜브 라이브입니다(채널A 온에어도 유튜브 플레이어를 씁니다).' },
+    note:'채널A 뉴스가 내보내는 이슈를 켜라 실시간 라이브를 고정 영상으로 연결합니다(2026-11-25 00:55 실측 isLive 확인). 방송사가 새 라이브로 갈아 끼우면 새 주소로 바꿔 주세요.' },
 
   /* ── 외부 공식 링크 (페이지 내 재생 불가) ────────────────────── */
   { id:'bbc_web', name:'BBC NEWS · WATCH LIVE', short:'BBC', country:'영국', cc:'GB', zone:'EXTERNAL',
@@ -341,8 +341,8 @@ const CHANNEL_BY_ID = CHANNELS.reduce((m, c) => (m[c.id] = c, m), {});
 /* 이 카탈로그의 빌드 표식 — 화면 하단 신호 스트립에 표시됩니다.
    휴대폰이 옛 파일(브라우저 캐시)을 불러왔는지 이 한 줄로 확인할 수 있고,
    채널·소스를 고칠 때마다 이 값과 index.html의 ?v= 를 함께 올려 주세요. */
-const CHANNELS_BUILD = 'SRC 11-25a';
-const CHANNELS_BUILD_DETAIL = '국내뉴스 9분할 추가 — KBS·MBC·SBS·OBS·YTN·연합뉴스TV·JTBC·TV조선·채널A (MBC·SBS·OBS·JTBC·TV조선·채널A는 공식 뉴스 유튜브 라이브) · SBS 실시간 라이브 고정 연결 · 2026-11-25 00:20 갱신';
+const CHANNELS_BUILD = 'SRC 11-25b';
+const CHANNELS_BUILD_DETAIL = '국내뉴스 9분할 추가 — KBS·MBC·SBS·OBS·YTN·연합뉴스TV·JTBC·TV조선·채널A (MBC·SBS·OBS·JTBC·TV조선·채널A는 공식 뉴스 유튜브 라이브) · JTBC·TV조선·채널A·SBS 라이브 고정 연결 · 2026-11-25 01:00 갱신';
 
 /* 다시 재생되지 않는 예전 소스 ID → 지금 쓰는 소스로 자동 교체
    (브라우저에 저장된 커스텀 소스에 옛 ID가 남아 있어도 되살아나지 않게) */

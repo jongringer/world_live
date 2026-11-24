@@ -163,6 +163,7 @@ const state = {
 };
 const live = {};            // slot index -> { node, media, ch, state, iframe, video, hls, ps }
 const YT_RETRY = {};        // slot index -> 빈 유튜브 타일 자동 재시도 횟수
+const YT_FALLBACK = {};     // slot index -> 고정 영상이 끝나 채널 라이브로 한 번 전환했는지
 let gen = 0;
 let io = null;
 
@@ -566,6 +567,9 @@ function mountSlot(i) {
   const muted = state.muted || state.audioId !== ch.id;
 
   if (ch.kind === 'youtube' || ch.kind === 'youtube-video') {
+    /* 고정 영상(youtube-video) 타일이 끝나면, 같은 채널의 '지금 라이브'(live_stream)로 한 번
+       자동 전환한다 — 방송사가 스트림을 새로 열었을 때 손대지 않고도 살아날 가능성을 얻기 위함. */
+    const useChannelLive = (ch.kind === 'youtube') || (!!ch.ytChannel && YT_FALLBACK[i] === 1);
     const params = new URLSearchParams({
       /* 자동재생은 '음소거' 상태에서만 허용됩니다(mute=0&autoplay=1 은 모바일·데스크톱 모두 차단).
          그래서 모든 유튜브 타일은 mute=1 로 먼저 띄워 '바로 재생'되게 하고,
@@ -575,8 +579,8 @@ function mountSlot(i) {
       iv_load_policy: '3', enablejsapi: '1', loop: '0'
     });
     if (location.origin && location.origin !== 'null') params.set('origin', location.origin);
-    const path = ch.kind === 'youtube'
-      ? 'embed/live_stream?channel=' + encodeURIComponent(ch.src)
+    const path = useChannelLive
+      ? 'embed/live_stream?channel=' + encodeURIComponent(ch.kind === 'youtube' ? ch.src : ch.ytChannel)
       : 'embed/' + encodeURIComponent(ch.src);
     const iframe = document.createElement('iframe');
     iframe.src = 'https://www.youtube.com/' + path + (path.indexOf('?') >= 0 ? '&' : '?') + params.toString();
@@ -601,11 +605,18 @@ function mountSlot(i) {
     /* 방송사 채널 라이브는 뉴스 편성 시간에만 열립니다(24시간 상시가 아닌 곳이 있음).
        그래서 한 번 비어 버린 타일(offline)은 4분 뒤 스스로 한 번 더 붙여 본다 —
        편성이 시작되면 새로고침 없이 자동으로 화면이 살아난다(최대 45회 ≈ 3시간). */
-    if (ch.kind === 'youtube') {
+    if (ch.kind === 'youtube-video' || ch.kind === 'youtube') {
       setTimeout(() => {
         const L = live[i];
         if (!L || myGen !== gen || !L.ch || L.ch.id !== ch.id) return;
         if (L.state !== 'offline') return;
+        /* 고정 영상이 끝났으면 먼저 같은 채널의 '지금 라이브'(live_stream)로 한 번 넘겨 본다 */
+        if (ch.ytChannel && YT_FALLBACK[i] !== 1 && !useChannelLive) {
+          YT_FALLBACK[i] = 1;
+          unmountSlot(i);
+          mountSlot(i);
+          return;
+        }
         const n = (YT_RETRY[i] || 0) + 1;
         if (n > 45) return;
         YT_RETRY[i] = n;
