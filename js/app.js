@@ -20,6 +20,7 @@ const LAYOUTS = {
   '9':  { cols: 3, rows: 3, count: 9, label: '9분할' },
   '4':  { cols: 2, rows: 2, count: 4, label: '4분할' },
   '6':  { cols: 3, rows: 2, count: 6, label: '6분할' },
+  'kr': { cols: 3, rows: 3, count: 9, label: '국내뉴스', kr: true },
   '1':  { cols: 1, rows: 1, count: 1, label: '전체화면' },
   'all':{ scroll: true, count: 0, label: '전체 스크롤' }
 };
@@ -143,6 +144,7 @@ function freshSets() {
     '9': DEFAULT_SETS['9'].slice(),
     '4': DEFAULT_SETS['4'].slice(),
     '6': DEFAULT_SETS['6'].slice(),
+    'kr': DEFAULT_SETS['kr'].slice(),
     '1': DEFAULT_SETS['1'].slice()
   };
 }
@@ -852,7 +854,11 @@ function sizeGrid() {
   if (isPortrait()) {
     grid.style.width = '100%';
     grid.style.height = 'auto';
-    grid.style.gridTemplateColumns = '1fr';
+    /* 국내뉴스는 세로 화면에서 2열 — 9채널을 3×3으로 짜부리지 않고 2열×5행 스크롤로
+       채널명·상태 배지가 읽히는 크기를 유지한다(터치·오디오 전환도 편함). */
+    grid.style.gridTemplateColumns = (LAYOUTS[state.layout] && LAYOUTS[state.layout].kr)
+      ? 'repeat(2, minmax(0, 1fr))'
+      : '1fr';
     grid.style.gridTemplateRows = '';
     grid.style.gap = '12px';
     return;
@@ -1105,7 +1111,7 @@ function updateStrip() {
 }
 
 /* ── start layout menu ─────────────────────────────────────── */
-const START_NAMES = { '9':'9분할', '6':'6분할', '4':'4분할', '1':'전체화면', 'all':'전체 스크롤' };
+const START_NAMES = { '9':'9분할', '6':'6분할', '4':'4분할', 'kr':'국내뉴스', '1':'전체화면', 'all':'전체 스크롤' };
 function refreshStartUI() {
   $('#start-label').textContent = state.startPinned ? (START_NAMES[state.start] || '9분할') : '마지막 화면';
   document.querySelectorAll('#start-menu [data-start]').forEach(b => {
@@ -1118,6 +1124,7 @@ function refreshStartUI() {
 }
 function setStart(layout) {
   if (layout === 'reset') { resetPreset(); return; }
+  if (layout === 'krreset') { setStart('kr'); resetKrNews(); return; }
   if (layout === 'auto') {
     state.startPinned = false;
     save();
@@ -1147,6 +1154,14 @@ function resetPreset() {
   rebuildGrid();
   applyAudio();
   toast('기본 배치로 초기화 — 4분할 · YTN / 연합뉴스TV / KBS / CNN INTERNATIONAL (YTN 음성 ON)');
+}
+/* 국내뉴스 9분할 — 방송사 순서를 기본값으로 되돌린다(사용자가 바꿔 둔 국내뉴스 배치만 초기화) */
+function resetKrNews() {
+  state.sets['kr'] = DEFAULT_SETS['kr'].slice();
+  state.allOrder = [];
+  save();
+  applyLayout('kr');
+  toast('국내뉴스 9분할 — KBS / MBC / SBS / OBS / YTN / 연합뉴스TV / JTBC / TV조선 / 채널A');
 }
 
 function refreshSortUI() {
@@ -2466,6 +2481,7 @@ function bindEvents() {
     else if (k === '3') applyLayout('4');
     else if (k === '4') showCleanFull();
     else if (k === '5' || k === 'a') applyLayout('all');
+    else if (k === 'k') applyLayout('kr');
     else if (k === 'f') toggleFullscreen();
     else if (k === 'h' && isFull()) toggleHud();
     else if (k === 'm') $('#btn-mute').click();
