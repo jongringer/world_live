@@ -14,6 +14,10 @@ const LEGACY_LS_KEYS = ['worldlive.v2', 'worldlive.v1'];   // v3 마이그레이
    (2 = 2026-11-24 사용자 확정: 4분할 · KBS/YTN/연합뉴스TV/CNN · KBS 음성 ON,
     5 = 2026-11-24 YTN 공식 HLS 교체 뒤 · 4분할 · YTN/연합뉴스TV/KBS/CNN · YTN 음성 ON) */
 const PRESET_VER = 5;
+/* 국내뉴스 9분할 전용 프리셋 버전 — 오르면 저장된 ‘국내뉴스’ 배치만 새 기본 순서로 맞춘다.
+   (1 = 2026-11-25 03:30 초기값 · 2 = YTN → 연합뉴스TV → KBS → MBC → SBS → JTBC → TV조선 → MBN → 채널A
+    ※ 9분할·6분할·4분할 프리셋과 사용자가 바꿔 둔 배치는 건드리지 않는다) */
+const KR_PRESET_VER = 2;
 const DEFAULT_AUDIO = 'ytn24';       // 기본 청취 채널 — 1번 칸 YTN(공식 HLS, 끊김 없음)
 const DEFAULT_LAYOUT = '4';          // 시작 화면 = 4분할
 const LAYOUTS = {
@@ -184,6 +188,7 @@ function save() {
   try {
     localStorage.setItem(LS_KEY, JSON.stringify({
       presetVer: PRESET_VER,
+      krVer: KR_PRESET_VER,
       layout: state.layout, start: state.start, startPinned: state.startPinned, sort: state.sort, sets: state.sets,
       allOrder: state.allOrder,
       custom: state.custom, audioId: state.audioId, muted: state.muted
@@ -270,7 +275,16 @@ function load() {
     }
   }
   const ver = (d && Number(d.presetVer)) || 0;
-  if (ver >= PRESET_VER) { applyStored(d); return; }
+  if (ver >= PRESET_VER) {
+    applyStored(d);
+    /* 국내뉴스만 별도 버전으로 관리한다 — 사용자가 순서를 바꿨든 아니든,
+       국내뉴스 프리셋이 오르면 그 배치 하나만 새 기본 순서로 맞춘다. */
+    if (!(d && Number(d.krVer) >= KR_PRESET_VER)) {
+      state.sets['kr'] = DEFAULT_SETS['kr'].slice();
+      save();
+    }
+    return;
+  }
   if (d) applyStored({ custom: d.custom, allOrder: d.allOrder, sort: d.sort });
   applyPresetDefaults();
   save();
@@ -1241,7 +1255,7 @@ function resetKrNews() {
   state.allOrder = [];
   save();
   applyLayout('kr');
-  toast('국내뉴스 9분할 — KBS / MBC / SBS / MBN / YTN / 연합뉴스TV / JTBC / TV조선 / 채널A');
+  toast('국내뉴스 9분할 — YTN / 연합뉴스TV / KBS / MBC / SBS / JTBC / TV조선 / MBN / 채널A');
 }
 
 function refreshSortUI() {

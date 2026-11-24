@@ -417,17 +417,21 @@ yt-test.html        (개발용) YouTube 임베드 다채널 프로브
 PC는 3×3 16:9, 스마트폰 세로 화면은 **1열 세로 피드** — 화면 하나(16:9)씩 위에서 아래로 9개가 순서대로 나옵니다
 (2026-11-25 사용자 요청). 두 칸씩 보려면 상단 **모바일 뷰** 버튼으로 2열 전환.
 
+기본 순서(2026-11-25 03:40 사용자 확정, PC 3×3·스마트폰 1열 동일):
+**YTN → 연합뉴스TV → KBS → MBC → SBS → JTBC → TV조선 → MBN → 채널A**
+(`KR_PRESET_VER`로 국내뉴스 배치만 갱신 — 9·6·4분할 프리셋은 건드리지 않음)
+
 | 칸 | 채널 | 소스 | 검증 |
 |---|---|---|---|
-| 1 | KBS NEWS 24 | `kind:'kbs'` — KBS 공식 온에어 API(`cfpwwwapi.kbs.co.kr`, 채널코드 81) | 2026-11-25 01:10 LIVE |
-| 2 | MBC 뉴스 | 유튜브 고정 영상 `q9bM12ucTIY` (MBCNEWS 「[ON AIR] 24시간 최신 MBC뉴스」) | 01:10 LIVE |
-| 3 | SBS 뉴스 | 유튜브 고정 `OcND87a_81M` (SBS 실시간 라이브) | 01:10 LIVE |
-| 4 | **MBN 뉴스** | `kind:'mbn'` — MBN 공식 온에어 인증 API(`mbnStreamAuth_new_live.mbn?vod_url=…`)가 내려주는 서명 HLS 1280×720 (`hls-live.mbn.co.kr/mbn-on-air/1000k/playlist.m3u8`, 백업 600k) | 2026-11-25 03:2x LIVE |
-| 5 | YTN | 공식 HLS `ylive.ytn.co.kr` | LIVE |
-| 6 | 연합뉴스TV | 유튜브 고정 `6QZ_qc75ihU` (24시간 생방송) | LIVE |
-| 7 | JTBC 뉴스 | 유튜브 고정 `cHX4x5a3KTI` | 01:10 LIVE |
-| 8 | TV조선 뉴스 | 유튜브 고정 `Kfs13vKV8xM` (뉴스TVCHOSUN 이슈PLAY) | 01:10 LIVE |
-| 9 | 채널A 뉴스 | 유튜브 고정 `s20KqsSKv3g` (이슈를 켜라) | 01:10 LIVE |
+| 1 | YTN | 공식 HLS `ylive.ytn.co.kr` (1920×1080) | 2026-11-25 03:05 LIVE |
+| 2 | 연합뉴스TV | 유튜브 고정 `6QZ_qc75ihU` (24시간 생방송) | 03:05 LIVE |
+| 3 | KBS NEWS 24 | `kind:'kbs'` — KBS 공식 온에어 API(`cfpwwwapi.kbs.co.kr`, 채널코드 81) | 03:05 LIVE |
+| 4 | MBC 뉴스 | 유튜브 고정 영상 `q9bM12ucTIY` (MBCNEWS 「[ON AIR] 24시간 최신 MBC뉴스」) | 03:05 LIVE |
+| 5 | SBS 뉴스 | 유튜브 고정 `OcND87a_81M` (SBS 실시간 라이브) | 03:05 LIVE |
+| 6 | JTBC 뉴스 | 유튜브 고정 `cHX4x5a3KTI` | 03:05 LIVE |
+| 7 | TV조선 뉴스 | 유튜브 고정 `Kfs13vKV8xM` (뉴스TVCHOSUN 이슈PLAY) | 03:05 LIVE |
+| 8 | **MBN 뉴스** | `kind:'mbn'` — MBN 공식 온에어 인증 API(`mbnStreamAuth_new_live.mbn?vod_url=…`)가 내려주는 서명 HLS 1280×720 (`hls-live.mbn.co.kr/mbn-on-air/1000k/playlist.m3u8`, 백업 600k) | 03:05 LIVE (1280×720 재생) |
+| 9 | 채널A 뉴스 | 유튜브 고정 `s20KqsSKv3g` (이슈를 켜라) | 03:05 LIVE |
 
 ### 왜 '방송 채널 본방'이 아니라 뉴스 채널인가 (2026-11-24~25 실측)
 

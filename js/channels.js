@@ -337,10 +337,10 @@ const DEFAULT_SETS = {
   '4': ['ytn24', 'yonhap24', 'kbs24', 'cnn'],
   '6': ['ytn24', 'yonhap24', 'kbs24', 'cnn', 'bbc', 'abc'],
   '1': ['ytn24'],
-  /* 국내뉴스 9분할 — 사용자가 정한 순서 그대로:
-     KBS → MBC → SBS → MBN → YTN → 연합뉴스TV → JTBC → TV조선 → 채널A
-     (2026-11-25 사용자 요청으로 4번 칸 OBS를 빼고 MBN으로 교체) */
-  'kr': ['kbs24', 'mbcnews', 'sbsnews', 'mbnnews', 'ytn24', 'yonhap24', 'jtbcnews', 'tvchosun_news', 'channela_news']
+  /* 국내뉴스 9분할 — 사용자가 정한 순서 그대로 (2026-11-25 03:40 변경):
+     YTN → 연합뉴스TV → KBS → MBC → SBS → JTBC → TV조선 → MBN → 채널A
+     (PC 3×3·스마트폰 1열 모두 이 순서 · 4번 칸 OBS는 MBN으로 교체됨) */
+  'kr': ['ytn24', 'yonhap24', 'kbs24', 'mbcnews', 'sbsnews', 'jtbcnews', 'tvchosun_news', 'mbnnews', 'channela_news']
 };
 
 const KIND_LABEL = { youtube:'YT·LIVE', 'youtube-video':'YT·LIVE', hls:'HLS', kbs:'KBS·ONAIR', mbn:'MBN·ONAIR', iframe:'PAGE', web:'WEB' };
@@ -359,8 +359,8 @@ const CHANNEL_BY_ID = CHANNELS.reduce((m, c) => (m[c.id] = c, m), {});
 /* 이 카탈로그의 빌드 표식 — 화면 하단 신호 스트립에 표시됩니다.
    휴대폰이 옛 파일(브라우저 캐시)을 불러왔는지 이 한 줄로 확인할 수 있고,
    채널·소스를 고칠 때마다 이 값과 index.html의 ?v= 를 함께 올려 주세요. */
-const CHANNELS_BUILD = 'SRC 11-25c';
-const CHANNELS_BUILD_DETAIL = '국내뉴스 9분할 — KBS·MBC·SBS·MBN·YTN·연합뉴스TV·JTBC·TV조선·채널A (4번 칸 OBS 삭제 → MBN 공식 온에어 HLS) · 모바일 국내뉴스 1열 세로 피드 · 2026-11-25 03:20 갱신';
+const CHANNELS_BUILD = 'SRC 11-25d';
+const CHANNELS_BUILD_DETAIL = '국내뉴스 9분할 기본 순서 YTN·연합뉴스TV·KBS·MBC·SBS·JTBC·TV조선·MBN·채널A (OBS 삭제 → MBN 공식 온에어 HLS) · 모바일 1열 세로 피드 · 2026-11-25 03:40 갱신';
 
 /* 다시 재생되지 않는 예전 소스 ID → 지금 쓰는 소스로 자동 교체
    (브라우저에 저장된 커스텀 소스에 옛 ID가 남아 있어도 되살아나지 않게) */
