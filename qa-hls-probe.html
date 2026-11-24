@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="ko"><head><meta charset="utf-8"><title>HLS 진단</title>
+<style>body{background:#0b0f16;color:#dfe7f2;font:12px/1.5 monospace;padding:12px}#log{white-space:pre-wrap}#v{width:480px;background:#000}</style></head>
+<body>
+<h3>HLS 진단 (임시 점검용)</h3>
+<video id="v" muted playsinline autoplay></video>
+<div id="log"></div>
+<script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.17/dist/hls.min.js"></script>
+<script>
+const log = (m) => { const el = document.getElementById('log'); el.textContent += m + "\n"; };
+const p = new URLSearchParams(location.search);
+const url = p.get('u');
+const v = document.getElementById('v');
+log('origin=' + location.origin + ' referrer=' + (document.referrer || '(none)'));
+log('url=' + url);
+
+async function step() {
+  try {
+    const r1 = await fetch(url, { cache: 'no-store' });
+    const t1 = await r1.text();
+    log('MASTER ' + r1.status + ' type=' + r1.headers.get('content-type') + ' acao=' + r1.headers.get('access-control-allow-origin') + ' len=' + t1.length);
+    log('--- master body ---\n' + t1.trim() + '\n---');
+    const line = t1.split('\n').map(s => s.trim()).filter(s => s && s[0] !== '#')[0];
+    if (!line) { log('no variant line'); return; }
+    const media = new URL(line, url).href;
+    log('media=' + media);
+    const r2 = await fetch(media, { cache: 'no-store' });
+    const t2 = await r2.text();
+    log('MEDIA ' + r2.status + ' type=' + r2.headers.get('content-type') + ' acao=' + r2.headers.get('access-control-allow-origin') + ' len=' + t2.length);
+    log('--- media body ---\n' + t2.trim() + '\n---');
+    const seg = t2.split('\n').map(s => s.trim()).filter(s => s && s[0] !== '#')[0];
+    if (!seg) { log('no segment line'); return; }
+    const segUrl = new URL(seg, media).href;
+    log('seg=' + segUrl);
+    const r3 = await fetch(segUrl, { cache: 'no-store' });
+    const b3 = await r3.arrayBuffer();
+    log('SEG ' + r3.status + ' type=' + r3.headers.get('content-type') + ' acao=' + r3.headers.get('access-control-allow-origin') + ' bytes=' + b3.byteLength);
+  } catch (e) {
+    log('FETCH ERROR ' + e.name + ' ' + e.message);
+  }
+}
+
+step().then(() => {
+  log('--- hls.js ---');
+  if (window.Hls && Hls.isSupported()) {
+    const hls = new Hls({ debug: false, enableWorker: true });
+    window.__hls = hls;
+    hls.on(Hls.Events.MANIFEST_PARSED, (e, d) => log('MANIFEST_PARSED levels=' + d.levels.length + ' firstLevel=' + (d.levels[0] && d.levels[0].width + 'x' + d.levels[0].height) + ' bitrate=' + (d.levels[0] && d.levels[0].bitrate)));
+    hls.on(Hls.Events.LEVEL_LOADED, (e, d) => log('LEVEL_LOADED live=' + d.details.live + ' frags=' + d.details.fragments.length + ' startSN=' + String(d.details.startSN) + ' endSN=' + String(d.details.endSN) + ' targetdur=' + d.details.targetduration));
+    hls.on(Hls.Events.FRAG_LOADED, (e, d) => log('FRAG_LOADED sn=' + d.frag.sn + ' bytes=' + (d.payload && d.payload.byteLength)));
+    hls.on(Hls.Events.ERROR, (e, d) => log('ERROR ' + d.type + ' / ' + d.details + ' fatal=' + d.fatal + (d.response ? ' http=' + d.response.code : '') + (d.reason ? ' reason=' + (d.reason.message || d.reason) : '')));
+    v.addEventListener('playing', () => log('video:playing ' + v.videoWidth + 'x' + v.videoHeight));
+    v.addEventListener('error', () => log('video:error code=' + (v.error && v.error.code)));
+    hls.loadSource(url);
+    hls.attachMedia(v);
+  } else { log('no Hls'); }
+});
+
+setInterval(() => { log('tick rs=' + v.readyState + ' ns=' + v.networkState + ' t=' + v.currentTime.toFixed(2) + ' ' + v.videoWidth + 'x' + v.videoHeight + (window.__hls ? ' lvl=' + __hls.currentLevel : '')); }, 3000);
+</script>
+</body></html>
