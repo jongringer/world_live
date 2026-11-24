@@ -115,10 +115,11 @@ function resolveTimeChannel(ch) {
    · 검증용 훅: WL_AUDIO.meter() · WL_AUDIO.setTarget(-16) · WL_AUDIO.record(초) */
 const LEVEL_TARGET_LUFS = -14.0;   // 목표 라우드니스 — 유튜브 정규화 수준(한국경제TV에서 들리는 크기)
 const LEVEL_GATE_LUFS = -52;       // 이보다 조용하면 '무음'으로 보고 게인을 얼린다
-const LEVEL_DEAD_DB = 0.75;        // 데드존 — 이 안의 오차는 그냥 둔다(펌핑 방지)
+const LEVEL_DEAD_DB = 1.0;         // 데드존 — 이 안의 오차는 그냥 둔다(펌핑 방지)
 const LEVEL_MIN_DB = -9;           // 자동 게인 하한
 const LEVEL_MAX_DB = 15;           // 자동 게인 상한
-const LEVEL_TAU_S = 2.0;           // 자동 게인 시간상수(초)
+const LEVEL_TAU_S = 6.0;           // 라우드니스 평균 시간상수(초) — 말소리 기복에 흔들리지 않게
+const LEVEL_SLEW_DB_S = 1.5;       // 게인 변화 속도 제한(dB/초) — 급격한 펌핑 방지
 let levelTarget = LEVEL_TARGET_LUFS;
 const LEVEL_ON = (function () {
   try {
@@ -203,9 +204,9 @@ function attachLevel(v, meta) {
       slot: meta && meta.slot != null ? meta.slot : null,
       id: chId || (v.title || 'video'),
       gDb: 0, primed: false, lvl: null, lufs: -Infinity, peak: 0, t: 0,
-      buf: new Float32Array(8192), pbuf: new Float32Array(1024)
+      buf: new Float32Array(32768), pbuf: new Float32Array(1024)
     };
-    chain.meter = kWeightProbe(ctx, lim, 8192);           // 출력 라우드니스(K-weight 근사)
+    chain.meter = kWeightProbe(ctx, lim, 32768);          // 출력 라우드니스(K-weight 근사 · 약 0.7초 창)
     const post = ctx.createAnalyser(); post.fftSize = 1024;  // 피크 감시(가중치 없음)
     lim.connect(post);
     chain.post = post;
@@ -263,7 +264,9 @@ function levelTick() {
       c.lvl += (L - c.lvl) * a;
       const err = levelTarget - c.lvl;
       if (Math.abs(err) > LEVEL_DEAD_DB) {
-        c.gDb = clampDb(c.gDb + err * Math.min(1, dt / LEVEL_TAU_S), LEVEL_MIN_DB, LEVEL_MAX_DB);
+        const want = c.gDb + err * Math.min(1, dt / LEVEL_TAU_S);
+        const step = clampDb(want - c.gDb, -LEVEL_SLEW_DB_S * dt, LEVEL_SLEW_DB_S * dt);
+        c.gDb = clampDb(c.gDb + step, LEVEL_MIN_DB, LEVEL_MAX_DB);
       }
     }
     if (pk > 0.95) c.gDb = clampDb(c.gDb - 0.5, LEVEL_MIN_DB, LEVEL_MAX_DB);   // 피크 보호
@@ -272,7 +275,7 @@ function levelTick() {
 }
 function startLevelLoop() {
   if (AUDIO.timer) return;
-  AUDIO.timer = setInterval(levelTick, 120);
+  AUDIO.timer = setInterval(levelTick, 150);
 }
 /* 자동재생 정책 — 첫 터치·키 입력에서 AudioContext 를 깨우고 대기하던 영상을 연결한다 */
 function wakeAudio() {
