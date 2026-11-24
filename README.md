@@ -245,6 +245,15 @@
 - **검증 (운영 페이지 `https://jongringer.github.io/world_live/`, 2026-11-23 06:56 KST)**: 1번 칸 iframe `src` = `https://www.youtube.com/embed/nfnWxzTVJA4?…&origin=https%3A%2F%2Fjongringer.github.io`, 타일 상태 `LIVE`, 화면에 KBS NEWS24 방송 영상이 실제로 재생됨(오류 150·153 없음). 같은 화면의 9개 타일 모두 LIVE.
 - **주의**: `nfnWxzTVJA4`는 KBS News(`@newskbs`) 채널의 **프로그램 단위 라이브**(제목 ‘[🔴LIVE] 뉴스광장 … 11월 23일(월) / KBS’)라, 그 방송이 끝나면 다시 새 영상 ID로 바뀝니다. **채널 자동 추적은 KBS에서 불가**: 2026-11-23 07:05 KST 운영 페이지에서 `embed/live_stream?channel=UCcQTRi69dsVYHN3exePtZ1A`(`@newskbs` 채널 ID)를 직접 미리보기로 열어 보니 **“이 동영상은 볼 수 없습니다.”** — KBS News는 채널 라이브 삽입을 막고 있어 이 방식은 쓸 수 없습니다. 방송이 끝나면 새 `/live/` 주소로 `kbs24`의 `src`를 교체해야 합니다.
 
+## NBC NEWS NOW — 채널 임베드 차단 확인 → 라이브 영상 고정으로 복구 (2026-11-25 KST · v9.9.3)
+
+- **증상**: 전체 스크롤의 `NBC NEWS NOW` 칸이 재생되지 않고 **“이 동영상은 볼 수 없습니다.” + `OFFLINE / 라이브 신호 없음`**.
+- **원인**: `kind:'youtube', src:'UCeY0bbntWzzVIaj2z3QigXg'`(= `embed/live_stream?channel=`) 방식이 NBC News에서 막혀 있습니다. 같은 화면에서 채널 라이브(`UCeY0bbntWzzVIaj2z3QigXg`)와 고정 영상(`13rFWn3k36s`)을 나란히 띄운 대조 실험(2026-11-25 04:25 KST, `yt-test.html`)에서 **채널 라이브만 “이 동영상은 볼 수 없습니다”**, 고정 영상은 정상 재생이었습니다. curl로 받은 `embed/live_stream` 응답도 `"reason":"Video player configuration error"`였습니다(빈 `videoId`).
+- **교체 내용**: `nbc`를 **`kind:'youtube-video', src:'13rFWn3k36s'`**(당시 라이브 `LIVE: NBC News NOW - Nov. 24`)로 바꾸고 `ytChannel:'UCeY0bbntWzzVIaj2z3QigXg'`·`web:'https://www.youtube.com/@NBCNews/live'`를 함께 적었습니다. `index.html`의 `js/channels.js?v=45 → ?v=46`, `sw.js` `worldlive-pwa-v7 → v8`, 빌드 표식 `SRC 11-25f → SRC 11-25g`.
+- **대체 HLS는 쓰지 않았습니다**: Xumo/Samsung TV Plus 계열 NBC News NOW HLS(`d1si3n1st4nkgb.cloudfront.net/10502/88896001/hls/master.m3u8`, CORS `*`)는 **한국 IP에서 매니페스트는 받아지지만 세그먼트가 타임아웃**했고(`hls-test.html` 실측), Akamai 판본(`pb-o6czxr182vtiv.akamaized.net`)은 **403**. 사용자는 국내에서 보므로 미국 전용 FAST 스트림은 쓸 수 없습니다.
+- **주의(매일 갱신 필요)**: NBC News는 24시간 라이브를 **하루에 한 번**(한국시간 13~14시경, 미국 동부 자정) `LIVE: NBC News NOW - <날짜>` 새 영상으로 갈아 끼웁니다(`Nov. 24`·`Sept. 24`·`July 24` 영상이 따로 존재). 그래서 이 칸은 새 영상이 열리면 OFFLINE이 되며, **`📡 world_live 라이브 주소 새벽 점검` 예약 작업(06:05·15:05 KST)** 이 새 ID로 교체합니다.
+- **검증 (운영 페이지, 2026-11-25 04:33 KST)**: 4분할 1번 칸에 NBC NEWS NOW를 넣어 **LIVE · 실제 방송 영상 재생**(BREAKING NEWS / 백악관 추수감사절 칠면조 사면 중계 자막 흐름 확인), 오디오 `AUDIO — NBC NEWS NOW +3dB`, 하단 `SRC 11-25g · 04:33:06 KST`, `4/4 FEEDS NOMINAL`. 스크린샷 `downloads/world_live-nbc-news-now-복구-2026-11-25-0433.png`.
+
 ## 빌드 표식 (2026-11-23 추가)
 
 - 하단 신호 스트립에 **`SRC 11-23a`** 처럼 현재 불러온 채널 목록의 빌드가 표시됩니다(`js/channels.js`의 `CHANNELS_BUILD`). 휴대폰이 옛 파일을 캐시해 쓰고 있으면 `SRC BUILD ? · 옛 파일(캐시)`로 주황색으로 표시되어, 화면이 안 바뀌었을 때 캐시 문제인지 바로 구분할 수 있습니다.
