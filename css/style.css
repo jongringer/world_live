@@ -1169,11 +1169,6 @@ body.is-full.is-hud .order-ctl { opacity: 1 !important; pointer-events: auto !im
   .clocks, .sort-wrap, .nav-sep, .start-wrap, #btn-apk { display: none !important; }
   /* 칸이 좁아 9분할 버튼은 뺀다(2026-11-25 사용자 요청) — 6분할·전체화면은 위 기본 규칙에서 이미 숨김 */
   .layout-btn[data-layout="9"] { display: none !important; }
-  /* 핵심 버튼만 한 줄에: 경제뉴스 → 국내뉴스 → 4분할 → 전체 스크롤 */
-  .layout-btn[data-layout="econ"] { order: 1; }
-  .layout-btn[data-layout="kr"] { order: 2; }
-  .layout-btn[data-layout="4"] { order: 3; }
-  .layout-btn[data-layout="all"] { order: 4; }
   .layouts {
     display: inline-flex !important;
     gap: 2px !important;
@@ -1723,16 +1718,19 @@ body.is-native-full .grid .tile.is-tally .tally-ring {
 }
 
 /* ═══════════════════════════════════════════════════════════════════════
-   v8.9 — 스마트폰 상단 분할 버튼 순서 (2026-11-24 사용자 지시)
-   스마트폰 폭에서는 4분할 → 9분할 → 전체 스크롤 순으로 앞에 오고,
-   6분할·전체화면은 그 뒤로 밀린다. 데스크톱 순서(9·6·4·전체화면·전체
-   스크롤)는 그대로 둔다. flex order는 위쪽 !important 규칙에 영향받지
+   v9.9 — 스마트폰 상단 분할 버튼 순서 (2026-11-25 사용자 지시)
+   스마트폰 폭에서는 경제뉴스 → 국내뉴스 → 4분할 → 전체 스크롤만 남는다.
+   9분할·6분할·전체화면은 상단 바에서 숨긴다. 데스크톱 순서(9·4·전체화면·전체
+   스크롤·국내뉴스·경제뉴스)는 그대로 둔다. flex order는 위쪽 !important 규칙에 영향받지
    않으므로 파일 맨 끝에 둔다.
    ═══════════════════════════════════════════════════════════════════════ */
 @media (max-width: 820px), ((orientation: portrait) and (max-width: 1024px)) {
-  .layouts .layout-btn[data-layout="4"] { order: 1; }
-  .layouts .layout-btn[data-layout="9"] { order: 2; }
-  .layouts .layout-btn[data-layout="all"] { order: 3; }
-  .layouts .layout-btn[data-layout="6"] { order: 4; }
-  .layouts .layout-btn[data-layout="1"] { order: 5; }
+  /* 2026-11-25: 경제뉴스 → 국내뉴스 → 4분할 → 전체 스크롤만 남기고 9·6·전체화면은 상단 바에서 뺀다 */
+  .layouts .layout-btn[data-layout="econ"] { order: 1; }
+  .layouts .layout-btn[data-layout="kr"] { order: 2; }
+  .layouts .layout-btn[data-layout="4"] { order: 3; }
+  .layouts .layout-btn[data-layout="all"] { order: 4; }
+  .layouts .layout-btn[data-layout="9"] { order: 5; }
+  .layouts .layout-btn[data-layout="6"] { order: 6; }
+  .layouts .layout-btn[data-layout="1"] { order: 7; }
 }
