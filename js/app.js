@@ -511,8 +511,8 @@ function applyChannelVolume(chId) {
   AUDIO.chains.forEach(function (c) {
     if (c.id === chId && c.user && ctx) c.user.gain.setTargetAtTime(pct / 100, ctx.currentTime, 0.03);
   });
-  const ids = slotIds();
-  ids.forEach(function (id, i) {
+  const actIds = activeSlotIds();
+  actIds.forEach(function (id, i) {
     if (id !== chId) return;
     const L = live[i];
     if (L && L.video) {
@@ -956,6 +956,14 @@ function sortedIds() {
 function slotIds() {
   if (state.layout === 'all') return sortedIds();
   return state.sets[state.layout];
+}
+/* 현재 화면 각 슬롯에서 실제로 방송(표시)되고 있는 채널 ID 목록 (timeSlot 대체 채널 반영) */
+function activeSlotIds() {
+  const ids = slotIds();
+  return ids.map((id, i) => {
+    const ch = slotChannel(i);
+    return ch ? ch.id : id;
+  });
 }
 function slotChannel(i) {
   const ids = slotIds();
@@ -1742,7 +1750,7 @@ function selectSlot(i) {
 }
 /* 저장된 audioId로 현재 화면의 선택 칸을 되찾는다 (레이아웃 변경·재구성 후) */
 function selByChannel() {
-  const ids = slotIds();
+  const ids = activeSlotIds();
   if (state.muted || !state.audioId) { state.selSlot = null; return; }
   if (state.selSlot != null && ids[state.selSlot] === state.audioId) return;
   const at = ids.indexOf(state.audioId);
@@ -1754,7 +1762,7 @@ function selByChannel() {
 /* 흰색 테두리(탤리) 표시 갱신 — 선택 칸 하나에만 */
 function syncTally() {
   const on = !state.muted && state.audioId != null;
-  const ids = slotIds();
+  const ids = activeSlotIds();
   grid.querySelectorAll('.tile').forEach(el => {
     const i = parseInt(el.dataset.slot, 10);
     el.classList.toggle('is-tally', !!(on && i === state.selSlot && ids[i] === state.audioId));
@@ -1765,7 +1773,7 @@ function setAudio(chId) {
   else {
     state.audioId = chId;
     state.muted = false;
-    const at = slotIds().indexOf(chId);
+    const at = activeSlotIds().indexOf(chId);
     state.selSlot = at >= 0 ? at : null;
   }
   applyAudio();
@@ -2652,7 +2660,7 @@ function reassertCinemaAudio() {
   state.audioId = a.id;
   state.muted = false;
   try { applyAudio(); } catch (e) {}
-  const i = slotIds().indexOf(a.id);
+  const i = activeSlotIds().indexOf(a.id);
   if (i < 0) return;
   const L = live[i];
   if (!L) return;
