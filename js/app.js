@@ -187,12 +187,58 @@ function kWeightProbe(ctx, fromNode, fftSize) {
 }
 /* Pause 중이던/제스처 전에 만들어진 <video> 들을 지금 연결한다 */
 function attachPendingLevel() {
-  if (!LEVEL_ON) return;
   Object.keys(live).forEach(function (k) {
     const L = live[k];
-    if (L && L.video && !L.video._wlChain) attachLevel(L.video, { slot: +k, id: L.ch.id });
+    if (!L || !L.video || L.video._wlChain) return;
+    if (LEVEL_ON) attachLevel(L.video, { slot: +k, id: L.ch.id });
+    else if (volPct(L.ch.id) > 100) ensureCleanBoost(L.video, L.ch.id, +k);
   });
-  try { if (pvVideo && !pvVideo._wlChain) attachLevel(pvVideo, { id: 'preview' }); } catch (e) {}
+  try {
+    if (pvVideo && !pvVideo._wlChain && LEVEL_ON) attachLevel(pvVideo, { id: 'preview' });
+  } catch (e) {}
+}
+/* 100% 초과 증폭이 필요한 채널 1개에만 가벼운 순수 GainNode(src → user → bus)를 연결한다.
+   컴프레서·AGC·리미터·필터·FFT 루프를 전혀 붙이지 않아 오디오 끓음 없이 소리만 키운다. */
+function ensureCleanBoost(v, chId, slot) {
+  if (!v) return false;
+  const pct = volPct(chId);
+  if (v._wlChain) {
+    const c = v._wlChain;
+    try { v.volume = 1; } catch (e) {}
+    if (c.user && AUDIO.ctx) c.user.gain.setTargetAtTime(pct / 100, AUDIO.ctx.currentTime, 0.03);
+    return true;
+  }
+  if (pct <= 100) return false;
+  const ctx = audioCtx();
+  if (!ctx) return false;
+  const connectNow = function () {
+    if (v._wlChain) {
+      try { v.volume = 1; } catch (e) {}
+      if (v._wlChain.user) v._wlChain.user.gain.setTargetAtTime(volPct(chId) / 100, ctx.currentTime, 0.03);
+      return true;
+    }
+    try {
+      v.volume = 1;
+      const src = ctx.createMediaElementSource(v);
+      const user = ctx.createGain();
+      user.gain.value = volPct(chId) / 100;
+      src.connect(user);
+      user.connect(AUDIO.bus);
+      const chain = {
+        v: v, src: src, hpf: null, comp: null, gain: null, lim: null, user: user, lim2: null,
+        slot: slot != null ? slot : null, id: chId || (v.title || 'video'),
+        gDb: 0, primed: false, lvl: null, lufs: -Infinity, intL: -Infinity, peak: 0, t: 0,
+        meter: null, post: null
+      };
+      v._wlChain = chain;
+      v._wlWait = null;
+      AUDIO.chains.push(chain); AUDIO.attached++;
+      return true;
+    } catch (e) { return false; }
+  };
+  if (ctx.state === 'running') return connectNow();
+  try { ctx.resume().then(connectNow, function () {}); } catch (e) {}
+  return false;
 }
 /* <video> 하나를 평준화 그래프에 연결 — 디폴트(LEVEL_ON=false)에서는 AudioContext 자체를 열지 않고 순정 원음 그대로 재생 */
 function attachLevel(v, meta) {
@@ -352,8 +398,12 @@ function startLevelLoop() {
 }
 /* 자동재생 정책 — 첫 터치·키 입력에서 AudioContext 를 깨우고 대기하던 영상을 연결한다 */
 function wakeAudio() {
-  if (!LEVEL_ON) return;
-  const ctx = AUDIO.ctx;
+  const hasBoost = LEVEL_ON || Object.keys(live).some(function (k) {
+    const L = live[k];
+    return L && L.video && !L.video._wlChain && volPct(L.ch.id) > 100;
+  });
+  if (!hasBoost) return;
+  const ctx = audioCtx();
   if (!ctx) return;
   if (ctx.state === 'suspended') {
     try { ctx.resume().then(attachPendingLevel, function () {}); } catch (e) {}
@@ -428,8 +478,11 @@ window.WL_AUDIO = {
    · YouTube 0~100% — 플레이어 자체 볼륨(setVolume 0~100)이 한계다.
    · 값은 채널 ID별로 worldlive.v3 에 저장돼 새로고침·재부팅 뒤에도 유지된다.
      (100%는 저장하지 않는다 = 기본값) */
+function canBoostVol(ch) {
+  return !!(ch && (ch.kind === 'hls' || ch.kind === 'kbs' || ch.kind === 'mbn'));
+}
 function volMaxOf(ch) {
-  return (LEVEL_ON && ch && (ch.kind === 'hls' || ch.kind === 'kbs' || ch.kind === 'mbn')) ? 200 : 100;
+  return 200;
 }
 function volPct(chId) {
   const v = chId ? state.vol[chId] : undefined;
@@ -446,7 +499,10 @@ function scheduleSave() {
   if (saveTimer) clearTimeout(saveTimer);
   saveTimer = setTimeout(function () { saveTimer = 0; try { save(); } catch (e) {} }, 200);
 }
-/* 채널 하나의 볼륨을 실제 재생에 반영 — 순정 네이티브 video.volume / YouTube setVolume */
+/* 채널 하나의 볼륨을 실제 재생에 반영:
+   · <=100%: 순정 video.volume (AudioContext 개입 0)
+   · >100%: 해당 채널에만 순수 GainNode 직결 증폭 (최대 200% / +6dB)
+   · YouTube: setVolume(0~100) */
 function applyChannelVolume(chId) {
   const ch = chId ? byId(chId) : null;
   if (!ch) return;
@@ -460,7 +516,13 @@ function applyChannelVolume(chId) {
     if (id !== chId) return;
     const L = live[i];
     if (L && L.video) {
-      try { L.video.volume = Math.max(0, Math.min(1, pct / 100)); } catch (e) {}
+      if (L.video._wlChain) {
+        try { L.video.volume = 1; } catch (e) {}
+      } else if (pct > 100 && canBoostVol(ch)) {
+        ensureCleanBoost(L.video, chId, i);
+      } else {
+        try { L.video.volume = Math.max(0, Math.min(1, pct / 100)); } catch (e) {}
+      }
     }
     if (ch.kind === 'youtube' || ch.kind === 'youtube-video') {
       ytCmd(i, 'setVolume', [Math.min(100, pct)]);
@@ -502,8 +564,7 @@ function buildVolPresets(ch) {
   const wrap = $('#vol-presets');
   if (!wrap) return;
   wrap.innerHTML = '';
-  const list = volMaxOf(ch) > 100 ? [30, 70, 100, 120, 150, 200] : [30, 50, 70, 100];
-  list.forEach(function (p) {
+  [30, 70, 100, 120, 150, 200].forEach(function (p) {
     const b = document.createElement('button');
     b.type = 'button';
     b.dataset.vol = String(p);
@@ -516,16 +577,15 @@ function syncVolPop() {
   if (!pop || pop.hidden || volSlot == null) return;
   const ch = slotChannel(volSlot);
   if (!ch) { closeVolPop(); return; }
-  const max = volMaxOf(ch);
-  const p = Math.min(max, volPct(ch.id));
+  const p = volPct(ch.id);
   const r = $('#vol-range');
   if (r && document.activeElement !== r) r.value = String(p);
-  if (r) r.style.setProperty('--vol-fill', Math.round((p / max) * 100) + '%');
+  if (r) r.style.setProperty('--vol-fill', Math.round((p / 200) * 100) + '%');
   $('#vol-pct').textContent = p + '%';
   $('#vol-db').textContent = (p === 0 ? '-∞' : p === 100 ? '0.0' : (20 * Math.log10(p / 100)).toFixed(1)) + ' dB';
-  $('#vol-note').textContent = max > 100
-    ? '평준화 모드(?level=1) — 최대 200%(+6.0 dB)까지 조절할 수 있습니다.'
-    : '원음 그대로 재생됩니다 (0~100% 조절 · 기본 100%).';
+  $('#vol-note').textContent = canBoostVol(ch)
+    ? '가운데(100% 원음)가 기본값 · 작은 소리는 최대 200%(+6.0 dB)까지 키울 수 있습니다.'
+    : '가운데(100% 원음)가 기본값 · YouTube는 플레이어 정책상 실제 출력은 100%가 최대입니다.';
   pop.querySelectorAll('#vol-presets [data-vol]').forEach(function (b) {
     b.classList.toggle('is-current', Number(b.dataset.vol) === p);
   });
@@ -1581,7 +1641,10 @@ function selectSlot(i) {
     ytCmd(i, 'setVolume', [Math.min(100, volPct(ch.id))]);
     ytCmd(i, 'playVideo');
   } else if ((ch.kind === 'hls' || ch.kind === 'kbs' || ch.kind === 'mbn') && L.video) {
-    try { L.video.volume = Math.max(0, Math.min(1, volPct(ch.id) / 100)); } catch (e) {}
+    const pct = volPct(ch.id);
+    if (pct > 100) ensureCleanBoost(L.video, ch.id, i);
+    else if (L.video._wlChain && L.video._wlChain.user && AUDIO.ctx) L.video._wlChain.user.gain.setTargetAtTime(pct / 100, AUDIO.ctx.currentTime, 0.03);
+    else { try { L.video.volume = Math.max(0, Math.min(1, pct / 100)); } catch (e) {} }
     if (L.video.paused) L.video.play().catch(() => {});
   }
 }
@@ -1628,7 +1691,10 @@ function applyAudio() {
     if (L.video != null) {
       L.video.muted = muted;
       if (!muted) {
-        try { L.video.volume = Math.max(0, Math.min(1, volPct(L.ch.id) / 100)); } catch (e) {}
+        const pct = volPct(L.ch.id);
+        if (pct > 100 && canBoostVol(L.ch)) ensureCleanBoost(L.video, L.ch.id, i);
+        else if (L.video._wlChain && L.video._wlChain.user && AUDIO.ctx) L.video._wlChain.user.gain.setTargetAtTime(pct / 100, AUDIO.ctx.currentTime, 0.03);
+        else { try { L.video.volume = Math.max(0, Math.min(1, pct / 100)); } catch (e) {} }
         playWithSound(L.video);
       }
     }

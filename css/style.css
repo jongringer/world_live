@@ -680,6 +680,10 @@ body.is-swapping .tile { transition: none; }
 }
 .vol-x:hover { color: #fff; border-color: rgba(212, 175, 55, 0.6); }
 .vol-bar { position: relative; padding: 4px 0 6px; }
+.vol-bar::after {
+  content: ""; position: absolute; left: 50%; top: 2px; bottom: 4px; width: 1.5px;
+  transform: translateX(-50%); background: rgba(245, 229, 192, 0.55); pointer-events: none;
+}
 .vol-bar input[type="range"] {
   position: relative; z-index: 1;
   -webkit-appearance: none; appearance: none; width: 100%; height: 4px; border-radius: 3px;
@@ -698,9 +702,9 @@ body.is-swapping .tile { transition: none; }
 .vol-num { display: flex; align-items: baseline; justify-content: space-between; margin: 2px 0 8px; }
 .vol-num b { font-size: 17px; color: #F5E9C8; letter-spacing: 0.01em; }
 .vol-num span { font-size: 10px; color: #94A3B8; }
-.vol-presets { display: flex; flex-wrap: wrap; gap: 5px; }
+.vol-presets { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 5px; }
 .vol-presets button {
-  flex: 1 1 auto; min-width: 46px; padding: 6px 4px; border-radius: 4px;
+  padding: 6px 0; border-radius: 4px;
   font-size: 10.5px; font-weight: 600; color: #CBD5E1;
   border: 1px solid rgba(255, 255, 255, 0.14); background: rgba(255, 255, 255, 0.05);
 }
