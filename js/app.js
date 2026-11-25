@@ -1924,11 +1924,10 @@ function openModal(slot) {
   modalSlot = (typeof slot === 'number') ? slot : null;
   const kicker = $('#modal-kicker'), title = $('#modal-title');
   if (modalSlot == null) {
-    kicker.textContent = 'SOURCE LIBRARY · ' + (LAYOUTS[state.layout].label || '');
-    title.textContent = '소스 라이브러리 · 커스텀 소스';
+    kicker.textContent = 'SOURCE LIBRARY';
+    title.textContent = '소스 라이브러리';
   } else {
-    const L = LAYOUTS[state.layout];
-    kicker.textContent = 'SOURCE PATCH BAY — ' + L.label + ' · SLOT ' + String(modalSlot + 1).padStart(2, '0');
+    kicker.textContent = 'SOURCE PATCH BAY · SLOT ' + String(modalSlot + 1).padStart(2, '0');
     title.textContent = '채널 변경 — ' + slotChannel(modalSlot).name;
   }
   srcSearch.value = '';
@@ -1978,7 +1977,32 @@ function renderSources(q) {
 
   if (state.sort === 'name') {
     list.sort(compareAbc);
-    list.forEach(c => addCard(c, null));
+    const abcOrder = ['AF', 'GN', 'OZ', 'KR'];
+    const abcMeta = {
+      AF: { label: 'A – F · ALPHABET', zone: 'AMERICAS' },
+      GN: { label: 'G – N · ALPHABET', zone: 'EUROPE' },
+      OZ: { label: 'O – Z · ALPHABET', zone: 'ASIA' },
+      KR: { label: '가 – 하 · 한국어 채널', zone: 'KOREA' }
+    };
+    const buckets = {};
+    list.forEach(c => {
+      const ch0 = String(c.name || '').trim().charAt(0).toUpperCase();
+      const k = (ch0 >= 'A' && ch0 <= 'F') ? 'AF'
+              : (ch0 >= 'G' && ch0 <= 'N') ? 'GN'
+              : (ch0 >= 'O' && ch0 <= 'Z') ? 'OZ' : 'KR';
+      (buckets[k] = buckets[k] || []).push(c);
+    });
+    abcOrder.forEach(k => {
+      const arr = buckets[k];
+      if (!arr || !arr.length) return;
+      const lab = document.createElement('div');
+      lab.className = 'src-group-label';
+      lab.dataset.zone = abcMeta[k].zone;
+      lab.innerHTML = '<span class="sgl-name">' + esc(abcMeta[k].label) + '</span><span class="sgl-count">' + arr.length + '</span>';
+      frag.appendChild(lab);
+      srcGroupLabels.push({ el: lab, zone: k, countEl: lab.querySelector('.sgl-count') });
+      arr.forEach(c => addCard(c, k));
+    });
   } else {
     const groups = {};
     list.forEach(c => { const z = c.zone || 'ASIA'; (groups[z] = groups[z] || []).push(c); });
@@ -1987,6 +2011,7 @@ function renderSources(q) {
       if (!arr) return;
       const lab = document.createElement('div');
       lab.className = 'src-group-label';
+      lab.dataset.zone = z;
       lab.innerHTML = '<span class="sgl-name">' + esc(ZONE_LABEL[z] || z) + '</span><span class="sgl-count">' + arr.length + '</span>';
       frag.appendChild(lab);
       srcGroupLabels.push({ el: lab, zone: z, countEl: lab.querySelector('.sgl-count') });
@@ -2028,6 +2053,7 @@ function srcCard(c, current) {
   b.type = 'button';
   b.className = 'src-card' + (current === c.id ? ' is-current' : '');
   b.dataset.kind = c.kind;
+  b.dataset.zone = c.zone || 'ASIA';
   b.dataset.id = c.id;
   const isCustom = !!c.custom;
   const stateTxt = c.status === 'event' ? ' · EVENT' : c.status === 'external' ? ' · 외부' : '';
