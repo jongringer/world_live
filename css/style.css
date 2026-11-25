@@ -1828,12 +1828,17 @@ body.is-full .tile.is-tally:hover {
   outline: 0 !important;
   box-shadow: none !important;
 }
-/* 풀화면에서는 YouTube iframe 위 투명 히트 레이어를 비활성화해 플레이어 ⚙️ 화질(1080p) 설정에 직접 접근 허용 */
+/* 1×1 전체화면 및 시네마 풀화면에서는 YouTube iframe 위 투명 히트 레이어 및 상단 배지·채널 변경 버튼을 숨겨,
+   YouTube 플레이어 우상단(음량·자막·⚙️ 화질 1080p 설정)과 영상 상단이 가려지지 않게 직접 조작을 허용 */
+.grid[data-layout="1"] .tile[data-kind^="youtube"] .tile-hit,
 body.is-full .grid[data-layout="1"] .tile[data-kind^="youtube"] .tile-hit,
 body.is-mobile-full .grid[data-layout="1"] .tile[data-kind^="youtube"] .tile-hit,
 body.is-native-full .grid[data-layout="1"] .tile[data-kind^="youtube"] .tile-hit,
 body.is-cinema .tile.is-cinema-target[data-kind^="youtube"] .tile-hit {
   pointer-events: none !important;
+}
+.grid[data-layout="1"] .tile[data-kind^="youtube"] .tlay-top {
+  display: none !important;
 }
 body.is-full .tile::before,
 body.is-full .tile.is-tally::before { content: none !important; }

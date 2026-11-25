@@ -6,7 +6,7 @@
      skipWaiting + clients.claim 으로 즉시 활성화됩니다.
    ─ 외부 스트림(.m3u8/.ts/youtube/kbs 등)은 절대 가로채지 않습니다.
    ═══════════════════════════════════════════════════════════════ */
-const VERSION = 'worldlive-pwa-v18';
+const VERSION = 'worldlive-pwa-v19';
 const RUNTIME = VERSION + '-runtime';
 const SHELL = [
   './',
