@@ -882,11 +882,19 @@ function restoreDeletedChannels() {
   toast('삭제했던 채널 ' + n + '개를 모두 복원했습니다');
 }
 const SORT_MODES = {
-  zone:  { label: '지역·국가순', sub: '일본·중국 → 미국 → 유럽 → 중동 → 한국' },
+  zone:  { label: '대륙순', sub: '한국 → 미주 → 유럽 → 아시아·태평양 → 중동·아프리카' },
+  name:  { label: 'ABC순', sub: '알파벳 A-Z · 가나다 이름순' },
   custom:{ label: '내 순서', sub: '전체 스크롤에서 ◀ ▶ 로 직접 정렬' },
-  name:  { label: '이름순 (A-Z)', sub: '채널명 가나다·알파벳' },
-  kr:    { label: '한국 우선', sub: '국내 뉴스를 맨 앞으로' }
+  kr:    { label: '대륙순', sub: '한국 → 미주 → 유럽 → 아시아·태평양 → 중동·아프리카' }
 };
+function compareAbc(ca, cb) {
+  const na = String((ca && ca.name) || '').trim();
+  const nb = String((cb && cb.name) || '').trim();
+  const ea = /^[A-Za-z0-9]/.test(na);
+  const eb = /^[A-Za-z0-9]/.test(nb);
+  if (ea !== eb) return ea ? -1 : 1;
+  return na.localeCompare(nb, ea ? 'en' : 'ko', { sensitivity: 'base' });
+}
 function zoneRank(c) {
   const i = ZONE_ORDER.indexOf((c && c.zone) || 'ASIA');
   return i < 0 ? ZONE_ORDER.length : i;
@@ -934,20 +942,11 @@ function sortedIds() {
   const ids = liveIds.slice();
   const kr = c => c.zone === 'KOREA' ? 0 : 1;
   if (state.sort === 'name') {
-    ids.sort((a, b) => {
-      const ca = byId(a) || {}, cb = byId(b) || {};
-      return String(ca.name || '').localeCompare(String(cb.name || ''), 'ko');
-    });
-  } else if (state.sort === 'zone') {
-    // 아시아(일본·중국) → 미주 → 영국·유럽 → 중동 → 오세아니아 → 아프리카 → 한국(맨 뒤) — 같은 지역은 카탈로그 순서
+    ids.sort((a, b) => compareAbc(byId(a), byId(b)));
+  } else {
+    // 대륙순: 한국 → 미주 → 유럽 → 아시아·태평양 → 중동·아프리카
     ids.sort((a, b) => {
       const ra = zoneRank(byId(a)), rb = zoneRank(byId(b));
-      if (ra !== rb) return ra - rb;
-      return liveIds.indexOf(a) - liveIds.indexOf(b);
-    });
-  } else if (state.sort === 'kr') {
-    ids.sort((a, b) => {
-      const ra = kr(byId(a) || {}), rb = kr(byId(b) || {});
       if (ra !== rb) return ra - rb;
       return liveIds.indexOf(a) - liveIds.indexOf(b);
     });
@@ -1908,9 +1907,15 @@ function resetEconNews() {
 }
 
 function refreshSortUI() {
-  $('#sort-label').textContent = SORT_MODES[state.sort].label;
+  const mode = SORT_MODES[state.sort] ? state.sort : 'zone';
+  const lbl = $('#sort-label');
+  if (lbl) lbl.textContent = SORT_MODES[mode].label;
   document.querySelectorAll('#sort-menu [data-sort]').forEach(b => {
-    b.classList.toggle('is-current', b.dataset.sort === state.sort);
+    b.classList.toggle('is-current', b.dataset.sort === mode);
+  });
+  const activeTab = mode === 'name' ? 'name' : 'zone';
+  document.querySelectorAll('#modal-sort-tabs [data-msort]').forEach(b => {
+    b.classList.toggle('is-active', b.dataset.msort === activeTab);
   });
 }
 
@@ -1928,10 +1933,24 @@ function openModal(slot) {
   }
   srcSearch.value = '';
   syncRestoreBtn();
+  refreshSortUI();
   const rBtn = $('#btn-restore-del');
   if (rBtn && !rBtn.dataset.bound) {
     rBtn.dataset.bound = '1';
     rBtn.addEventListener('click', restoreDeletedChannels);
+  }
+  const mTabs = $('#modal-sort-tabs');
+  if (mTabs && !mTabs.dataset.bound) {
+    mTabs.dataset.bound = '1';
+    mTabs.addEventListener('click', ev => {
+      const t = ev.target.closest('[data-msort]');
+      if (!t) return;
+      state.sort = t.dataset.msort;
+      save();
+      refreshSortUI();
+      renderSources(srcSearch ? srcSearch.value : '');
+      if (state.layout === 'all') applyLayout('all');
+    });
   }
   renderSources('');
   modalRoot.hidden = false;
@@ -1945,7 +1964,7 @@ function renderSources(q) {
   const current = (modalSlot != null) ? slotIds()[modalSlot] : null;
   srcGrid.innerHTML = '';
   srcEntries = []; srcGroupLabels = [];
-  const list = allChannels().slice();
+  const list = allChannels().filter(c => !c.alt);
   const frag = document.createDocumentFragment();
 
   const addCard = (c, group) => {
@@ -1958,7 +1977,7 @@ function renderSources(q) {
   };
 
   if (state.sort === 'name') {
-    list.sort((a, b) => String(a.name || '').localeCompare(String(b.name || ''), 'ko'));
+    list.sort(compareAbc);
     list.forEach(c => addCard(c, null));
   } else {
     const groups = {};

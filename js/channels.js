@@ -231,18 +231,18 @@ const CHANNELS = [
   { id:'rudaw', name:'RUDAW TV', short:'RUDAW', country:'이라크', cc:'IQ', zone:'MIDEAST',
     kind:'hls', src:'https://hlspackager.akamaized.net/live/DB/RUDAW/HLS/RUDAW.m3u8', status:'live' },
 
-  /* ── OCEANIA ────────────────────────────────────────────────── */
-  { id:'abcau', name:'ABC NEWS (AUSTRALIA)', short:'ABC', country:'호주', cc:'AU', zone:'OCEANIA',
+  /* ── OCEANIA (아시아·태평양 권역으로 통합) ───────────────────── */
+  { id:'abcau', name:'ABC NEWS (AUSTRALIA)', short:'ABC', country:'호주', cc:'AU', zone:'ASIA',
     kind:'youtube', src:'UCVgO39Bk5sMo66-6o6Spn6Q', status:'live' },
 
-  { id:'skyau', name:'SKY NEWS AUSTRALIA', short:'SKY', country:'호주', cc:'AU', zone:'OCEANIA',
+  { id:'skyau', name:'SKY NEWS AUSTRALIA', short:'SKY', country:'호주', cc:'AU', zone:'ASIA',
     kind:'hls', src:'https://skynewsau-live.akamaized.net/hls/live/2002691/skynewsau-extra3/master.m3u8', status:'live' },
 
-  /* ── AFRICA ─────────────────────────────────────────────────── */
-  { id:'africanews', name:'AFRICANEWS', short:'AF', country:'아프리카', cc:'AF', zone:'AFRICA',
+  /* ── AFRICA (중동·아프리카 권역으로 통합) ────────────────────── */
+  { id:'africanews', name:'AFRICANEWS', short:'AF', country:'아프리카', cc:'AF', zone:'MIDEAST',
     kind:'youtube', src:'UC1_E8NeF5QHY2dtdLRBCCLA', status:'live' },
 
-  { id:'sabc', name:'SABC NEWS', short:'SABC', country:'남아공', cc:'ZA', zone:'AFRICA',
+  { id:'sabc', name:'SABC NEWS', short:'SABC', country:'남아공', cc:'ZA', zone:'MIDEAST',
     kind:'hls', src:'https://sabconetanw.cdn.mangomolo.com/news/smil:news.stream.smil/master.m3u8', status:'live' },
 
   /* ── KOREA (국내 뉴스 · 지역순에서는 맨 뒤, ‘한국 우선’ 정렬에서 맨 앞) ── */
@@ -429,14 +429,16 @@ const DEFAULT_SETS = {
 
 const KIND_LABEL = { youtube:'YT·LIVE', 'youtube-video':'YT·LIVE', hls:'HLS', kbs:'KBS·ONAIR', mbn:'MBN·ONAIR', iframe:'PAGE', web:'WEB' };
 const ZONE_LABEL = {
-  KOREA:'KOREA · 국내 뉴스',
-  ASIA:'ASIA · 일본·중국·아시아', AMERICAS:'AMERICAS · 미주',
-  EUROPE:'EUROPE · 영국·유럽', MIDEAST:'MIDDLE EAST · 중동',
-  OCEANIA:'OCEANIA · 오세아니아', AFRICA:'AFRICA · 아프리카',
-  EXTERNAL:'외부 공식 링크 (새 창)', CUSTOM:'CUSTOM SOURCES'
+  KOREA:'한국 · KOREA',
+  AMERICAS:'미주 · AMERICAS',
+  EUROPE:'유럽 · EUROPE',
+  ASIA:'아시아 · 태평양 · ASIA-PACIFIC',
+  MIDEAST:'중동 · 아프리카 · MIDDLE EAST & AFRICA',
+  CUSTOM:'커스텀 소스 · CUSTOM',
+  EXTERNAL:'외부 공식 링크 · EXTERNAL'
 };
-/* 지역·국가순 정렬 기준 — 일본·중국(아시아) → 미국(미주) → 영국·유럽 → 중동 → 나머지 → 한국(맨 뒤) */
-const ZONE_ORDER = ['ASIA', 'AMERICAS', 'EUROPE', 'MIDEAST', 'OCEANIA', 'AFRICA', 'KOREA', 'EXTERNAL', 'CUSTOM'];
+/* 대륙순 정렬 기준 — 한국 → 미주 → 유럽 → 아시아·태평양 → 중동·아프리카 */
+const ZONE_ORDER = ['KOREA', 'AMERICAS', 'EUROPE', 'ASIA', 'MIDEAST', 'CUSTOM', 'EXTERNAL'];
 
 const CHANNEL_BY_ID = CHANNELS.reduce((m, c) => (m[c.id] = c, m), {});
 
