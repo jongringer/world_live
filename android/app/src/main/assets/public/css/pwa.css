@@ -49,9 +49,9 @@
   width: min(360px, calc(100vw - 28px));
   padding: 14px 16px 12px;
   border-radius: 12px;
-  border: 1px solid rgba(245, 229, 192, 0.45);
+  border: 1px solid rgba(186, 230, 253, 0.45);
   background:
-    radial-gradient(320px 120px at 100% 0%, rgba(212, 175, 55, 0.20), transparent 70%),
+    radial-gradient(320px 120px at 100% 0%, rgba(56, 189, 248, 0.20), transparent 70%),
     linear-gradient(180deg, rgba(22, 32, 48, 0.98), rgba(10, 16, 26, 0.99));
   box-shadow: 0 18px 42px -10px rgba(0, 0, 0, 0.85), inset 0 1px 0 rgba(255, 255, 255, 0.14);
   color: #E9F1FB;
@@ -141,9 +141,9 @@
   align-items: center;
   gap: 10px;
   padding: 7px 14px;
-  border-bottom: 1px solid rgba(245, 229, 192, 0.22);
+  border-bottom: 1px solid rgba(186, 230, 253, 0.22);
   background:
-    radial-gradient(420px 90px at 6% 0%, rgba(212, 175, 55, 0.16), transparent 70%),
+    radial-gradient(420px 90px at 6% 0%, rgba(56, 189, 248, 0.16), transparent 70%),
     linear-gradient(180deg, rgba(24, 34, 52, 0.97), rgba(12, 19, 31, 0.99));
   color: #EAF2FC;
   font-family: Pretendard, "Pretendard Variable", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;

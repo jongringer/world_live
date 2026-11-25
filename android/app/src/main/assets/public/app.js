@@ -187,12 +187,58 @@ function kWeightProbe(ctx, fromNode, fftSize) {
 }
 /* Pause 중이던/제스처 전에 만들어진 <video> 들을 지금 연결한다 */
 function attachPendingLevel() {
-  if (!LEVEL_ON) return;
   Object.keys(live).forEach(function (k) {
     const L = live[k];
-    if (L && L.video && !L.video._wlChain) attachLevel(L.video, { slot: +k, id: L.ch.id });
+    if (!L || !L.video || L.video._wlChain) return;
+    if (LEVEL_ON) attachLevel(L.video, { slot: +k, id: L.ch.id });
+    else if (volPct(L.ch.id) > 100) ensureCleanBoost(L.video, L.ch.id, +k);
   });
-  try { if (pvVideo && !pvVideo._wlChain) attachLevel(pvVideo, { id: 'preview' }); } catch (e) {}
+  try {
+    if (pvVideo && !pvVideo._wlChain && LEVEL_ON) attachLevel(pvVideo, { id: 'preview' });
+  } catch (e) {}
+}
+/* 100% 초과 증폭이 필요한 채널 1개에만 가벼운 순수 GainNode(src → user → bus)를 연결한다.
+   컴프레서·AGC·리미터·필터·FFT 루프를 전혀 붙이지 않아 오디오 끓음 없이 소리만 키운다. */
+function ensureCleanBoost(v, chId, slot) {
+  if (!v) return false;
+  const pct = volPct(chId);
+  if (v._wlChain) {
+    const c = v._wlChain;
+    try { v.volume = 1; } catch (e) {}
+    if (c.user && AUDIO.ctx) c.user.gain.setTargetAtTime(pct / 100, AUDIO.ctx.currentTime, 0.03);
+    return true;
+  }
+  if (pct <= 100) return false;
+  const ctx = audioCtx();
+  if (!ctx) return false;
+  const connectNow = function () {
+    if (v._wlChain) {
+      try { v.volume = 1; } catch (e) {}
+      if (v._wlChain.user) v._wlChain.user.gain.setTargetAtTime(volPct(chId) / 100, ctx.currentTime, 0.03);
+      return true;
+    }
+    try {
+      v.volume = 1;
+      const src = ctx.createMediaElementSource(v);
+      const user = ctx.createGain();
+      user.gain.value = volPct(chId) / 100;
+      src.connect(user);
+      user.connect(AUDIO.bus);
+      const chain = {
+        v: v, src: src, hpf: null, comp: null, gain: null, lim: null, user: user, lim2: null,
+        slot: slot != null ? slot : null, id: chId || (v.title || 'video'),
+        gDb: 0, primed: false, lvl: null, lufs: -Infinity, intL: -Infinity, peak: 0, t: 0,
+        meter: null, post: null
+      };
+      v._wlChain = chain;
+      v._wlWait = null;
+      AUDIO.chains.push(chain); AUDIO.attached++;
+      return true;
+    } catch (e) { return false; }
+  };
+  if (ctx.state === 'running') return connectNow();
+  try { ctx.resume().then(connectNow, function () {}); } catch (e) {}
+  return false;
 }
 /* <video> 하나를 평준화 그래프에 연결 — 디폴트(LEVEL_ON=false)에서는 AudioContext 자체를 열지 않고 순정 원음 그대로 재생 */
 function attachLevel(v, meta) {
@@ -352,8 +398,12 @@ function startLevelLoop() {
 }
 /* 자동재생 정책 — 첫 터치·키 입력에서 AudioContext 를 깨우고 대기하던 영상을 연결한다 */
 function wakeAudio() {
-  if (!LEVEL_ON) return;
-  const ctx = AUDIO.ctx;
+  const hasBoost = LEVEL_ON || Object.keys(live).some(function (k) {
+    const L = live[k];
+    return L && L.video && !L.video._wlChain && volPct(L.ch.id) > 100;
+  });
+  if (!hasBoost) return;
+  const ctx = audioCtx();
   if (!ctx) return;
   if (ctx.state === 'suspended') {
     try { ctx.resume().then(attachPendingLevel, function () {}); } catch (e) {}
@@ -428,8 +478,11 @@ window.WL_AUDIO = {
    · YouTube 0~100% — 플레이어 자체 볼륨(setVolume 0~100)이 한계다.
    · 값은 채널 ID별로 worldlive.v3 에 저장돼 새로고침·재부팅 뒤에도 유지된다.
      (100%는 저장하지 않는다 = 기본값) */
+function canBoostVol(ch) {
+  return !!(ch && (ch.kind === 'hls' || ch.kind === 'kbs' || ch.kind === 'mbn'));
+}
 function volMaxOf(ch) {
-  return (LEVEL_ON && ch && (ch.kind === 'hls' || ch.kind === 'kbs' || ch.kind === 'mbn')) ? 200 : 100;
+  return 200;
 }
 function volPct(chId) {
   const v = chId ? state.vol[chId] : undefined;
@@ -446,7 +499,10 @@ function scheduleSave() {
   if (saveTimer) clearTimeout(saveTimer);
   saveTimer = setTimeout(function () { saveTimer = 0; try { save(); } catch (e) {} }, 200);
 }
-/* 채널 하나의 볼륨을 실제 재생에 반영 — 순정 네이티브 video.volume / YouTube setVolume */
+/* 채널 하나의 볼륨을 실제 재생에 반영:
+   · <=100%: 순정 video.volume (AudioContext 개입 0)
+   · >100%: 해당 채널에만 순수 GainNode 직결 증폭 (최대 200% / +6dB)
+   · YouTube: setVolume(0~100) */
 function applyChannelVolume(chId) {
   const ch = chId ? byId(chId) : null;
   if (!ch) return;
@@ -455,12 +511,18 @@ function applyChannelVolume(chId) {
   AUDIO.chains.forEach(function (c) {
     if (c.id === chId && c.user && ctx) c.user.gain.setTargetAtTime(pct / 100, ctx.currentTime, 0.03);
   });
-  const ids = slotIds();
-  ids.forEach(function (id, i) {
+  const actIds = activeSlotIds();
+  actIds.forEach(function (id, i) {
     if (id !== chId) return;
     const L = live[i];
     if (L && L.video) {
-      try { L.video.volume = Math.max(0, Math.min(1, pct / 100)); } catch (e) {}
+      if (L.video._wlChain) {
+        try { L.video.volume = 1; } catch (e) {}
+      } else if (pct > 100 && canBoostVol(ch)) {
+        ensureCleanBoost(L.video, chId, i);
+      } else {
+        try { L.video.volume = Math.max(0, Math.min(1, pct / 100)); } catch (e) {}
+      }
     }
     if (ch.kind === 'youtube' || ch.kind === 'youtube-video') {
       ytCmd(i, 'setVolume', [Math.min(100, pct)]);
@@ -502,8 +564,7 @@ function buildVolPresets(ch) {
   const wrap = $('#vol-presets');
   if (!wrap) return;
   wrap.innerHTML = '';
-  const list = volMaxOf(ch) > 100 ? [30, 70, 100, 120, 150, 200] : [30, 50, 70, 100];
-  list.forEach(function (p) {
+  [30, 70, 100, 120, 150, 200].forEach(function (p) {
     const b = document.createElement('button');
     b.type = 'button';
     b.dataset.vol = String(p);
@@ -516,16 +577,15 @@ function syncVolPop() {
   if (!pop || pop.hidden || volSlot == null) return;
   const ch = slotChannel(volSlot);
   if (!ch) { closeVolPop(); return; }
-  const max = volMaxOf(ch);
-  const p = Math.min(max, volPct(ch.id));
+  const p = volPct(ch.id);
   const r = $('#vol-range');
   if (r && document.activeElement !== r) r.value = String(p);
-  if (r) r.style.setProperty('--vol-fill', Math.round((p / max) * 100) + '%');
+  if (r) r.style.setProperty('--vol-fill', Math.round((p / 200) * 100) + '%');
   $('#vol-pct').textContent = p + '%';
   $('#vol-db').textContent = (p === 0 ? '-∞' : p === 100 ? '0.0' : (20 * Math.log10(p / 100)).toFixed(1)) + ' dB';
-  $('#vol-note').textContent = max > 100
-    ? '평준화 모드(?level=1) — 최대 200%(+6.0 dB)까지 조절할 수 있습니다.'
-    : '원음 그대로 재생됩니다 (0~100% 조절 · 기본 100%).';
+  $('#vol-note').textContent = canBoostVol(ch)
+    ? '가운데(100% 원음)가 기본값 · 작은 소리는 최대 200%(+6.0 dB)까지 키울 수 있습니다.'
+    : '가운데(100% 원음)가 기본값 · YouTube는 플레이어 정책상 실제 출력은 100%가 최대입니다.';
   pop.querySelectorAll('#vol-presets [data-vol]').forEach(function (b) {
     b.classList.toggle('is-current', Number(b.dataset.vol) === p);
   });
@@ -605,6 +665,7 @@ const state = {
   sets: freshSets(),
   allOrder: [],            // ‘내 순서’ — 전체 스크롤(ALL LIVE) 채널 순서
   custom: [],
+  deleted: [],             // 사용자가 삭제한 채널 ID 목록 (새로고침·재방문 뒤에도 유지)
   audioId: DEFAULT_AUDIO,  // 기본은 1번 칸 YTN 단독 청취
   vol: {},                 // 채널 ID별 볼륨(%) — HLS 0~200, YouTube 0~100 (100=기본)
   muted: false,
@@ -638,7 +699,7 @@ function save() {
       econVer: ECON_PRESET_VER,
       layout: state.layout, start: state.start, startPinned: state.startPinned, sort: state.sort, sets: state.sets,
       allOrder: state.allOrder,
-      custom: state.custom, audioId: state.audioId, muted: state.muted, vol: state.vol
+      custom: state.custom, deleted: state.deleted, audioId: state.audioId, muted: state.muted, vol: state.vol
     }));
   } catch (e) {}
 }
@@ -662,10 +723,20 @@ function normalizeSet(arr, key) {
     const id = seeds[k % seeds.length];
     if (byId(id) && out.indexOf(id) < 0) out.push(id);
   }
+  if (out.length < n) {
+    const pool = activeLiveIds();
+    for (let k = 0; out.length < n && k < pool.length; k++) {
+      const id = pool[k];
+      if (byId(id) && out.indexOf(id) < 0) out.push(id);
+    }
+  }
   return out;
 }
 function applyStored(d) {
   if (!d || typeof d !== 'object') return;
+  if (Array.isArray(d.deleted)) {
+    state.deleted = d.deleted.filter(id => typeof id === 'string');
+  }
   const dead = (typeof DEAD_SOURCES !== 'undefined' && DEAD_SOURCES) || [];
   if (Array.isArray(d.custom)) state.custom = d.custom.filter(c => c && c.id && c.kind && c.src)
     .filter(c => !(c.kind === 'youtube-video' && dead.indexOf(c.src) >= 0))
@@ -749,27 +820,95 @@ function load() {
 }
 
 /* ── channel helpers ───────────────────────────────────────── */
-function allChannels() { return CHANNELS.concat(state.custom); }
-function byId(id) { return CHANNEL_BY_ID[id] || state.custom.find(c => c.id === id) || null; }
+function isDeleted(id) { return state.deleted.indexOf(id) >= 0; }
+function allChannels() { return CHANNELS.filter(c => !isDeleted(c.id)).concat(state.custom); }
+function byId(id) {
+  if (!id || isDeleted(id)) return null;
+  return CHANNEL_BY_ID[id] || state.custom.find(c => c.id === id) || null;
+}
+function activeLiveIds() {
+  const base = ALL_LIVE_IDS.filter(id => !isDeleted(id));
+  state.custom.forEach(c => {
+    if (c && c.id && c.kind !== 'web' && !isDeleted(c.id) && base.indexOf(c.id) < 0) base.push(c.id);
+  });
+  return base;
+}
+function syncRestoreBtn() {
+  const btn = $('#btn-restore-del');
+  if (!btn) return;
+  const n = state.deleted.length;
+  btn.hidden = n === 0;
+  if (n > 0) btn.textContent = '삭제 복원 (' + n + ')';
+}
+function deleteChannel(id) {
+  if (!id) return;
+  const raw = CHANNEL_BY_ID[id] || state.custom.find(c => c.id === id);
+  const name = (raw && raw.name) || id;
+  if (state.custom.some(c => c.id === id)) {
+    state.custom = state.custom.filter(c => c.id !== id);
+  } else if (!isDeleted(id)) {
+    state.deleted.push(id);
+  }
+  state.allOrder = state.allOrder.filter(x => x !== id);
+  const fallbackPool = activeLiveIds();
+  Object.keys(state.sets).forEach(k => {
+    const arr = state.sets[k];
+    if (!Array.isArray(arr) || arr.indexOf(id) < 0) return;
+    state.sets[k] = arr.map(s => {
+      if (s !== id) return s;
+      const pick = nextUnusedId(k, arr) || fallbackPool[0] || 'ytn24';
+      return pick;
+    });
+  });
+  if (state.audioId === id) {
+    const curIds = slotIds();
+    state.audioId = curIds[0] || fallbackPool[0] || null;
+  }
+  save();
+  syncRestoreBtn();
+  if (modalRoot && !modalRoot.hidden) renderSources(srcSearch ? srcSearch.value : '');
+  rebuildGrid();
+  applyAudio();
+  toast(name + ' — 채널을 삭제했습니다');
+}
+function restoreDeletedChannels() {
+  const n = state.deleted.length;
+  if (!n) return;
+  state.deleted = [];
+  save();
+  syncRestoreBtn();
+  if (modalRoot && !modalRoot.hidden) renderSources(srcSearch ? srcSearch.value : '');
+  rebuildGrid();
+  toast('삭제했던 채널 ' + n + '개를 모두 복원했습니다');
+}
 const SORT_MODES = {
-  zone:  { label: '지역·국가순', sub: '일본·중국 → 미국 → 유럽 → 중동 → 한국' },
+  zone:  { label: '대륙순', sub: '한국 → 미주 → 유럽 → 아시아·태평양 → 중동·아프리카' },
+  name:  { label: 'ABC순', sub: '알파벳 A-Z · 가나다 이름순' },
   custom:{ label: '내 순서', sub: '전체 스크롤에서 ◀ ▶ 로 직접 정렬' },
-  name:  { label: '이름순 (A-Z)', sub: '채널명 가나다·알파벳' },
-  kr:    { label: '한국 우선', sub: '국내 뉴스를 맨 앞으로' }
+  kr:    { label: '대륙순', sub: '한국 → 미주 → 유럽 → 아시아·태평양 → 중동·아프리카' }
 };
+function compareAbc(ca, cb) {
+  const na = String((ca && ca.name) || '').trim();
+  const nb = String((cb && cb.name) || '').trim();
+  const ea = /^[A-Za-z0-9]/.test(na);
+  const eb = /^[A-Za-z0-9]/.test(nb);
+  if (ea !== eb) return ea ? -1 : 1;
+  return na.localeCompare(nb, ea ? 'en' : 'ko', { sensitivity: 'base' });
+}
 function zoneRank(c) {
   const i = ZONE_ORDER.indexOf((c && c.zone) || 'ASIA');
   return i < 0 ? ZONE_ORDER.length : i;
 }
 /* ‘내 순서’ — 저장된 순서를 먼저 두고, 빠진(새로 추가된) 채널은 뒤에 붙인다 */
 function allOrderIds() {
+  const liveIds = activeLiveIds();
   const seen = {};
   const out = [];
   state.allOrder.forEach(id => {
-    if (ALL_LIVE_IDS.indexOf(id) < 0 || seen[id]) return;
+    if (liveIds.indexOf(id) < 0 || seen[id]) return;
     seen[id] = 1; out.push(id);
   });
-  ALL_LIVE_IDS.forEach(id => { if (!seen[id]) { seen[id] = 1; out.push(id); } });
+  liveIds.forEach(id => { if (!seen[id]) { seen[id] = 1; out.push(id); } });
   return out;
 }
 function moveAllOrder(id, dir) {
@@ -799,25 +938,17 @@ function moveAllOrder(id, dir) {
 }
 function sortedIds() {
   if (state.sort === 'custom') return allOrderIds();
-  const ids = ALL_LIVE_IDS.slice();
+  const liveIds = activeLiveIds();
+  const ids = liveIds.slice();
   const kr = c => c.zone === 'KOREA' ? 0 : 1;
   if (state.sort === 'name') {
-    ids.sort((a, b) => {
-      const ca = byId(a) || {}, cb = byId(b) || {};
-      return String(ca.name || '').localeCompare(String(cb.name || ''), 'ko');
-    });
-  } else if (state.sort === 'zone') {
-    // 아시아(일본·중국) → 미주 → 영국·유럽 → 중동 → 오세아니아 → 아프리카 → 한국(맨 뒤) — 같은 지역은 카탈로그 순서
+    ids.sort((a, b) => compareAbc(byId(a), byId(b)));
+  } else {
+    // 대륙순: 한국 → 미주 → 유럽 → 아시아·태평양 → 중동·아프리카
     ids.sort((a, b) => {
       const ra = zoneRank(byId(a)), rb = zoneRank(byId(b));
       if (ra !== rb) return ra - rb;
-      return ALL_LIVE_IDS.indexOf(a) - ALL_LIVE_IDS.indexOf(b);
-    });
-  } else if (state.sort === 'kr') {
-    ids.sort((a, b) => {
-      const ra = kr(byId(a) || {}), rb = kr(byId(b) || {});
-      if (ra !== rb) return ra - rb;
-      return ALL_LIVE_IDS.indexOf(a) - ALL_LIVE_IDS.indexOf(b);
+      return liveIds.indexOf(a) - liveIds.indexOf(b);
     });
   }
   return ids;
@@ -825,6 +956,14 @@ function sortedIds() {
 function slotIds() {
   if (state.layout === 'all') return sortedIds();
   return state.sets[state.layout];
+}
+/* 현재 화면 각 슬롯에서 실제로 방송(표시)되고 있는 채널 ID 목록 (timeSlot 대체 채널 반영) */
+function activeSlotIds() {
+  const ids = slotIds();
+  return ids.map((id, i) => {
+    const ch = slotChannel(i);
+    return ch ? ch.id : id;
+  });
 }
 function slotChannel(i) {
   const ids = slotIds();
@@ -935,6 +1074,12 @@ window.addEventListener('message', function (e) {
   }
   if (d.event === 'onError') {
     const code = (d.info && d.info.data) || '?';
+    if (L.ch && L.ch.fallbackVideo && YT_FALLBACK[slot] !== 2) {
+      YT_FALLBACK[slot] = 2;
+      unmountSlot(slot);
+      mountSlot(slot);
+      return;
+    }
     L.err = code;
     if (String(code) === '150' || String(code) === '101') {
       showVeil(slot, '임베드 제한 채널', L.ch.name + '은(는) 방송사가 외부 페이지 삽입을 막았습니다(오류 ' + code + '). 소스를 바꾸거나 새 창에서 재생하세요.', '새 창에서 열기', 'open');
@@ -960,7 +1105,8 @@ const ICONS = {
   caret:'<svg viewBox="0 0 12 12" width="10" height="10"><path d="M2.6 4.6L6 8l3.4-3.4" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>',
   left:'<svg viewBox="0 0 16 16"><path d="M10 3.4L5.4 8l4.6 4.6" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>',
   right:'<svg viewBox="0 0 16 16"><path d="M6 3.4L10.6 8 6 12.6" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>',
-  top:'<svg viewBox="0 0 16 16"><g fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M8 12.6V4.4M4.4 8L8 4.4 11.6 8"/><path d="M3.4 2.6h9.2"/></g></svg>'
+  top:'<svg viewBox="0 0 16 16"><g fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M8 12.6V4.4M4.4 8L8 4.4 11.6 8"/><path d="M3.4 2.6h9.2"/></g></svg>',
+  del:'<svg viewBox="0 0 16 16"><g fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M4.2 4.2l7.6 7.6M11.8 4.2l-7.6 7.6"/></g></svg>'
 };
 function esc(s) {
   return String(s == null ? '' : s).replace(/[&<>"']/g, m => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[m]));
@@ -991,6 +1137,7 @@ function buildTile(i) {
                <button class="tbtn mv" data-act="mv-first" title="맨 앞으로">${ICONS.top}</button>
                <button class="tbtn mv" data-act="mv-prev" title="앞으로">${ICONS.left}</button>
                <button class="tbtn mv" data-act="mv-next" title="뒤로">${ICONS.right}</button>
+               <button class="tbtn mv tbtn-del" data-act="del" title="이 채널 삭제">${ICONS.del}</button>
              </div>
              <button class="chan-switch" data-act="src" title="이 칸의 채널 변경">${ICONS.src}<span>채널 변경</span>${ICONS.caret}</button>
            </div>`
@@ -1000,7 +1147,10 @@ function buildTile(i) {
       <div class="veil-icon">${ICONS.warn}</div>
       <div class="veil-title">피드 없음</div>
       <div class="veil-desc"></div>
-      <button class="veil-btn" data-act="src">${ICONS.link} 소스 변경</button>
+      <div class="veil-actions">
+        <button class="veil-btn" data-act="src">${ICONS.link} 소스 변경</button>
+        <button class="veil-btn veil-btn-del" data-act="del" title="이 채널을 목록에서 삭제">${ICONS.del} 채널 삭제</button>
+      </div>
     </div>
     <div class="tlay-ctrl">
       <div class="ctrl-meta">
@@ -1014,6 +1164,7 @@ function buildTile(i) {
         <button class="tbtn" data-act="max" title="1×1 전체화면 (ESC → 이전 화면)">${ICONS.max}</button>
         <button class="tbtn" data-act="pop" title="새 창에서 열기">${ICONS.pop}</button>
         <button class="tbtn" data-act="reload" title="이 피드 새로고침">${ICONS.re}</button>
+        <button class="tbtn tbtn-del" data-act="del" title="이 채널 삭제 (목록에서 제거)">${ICONS.del}</button>
       </div>
     </div>`;
   return el;
@@ -1046,19 +1197,24 @@ function mountSlot(i) {
   if (ch.kind === 'youtube' || ch.kind === 'youtube-video') {
     /* 고정 영상(youtube-video) 타일이 끝나면, 같은 채널의 '지금 라이브'(live_stream)로 한 번
        자동 전환한다 — 방송사가 스트림을 새로 열었을 때 손대지 않고도 살아날 가능성을 얻기 위함. */
-    const useChannelLive = (ch.kind === 'youtube') || (!!ch.ytChannel && YT_FALLBACK[i] === 1);
+    const useFallbackVideo = !!(ch.fallbackVideo && YT_FALLBACK[i] === 2);
+    const useChannelLive = !useFallbackVideo && ((ch.kind === 'youtube') || (!!ch.ytChannel && YT_FALLBACK[i] === 1));
+    const isSingle = state.layout === '1';
     const params = new URLSearchParams({
       /* 자동재생은 '음소거' 상태에서만 허용됩니다(mute=0&autoplay=1 은 모바일·데스크톱 모두 차단).
          그래서 모든 유튜브 타일은 mute=1 로 먼저 띄워 '바로 재생'되게 하고,
-         음성 채널은 onReady 에서 unMute 를 시도, 막히면 첫 터치에서 소리를 켭니다(armSoundUnlock). */
-      autoplay: '1', mute: '1', controls: '0', rel: '0',
-      modestbranding: '1', playsinline: '1', disablekb: '1', fs: '0',
+         음성 채널은 onReady 에서 unMute 를 시도, 막히면 첫 터치에서 소리를 켭니다(armSoundUnlock).
+         1×1 풀화면에서는 controls=1 로 열어 유튜브 설정(⚙️ 화질 1080p 등)에 접근할 수 있게 합니다. */
+      autoplay: '1', mute: '1', controls: isSingle ? '1' : '0', rel: '0',
+      modestbranding: '1', playsinline: '1', disablekb: isSingle ? '0' : '1', fs: '0',
       iv_load_policy: '3', enablejsapi: '1', loop: '0'
     });
     if (location.origin && location.origin !== 'null') params.set('origin', location.origin);
-    const path = useChannelLive
-      ? 'embed/live_stream?channel=' + encodeURIComponent(ch.kind === 'youtube' ? ch.src : ch.ytChannel)
-      : 'embed/' + encodeURIComponent(ch.src);
+    const path = useFallbackVideo
+      ? 'embed/' + encodeURIComponent(ch.fallbackVideo)
+      : useChannelLive
+        ? 'embed/live_stream?channel=' + encodeURIComponent(ch.kind === 'youtube' ? ch.src : ch.ytChannel)
+        : 'embed/' + encodeURIComponent(ch.src);
     const iframe = document.createElement('iframe');
     iframe.src = 'https://www.youtube.com/' + path + (path.indexOf('?') >= 0 ? '&' : '?') + params.toString();
     iframe.allow = 'autoplay; encrypted-media; picture-in-picture; fullscreen';
@@ -1075,11 +1231,17 @@ function mountSlot(i) {
     iframe.addEventListener('load', () => { setTimeout(hs, 350); setTimeout(hs, 1500); });
     setTimeout(hs, 1800);
     setTimeout(() => {
-      if (!live[i]) return;
+      if (!live[i] || myGen !== gen) return;
+      if (ch.fallbackVideo && YT_FALLBACK[i] !== 2 && live[i].ps !== 1) {
+        YT_FALLBACK[i] = 2;
+        unmountSlot(i);
+        mountSlot(i);
+        return;
+      }
       ytCmd(i, 'addEventListener', ['onStateChange']);
       if (live[i].ps !== 1) ytCmd(i, 'playVideo');
       ytCmd(i, muted ? 'mute' : 'unMute');
-    }, 5000);
+    }, 4500);
     setTimeout(() => {
       if (live[i] && live[i].state === 'loading' && !live[i].err) setTileState(i, live[i].ch.status === 'event' ? 'offline' : 'live');
     }, 11000);
@@ -1289,9 +1451,13 @@ function attachHls(i, v, primary, backup, refresh) {
       let netRetry = 0, netRetriedAll = false;
       let mediaRecovered = false;
       const hls = new window.Hls({
+        enableWorker: true,
+        capLevelToPlayerSize: true,
         lowLatencyMode: false,
-        liveSyncDurationCount: 4,
-        maxBufferLength: 24,
+        liveSyncDurationCount: 3,
+        maxBufferLength: 12,
+        maxMaxBufferLength: 20,
+        backBufferLength: 6,
         manifestLoadingMaxRetry: 2,
         levelLoadingMaxRetry: 2,
         fragLoadingMaxRetry: 2
@@ -1575,13 +1741,16 @@ function selectSlot(i) {
     ytCmd(i, 'setVolume', [Math.min(100, volPct(ch.id))]);
     ytCmd(i, 'playVideo');
   } else if ((ch.kind === 'hls' || ch.kind === 'kbs' || ch.kind === 'mbn') && L.video) {
-    try { L.video.volume = Math.max(0, Math.min(1, volPct(ch.id) / 100)); } catch (e) {}
+    const pct = volPct(ch.id);
+    if (pct > 100) ensureCleanBoost(L.video, ch.id, i);
+    else if (L.video._wlChain && L.video._wlChain.user && AUDIO.ctx) L.video._wlChain.user.gain.setTargetAtTime(pct / 100, AUDIO.ctx.currentTime, 0.03);
+    else { try { L.video.volume = Math.max(0, Math.min(1, pct / 100)); } catch (e) {} }
     if (L.video.paused) L.video.play().catch(() => {});
   }
 }
 /* 저장된 audioId로 현재 화면의 선택 칸을 되찾는다 (레이아웃 변경·재구성 후) */
 function selByChannel() {
-  const ids = slotIds();
+  const ids = activeSlotIds();
   if (state.muted || !state.audioId) { state.selSlot = null; return; }
   if (state.selSlot != null && ids[state.selSlot] === state.audioId) return;
   const at = ids.indexOf(state.audioId);
@@ -1593,7 +1762,7 @@ function selByChannel() {
 /* 흰색 테두리(탤리) 표시 갱신 — 선택 칸 하나에만 */
 function syncTally() {
   const on = !state.muted && state.audioId != null;
-  const ids = slotIds();
+  const ids = activeSlotIds();
   grid.querySelectorAll('.tile').forEach(el => {
     const i = parseInt(el.dataset.slot, 10);
     el.classList.toggle('is-tally', !!(on && i === state.selSlot && ids[i] === state.audioId));
@@ -1604,7 +1773,7 @@ function setAudio(chId) {
   else {
     state.audioId = chId;
     state.muted = false;
-    const at = slotIds().indexOf(chId);
+    const at = activeSlotIds().indexOf(chId);
     state.selSlot = at >= 0 ? at : null;
   }
   applyAudio();
@@ -1622,7 +1791,10 @@ function applyAudio() {
     if (L.video != null) {
       L.video.muted = muted;
       if (!muted) {
-        try { L.video.volume = Math.max(0, Math.min(1, volPct(L.ch.id) / 100)); } catch (e) {}
+        const pct = volPct(L.ch.id);
+        if (pct > 100 && canBoostVol(L.ch)) ensureCleanBoost(L.video, L.ch.id, i);
+        else if (L.video._wlChain && L.video._wlChain.user && AUDIO.ctx) L.video._wlChain.user.gain.setTargetAtTime(pct / 100, AUDIO.ctx.currentTime, 0.03);
+        else { try { L.video.volume = Math.max(0, Math.min(1, pct / 100)); } catch (e) {} }
         playWithSound(L.video);
       }
     }
@@ -1743,9 +1915,15 @@ function resetEconNews() {
 }
 
 function refreshSortUI() {
-  $('#sort-label').textContent = SORT_MODES[state.sort].label;
+  const mode = SORT_MODES[state.sort] ? state.sort : 'zone';
+  const lbl = $('#sort-label');
+  if (lbl) lbl.textContent = SORT_MODES[mode].label;
   document.querySelectorAll('#sort-menu [data-sort]').forEach(b => {
-    b.classList.toggle('is-current', b.dataset.sort === state.sort);
+    b.classList.toggle('is-current', b.dataset.sort === mode);
+  });
+  const activeTab = mode === 'name' ? 'name' : 'zone';
+  document.querySelectorAll('#modal-sort-tabs [data-msort]').forEach(b => {
+    b.classList.toggle('is-active', b.dataset.msort === activeTab);
   });
 }
 
@@ -1754,14 +1932,33 @@ function openModal(slot) {
   modalSlot = (typeof slot === 'number') ? slot : null;
   const kicker = $('#modal-kicker'), title = $('#modal-title');
   if (modalSlot == null) {
-    kicker.textContent = 'SOURCE LIBRARY · ' + (LAYOUTS[state.layout].label || '');
-    title.textContent = '소스 라이브러리 · 커스텀 소스';
+    kicker.textContent = 'SOURCE LIBRARY';
+    title.textContent = '소스 라이브러리';
   } else {
-    const L = LAYOUTS[state.layout];
-    kicker.textContent = 'SOURCE PATCH BAY — ' + L.label + ' · SLOT ' + String(modalSlot + 1).padStart(2, '0');
+    kicker.textContent = 'SOURCE PATCH BAY · SLOT ' + String(modalSlot + 1).padStart(2, '0');
     title.textContent = '채널 변경 — ' + slotChannel(modalSlot).name;
   }
   srcSearch.value = '';
+  syncRestoreBtn();
+  refreshSortUI();
+  const rBtn = $('#btn-restore-del');
+  if (rBtn && !rBtn.dataset.bound) {
+    rBtn.dataset.bound = '1';
+    rBtn.addEventListener('click', restoreDeletedChannels);
+  }
+  const mTabs = $('#modal-sort-tabs');
+  if (mTabs && !mTabs.dataset.bound) {
+    mTabs.dataset.bound = '1';
+    mTabs.addEventListener('click', ev => {
+      const t = ev.target.closest('[data-msort]');
+      if (!t) return;
+      state.sort = t.dataset.msort;
+      save();
+      refreshSortUI();
+      renderSources(srcSearch ? srcSearch.value : '');
+      if (state.layout === 'all') applyLayout('all');
+    });
+  }
   renderSources('');
   modalRoot.hidden = false;
   const hint = $('#modal-hint');
@@ -1774,7 +1971,7 @@ function renderSources(q) {
   const current = (modalSlot != null) ? slotIds()[modalSlot] : null;
   srcGrid.innerHTML = '';
   srcEntries = []; srcGroupLabels = [];
-  const list = allChannels().slice();
+  const list = allChannels().filter(c => !c.alt);
   const frag = document.createDocumentFragment();
 
   const addCard = (c, group) => {
@@ -1787,8 +1984,33 @@ function renderSources(q) {
   };
 
   if (state.sort === 'name') {
-    list.sort((a, b) => String(a.name || '').localeCompare(String(b.name || ''), 'ko'));
-    list.forEach(c => addCard(c, null));
+    list.sort(compareAbc);
+    const abcOrder = ['AF', 'GN', 'OZ', 'KR'];
+    const abcMeta = {
+      AF: { label: 'A – F · ALPHABET', zone: 'AMERICAS' },
+      GN: { label: 'G – N · ALPHABET', zone: 'EUROPE' },
+      OZ: { label: 'O – Z · ALPHABET', zone: 'ASIA' },
+      KR: { label: '가 – 하 · 한국어 채널', zone: 'KOREA' }
+    };
+    const buckets = {};
+    list.forEach(c => {
+      const ch0 = String(c.name || '').trim().charAt(0).toUpperCase();
+      const k = (ch0 >= 'A' && ch0 <= 'F') ? 'AF'
+              : (ch0 >= 'G' && ch0 <= 'N') ? 'GN'
+              : (ch0 >= 'O' && ch0 <= 'Z') ? 'OZ' : 'KR';
+      (buckets[k] = buckets[k] || []).push(c);
+    });
+    abcOrder.forEach(k => {
+      const arr = buckets[k];
+      if (!arr || !arr.length) return;
+      const lab = document.createElement('div');
+      lab.className = 'src-group-label';
+      lab.dataset.zone = abcMeta[k].zone;
+      lab.innerHTML = '<span class="sgl-name">' + esc(abcMeta[k].label) + '</span><span class="sgl-count">' + arr.length + '</span>';
+      frag.appendChild(lab);
+      srcGroupLabels.push({ el: lab, zone: k, countEl: lab.querySelector('.sgl-count') });
+      arr.forEach(c => addCard(c, k));
+    });
   } else {
     const groups = {};
     list.forEach(c => { const z = c.zone || 'ASIA'; (groups[z] = groups[z] || []).push(c); });
@@ -1797,6 +2019,7 @@ function renderSources(q) {
       if (!arr) return;
       const lab = document.createElement('div');
       lab.className = 'src-group-label';
+      lab.dataset.zone = z;
       lab.innerHTML = '<span class="sgl-name">' + esc(ZONE_LABEL[z] || z) + '</span><span class="sgl-count">' + arr.length + '</span>';
       frag.appendChild(lab);
       srcGroupLabels.push({ el: lab, zone: z, countEl: lab.querySelector('.sgl-count') });
@@ -1838,6 +2061,7 @@ function srcCard(c, current) {
   b.type = 'button';
   b.className = 'src-card' + (current === c.id ? ' is-current' : '');
   b.dataset.kind = c.kind;
+  b.dataset.zone = c.zone || 'ASIA';
   b.dataset.id = c.id;
   const isCustom = !!c.custom;
   const stateTxt = c.status === 'event' ? ' · EVENT' : c.status === 'external' ? ' · 외부' : '';
@@ -1850,15 +2074,12 @@ function srcCard(c, current) {
         ${esc(c.cc || '')} · ${KIND_LABEL[c.kind] || ''}${stateTxt}
       </span>
     </span>
-    ${isCustom ? '<span class="src-del" data-del="' + esc(c.id) + '" title="삭제"><svg viewBox="0 0 16 16"><g stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M4 4l8 8M12 4l-8 8"/></g></svg></span>' : ''}`;
+    <span class="src-del" data-del="${esc(c.id)}" title="이 채널 삭제 (목록에서 제거)"><svg viewBox="0 0 16 16"><g stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M4 4l8 8M12 4l-8 8"/></g></svg></span>`;
   b.addEventListener('click', ev => {
     const del = ev.target.closest('[data-del]');
     if (del) {
       ev.stopPropagation();
-      state.custom = state.custom.filter(x => x.id !== del.dataset.del);
-      Object.keys(state.sets).forEach(k => { state.sets[k] = state.sets[k].map(s => s === del.dataset.del ? 'nhk' : s); });
-      save(); renderSources(srcSearch.value); rebuildGrid();
-      toast('커스텀 소스를 삭제했습니다');
+      deleteChannel(del.dataset.del);
       return;
     }
     if (modalSlot == null) {
@@ -2439,7 +2660,7 @@ function reassertCinemaAudio() {
   state.audioId = a.id;
   state.muted = false;
   try { applyAudio(); } catch (e) {}
-  const i = slotIds().indexOf(a.id);
+  const i = activeSlotIds().indexOf(a.id);
   if (i < 0) return;
   const L = live[i];
   if (!L) return;
@@ -2461,6 +2682,18 @@ function hideCinemaHud() {
   const hud = $('#cinema-hud');
   if (hud) hud.classList.remove('is-on');
 }
+function setYtControls(slot, show) {
+  const L = live[slot];
+  if (!L || !L.iframe || !L.iframe.src) return;
+  try {
+    const u = new URL(L.iframe.src);
+    const want = show ? '1' : '0';
+    if (u.searchParams.get('controls') === want) return;
+    u.searchParams.set('controls', want);
+    u.searchParams.set('disablekb', want === '1' ? '0' : '1');
+    L.iframe.src = u.toString();
+  } catch (e) {}
+}
 function enterCinema(slot) {
   if (CINEMA.active) return;
   const el = grid.querySelector('.tile[data-slot="' + slot + '"]');
@@ -2475,6 +2708,7 @@ function enterCinema(slot) {
   grid.querySelectorAll('.tile').forEach(t => t.classList.toggle('is-cinema-target', t === el));
   // 이 채널을 그대로 듣는다 — 음소거였으면 이 칸으로 소리를 켠다(한 번 탭과 같은 규칙)
   if (state.muted || state.audioId !== ch.id) { try { selectSlot(slot); } catch (e) {} }
+  if (ch.kind === 'youtube' || ch.kind === 'youtube-video') setYtControls(slot, true);
   CINEMA.audio = { id: state.audioId, muted: !!state.muted };
   try { history.pushState({ worldliveCinema: 1 }, ''); CINEMA.pushed = true; } catch (e) { CINEMA.pushed = false; }
   showCinemaHud(2400);                        // 진입 직후 2.4초 안내 → 곧 완전 클린
@@ -2485,6 +2719,8 @@ function enterCinema(slot) {
 function exitCinema(opts) {
   opts = opts || {};
   if (!CINEMA.active) return;
+  const exitedSlot = CINEMA.slot;
+  const ch = slotChannel(exitedSlot);
   const wasPushed = CINEMA.pushed;
   const backTo = CINEMA.scroll;
   CINEMA.active = false;
@@ -2492,6 +2728,7 @@ function exitCinema(opts) {
   hideCinemaHud();
   document.body.classList.remove('is-cinema');
   grid.querySelectorAll('.tile.is-cinema-target').forEach(t => t.classList.remove('is-cinema-target'));
+  if (ch && (ch.kind === 'youtube' || ch.kind === 'youtube-video')) setYtControls(exitedSlot, false);
   if (document.fullscreenElement) {
     CINEMA.fsSuppress = true;                 // 우리가 뺀 전체화면 이벤트는 무시
     try { document.exitFullscreen().catch(() => {}); } catch (e) {}
@@ -2701,6 +2938,7 @@ function bindEvents() {
     if (act === 'max') { showBig(i, true); return; }   // 1×1 + FULL (ESC → 이전 화면)
     if (act === 'pop') { openExternal(i); return; }
     if (act === 'reload') { try { unmountSlot(i); } catch (x) {} mountSlot(i); toast(slotChannel(i).name + ' — 재연결'); return; }
+    if (act === 'del') { deleteChannel(slotChannel(i).id); return; }
     if (act === 'open') { openExternal(i); return; }
     if (act === 'retry') { try { unmountSlot(i); } catch (x) {} mountSlot(i); return; }
     // FULL(순수 영상)에서는 아래 HUD 핸들러가 타일 클릭을 맡는다

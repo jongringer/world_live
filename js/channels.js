@@ -445,8 +445,8 @@ const CHANNEL_BY_ID = CHANNELS.reduce((m, c) => (m[c.id] = c, m), {});
 /* 이 카탈로그의 빌드 표식 — 화면 하단 신호 스트립에 표시됩니다.
    휴대폰이 옛 파일(브라우저 캐시)을 불러왔는지 이 한 줄로 확인할 수 있고,
    채널·소스를 고칠 때마다 이 값과 index.html의 ?v= 를 함께 올려 주세요. */
-const CHANNELS_BUILD = 'SRC 11-25k';
-const CHANNELS_BUILD_DETAIL = '사용자 채널 삭제·복원 기능 추가 · AP 통신(Associated Press) 추가 · Bloomberg/Yahoo Finance/CNA/TRT World/CBS News/Sky News 6개 채널 공식 HLS 전환';
+const CHANNELS_BUILD = 'SRC 11-25m';
+const CHANNELS_BUILD_DETAIL = '서울경제TV 시간대 대체 편성 오디오 탤리 수정 · YouTube 1×1 전체화면 우상단 볼륨/설정 가림 제거 · 소스 라이브러리 및 채널 관리 개선';
 
 /* 다시 재생되지 않는 예전 소스 ID → 지금 쓰는 소스로 자동 교체
    (브라우저에 저장된 커스텀 소스에 옛 ID가 남아 있어도 되살아나지 않게) */

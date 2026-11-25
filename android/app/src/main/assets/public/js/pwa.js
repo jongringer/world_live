@@ -238,9 +238,22 @@
 
   /* ── 서비스 워커 등록 ── */
   if ('serviceWorker' in navigator) {
+    const hadController = !!navigator.serviceWorker.controller;
+    let refreshing = false;
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      if (!hadController || refreshing) return;
+      refreshing = true;
+      location.reload();
+    });
     window.addEventListener('load', () => {
       navigator.serviceWorker.register('sw.js', { scope: './', updateViaCache: 'none' })
-        .then(reg => { reg.update().catch(() => {}); })
+        .then(reg => {
+          reg.update().catch(() => {});
+          setInterval(() => { reg.update().catch(() => {}); }, 5 * 60 * 1000);
+          document.addEventListener('visibilitychange', () => {
+            if (!document.hidden) reg.update().catch(() => {});
+          });
+        })
         .catch(() => { /* file://, 사생활 보호 모드 등에서는 조용히 넘어감 */ });
     });
   }
