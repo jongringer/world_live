@@ -40,10 +40,10 @@ const CHANNELS = [
     status:'live' },
 
   { id:'cna', name:'CNA', short:'CNA', country:'싱가포르', cc:'SG', zone:'ASIA',
-    kind:'youtube', src:'UC83jt4dlz1Gjl58fzQrrKZg', status:'live' },
+    kind:'hls', src:'https://d2e1asnsl7br7b.cloudfront.net/7782e205e72f43aeb4a48ec97f66ebbe/index.m3u8', status:'live' },
 
-  { id:'cna_hls', name:'CNA · HLS', short:'CNA', country:'싱가포르', cc:'SG', zone:'ASIA',
-    kind:'hls', src:'https://d2e1asnsl7br7b.cloudfront.net/7782e205e72f43aeb4a48ec97f66ebbe/index.m3u8', status:'live', alt:true },
+  { id:'cna_yt', name:'CNA · YouTube', short:'CNA', country:'싱가포르', cc:'SG', zone:'ASIA',
+    kind:'youtube', src:'UC83jt4dlz1Gjl58fzQrrKZg', status:'live', alt:true },
 
   { id:'indiatoday', name:'INDIA TODAY', short:'IT', country:'인도', cc:'IN', zone:'ASIA',
     kind:'hls', src:'https://d2lk5u59tns74c.cloudfront.net/out/v1/d4435039c7d1433d9b9d0b6cdc9dd4ff/index.m3u8', status:'live' },
@@ -93,17 +93,37 @@ const CHANNELS = [
     web:'https://www.youtube.com/@NBCNews/live',
     note:'NBC News 공식 유튜브의 24시간 라이브 — NBC News는 하루에 한 번 새 라이브 영상으로 갈아 끼우기 때문에 고정 영상 ID(13rFWn3k36s = Nov. 24 방송)로 붙여 두었습니다. 방송일이 바뀌면 이 칸이 OFFLINE이 되므로 그때는 소스 변경에서 그날 라이브 ID를 넣거나 @NBCNews/live를 새 창으로 여세요.' },
 
+  { id:'ap', name:'AP (ASSOCIATED PRESS)', short:'AP', country:'미국', cc:'US', zone:'AMERICAS',
+    kind:'youtube', src:'UC52X5wxOL_s5yw0dQk7NtgA', fallbackVideo:'aR9ZWFNQjCE', status:'live',
+    web:'https://www.youtube.com/@AssociatedPress/streams',
+    note:'AP 통신 공식 라이브(@AssociatedPress) — 현장 생중계가 열리면 실시간으로 자동 연결하고, 현장 중계 사이 공백 시간에는 가장 최근 AP 현장 라이브 브리핑을 재생합니다.' },
+
+  { id:'cbs', name:'CBS NEWS 24/7', short:'CBS', country:'미국', cc:'US', zone:'AMERICAS',
+    kind:'hls', src:'https://cbsn-us.cbsnstream.cbsnews.com/out/v1/55a8648e8f134e82a470f83d562deeca/master.m3u8', status:'live',
+    web:'https://www.cbsnews.com/live/',
+    note:'CBS News 24/7 공식 실시간 HLS 스트림을 페이지 안에서 바로 재생합니다.' },
+
   { id:'bloomberg', name:'BLOOMBERG TV', short:'BBG', country:'미국', cc:'US', zone:'AMERICAS',
-    kind:'youtube', src:'UCIALMKvObZNtJ6AmdCLP7Lg', status:'live' },
+    kind:'hls',
+    src:'https://www.bloomberg.com/media-manifest/streams/us.m3u8',
+    backup:'https://www.bloomberg.com/media-manifest/streams/asia.m3u8',
+    status:'live',
+    web:'https://www.bloomberg.com/live' },
+
+  { id:'bloomberg_yt', name:'BLOOMBERG TV · YouTube', short:'BBG', country:'미국', cc:'US', zone:'AMERICAS',
+    kind:'youtube', src:'UCIALMKvObZNtJ6AmdCLP7Lg', status:'live', alt:true },
 
   { id:'cnbc', name:'CNBC', short:'CNBC', country:'미국', cc:'US', zone:'AMERICAS',
     kind:'youtube', src:'UCvJJ_dzjViJCoLf5uKUTwoA', status:'live' },
 
-  /* 경제뉴스 9분할 — 미국 경제 채널 (2026-11-25 03:40 실측: 모두 유튜브 임베드 재생 확인) */
+  /* 경제뉴스 9분할 — 미국 경제 채널 */
   { id:'yahoo_fin', name:'YAHOO FINANCE', short:'YHOO', country:'미국', cc:'US', zone:'AMERICAS',
-    kind:'youtube-video', src:'P_vVzEcKnWU', ytChannel:'UCEAZeUIeJs0IjQiqTCdVSIg', status:'live',
+    kind:'hls', src:'https://d1ewctnvcwvvvu.cloudfront.net/playlist.m3u8', status:'live',
     web:'https://www.youtube.com/@YahooFinance/live',
-    note:'Yahoo Finance 라이브(공식 유튜브 @YahooFinance) — 미국 장 시간 중심으로 송출됩니다. 2026-11-25 06:10 교체: 이전 ID(6MRyehWhrRM)는 Yahoo Finance가 아니라 Schwab Network의 9분짜리 다시보기 영상이라 라이브가 아니었습니다. 방송사가 새 라이브로 갈아 끼우면 채널 라이브로 자동 전환됩니다.' },
+    note:'Yahoo Finance 24시간 공식 HLS 스트림을 페이지 안에서 바로 재생합니다.' },
+
+  { id:'yahoo_fin_yt', name:'YAHOO FINANCE · YouTube', short:'YHOO', country:'미국', cc:'US', zone:'AMERICAS',
+    kind:'youtube-video', src:'P_vVzEcKnWU', ytChannel:'UCEAZeUIeJs0IjQiqTCdVSIg', status:'live', alt:true },
 
   { id:'fox_biz', name:'FOX BUSINESS', short:'FBN', country:'미국', cc:'US', zone:'AMERICAS',
     kind:'youtube-video', src:'P-SvyILdsYc', ytChannel:'UCCXoCcu9Rp7NPbTzIvogpZg', status:'live',
@@ -126,6 +146,11 @@ const CHANNELS = [
     backup:'https://vs-hls-push-ww-live.akamaized.net/x=4/i=urn:bbc:pips:service:bbc_news_channel_hd/t=3840/v=pv14/b=5070016/main.m3u8',
     status:'live',
     note:'BBC 뉴스 채널 HLS — 영국 외 지역에서 차단되면 백업 주소로, 그래도 실패하면 공식 페이지로 연결됩니다.' },
+
+  { id:'sky', name:'SKY NEWS', short:'SKY', country:'영국', cc:'GB', zone:'EUROPE',
+    kind:'hls', src:'https://linear901-oo-hls0-prd-gtm.delivery.skycdp.com/17501/sde-fast-skynews/master.m3u8', status:'live',
+    web:'https://news.sky.com/watch-live',
+    note:'Sky News 실시간 HLS 스트림을 페이지 안에서 바로 재생합니다.' },
 
   { id:'f24', name:'FRANCE 24 ENGLISH', short:'F24', country:'프랑스', cc:'FR', zone:'EUROPE',
     kind:'hls', src:'https://live.france24.com/hls/live/2037218/F24_EN_HI_HLS/master_5000.m3u8', status:'live' },
@@ -189,10 +214,10 @@ const CHANNELS = [
     kind:'hls', src:'https://live-news.asharq.com/asharq.m3u8', status:'live' },
 
   { id:'trt', name:'TRT WORLD', short:'TRT', country:'튀르키예', cc:'TR', zone:'MIDEAST',
-    kind:'youtube', src:'UC7fWeaHhqgM4Ry-RMpM2YYw', status:'live' },
+    kind:'hls', src:'https://tv-trtworld.medya.trt.com.tr/master.m3u8', status:'live' },
 
-  { id:'trt_hls', name:'TRT WORLD · HLS', short:'TRT', country:'튀르키예', cc:'TR', zone:'MIDEAST',
-    kind:'hls', src:'https://tv-trtworld.medya.trt.com.tr/master.m3u8', status:'live', alt:true },
+  { id:'trt_yt', name:'TRT WORLD · YouTube', short:'TRT', country:'튀르키예', cc:'TR', zone:'MIDEAST',
+    kind:'youtube', src:'UC7fWeaHhqgM4Ry-RMpM2YYw', status:'live', alt:true },
 
   { id:'i24', name:'i24NEWS ENGLISH', short:'i24', country:'이스라엘', cc:'IL', zone:'MIDEAST',
     kind:'hls', src:'https://hlspackager.akamaized.net/live/DB/i24_ENGLISH/HLS/i24_ENGLISH.m3u8', status:'live' },
@@ -365,14 +390,6 @@ const CHANNELS = [
     kind:'web', src:'https://tv.cctv.com/live/cctv13/', status:'external',
     note:'CCTV-13은 자사 플레이어(HTML5 CDN LIVE DRM) 전용이라 페이지 안에서는 재생되지 않습니다. 새 창의 공식 페이지에서는 재생됩니다(2026-11-22 확인).' },
 
-  { id:'sky', name:'SKY NEWS', short:'SKY', country:'영국', cc:'GB', zone:'EXTERNAL',
-    kind:'web', src:'https://news.sky.com/watch-live', status:'external',
-    note:'Sky News는 YouTube 임베드가 차단되어(오류 150) 공식 페이지에서만 재생됩니다.' },
-
-  { id:'cbs', name:'CBS NEWS 24/7', short:'CBS', country:'미국', cc:'US', zone:'EXTERNAL',
-    kind:'web', src:'https://www.cbsnews.com/live/', status:'external',
-    note:'CBS News 24/7은 자사 사이트 전용 플레이어입니다(YouTube 임베드 차단).' },
-
   { id:'livenow', name:'LIVENOW FROM FOX', short:'LN', country:'미국', cc:'US', zone:'EXTERNAL',
     kind:'web', src:'https://www.livenowfox.com/', status:'external',
     note:'LiveNOW는 자사 사이트에서 24시간 재생되며 YouTube 임베드는 차단되어 있습니다.' },
@@ -390,7 +407,7 @@ const RETIRED_IDS = [
 
 /* 저장된 배치에 남아 있는 옛 채널을 같은 자리의 새 채널로 바꿔 준다.
    (OBS를 빼고 MBN을 넣을 때 4번 칸이 밀리지 않고 그대로 MBN이 되도록) */
-const SLOT_REPLACE = { obsnews: 'mbnnews', obstv: 'mbnnews' };
+const SLOT_REPLACE = { obsnews: 'mbnnews', obstv: 'mbnnews', cna_hls: 'cna', trt_hls: 'trt' };
 
 /* 레이아웃별 기본 배치 — 4분할과 9분할은 서로 독립적으로 저장됩니다
    ※ 2026-11-24 사용자가 확정한 기본 순서(DEFAULT_SETS) — 모든 분할에서 YTN → 연합뉴스TV → KBS 순
@@ -426,8 +443,8 @@ const CHANNEL_BY_ID = CHANNELS.reduce((m, c) => (m[c.id] = c, m), {});
 /* 이 카탈로그의 빌드 표식 — 화면 하단 신호 스트립에 표시됩니다.
    휴대폰이 옛 파일(브라우저 캐시)을 불러왔는지 이 한 줄로 확인할 수 있고,
    채널·소스를 고칠 때마다 이 값과 index.html의 ?v= 를 함께 올려 주세요. */
-const CHANNELS_BUILD = 'SRC 11-25j';
-const CHANNELS_BUILD_DETAIL = '오디오 라우드니스 평준화 목표를 -14 → -20 LUFS 로 하향(2026-11-25 사용자 요청: 너무 크고 노이즈가 들림) · 채널별 VOL 슬라이더는 그대로 · NBC NEWS NOW 고정 영상 유지 · 2026-11-25 06:0x 갱신';
+const CHANNELS_BUILD = 'SRC 11-25k';
+const CHANNELS_BUILD_DETAIL = '사용자 채널 삭제·복원 기능 추가 · AP 통신(Associated Press) 추가 · Bloomberg/Yahoo Finance/CNA/TRT World/CBS News/Sky News 6개 채널 공식 HLS 전환';
 
 /* 다시 재생되지 않는 예전 소스 ID → 지금 쓰는 소스로 자동 교체
    (브라우저에 저장된 커스텀 소스에 옛 ID가 남아 있어도 되살아나지 않게) */

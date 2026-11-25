@@ -574,6 +574,25 @@ body.is-swapping .tile { transition: none; }
   color: #fff; background: rgba(45, 55, 72, 0.85); border-color: rgba(255, 255, 255, 0.3);
   transform: translateY(-0.5px);
 }
+.tbtn.tbtn-del:hover {
+  color: #FECACA; background: rgba(239, 68, 68, 0.25); border-color: rgba(239, 68, 68, 0.65);
+}
+.veil-actions { display: flex; align-items: center; justify-content: center; gap: 6px; flex-wrap: wrap; }
+.veil-btn.veil-btn-del {
+  border-color: rgba(239, 68, 68, 0.45);
+  background: linear-gradient(180deg, rgba(239, 68, 68, 0.22) 0%, rgba(239, 68, 68, 0.08) 100%);
+  color: #FCA5A5;
+}
+.veil-btn.veil-btn-del:hover { background: rgba(239, 68, 68, 0.34); border-color: rgba(239, 68, 68, 0.75); color: #FFF; }
+.btn-restore-del {
+  flex: 0 0 auto; height: 28px; padding: 0 10px; border-radius: 4px;
+  font-size: 11px; font-weight: 700; color: #F5E5C0;
+  border: 1px solid rgba(212, 175, 55, 0.5);
+  background: rgba(212, 175, 55, 0.14);
+  white-space: nowrap;
+}
+.btn-restore-del:hover { background: rgba(212, 175, 55, 0.28); border-color: rgba(245, 229, 192, 0.85); color: #FFF; }
+.btn-restore-del[hidden] { display: none !important; }
 .tbtn.is-on {
   color: #032014;
   background: linear-gradient(180deg, #34D399 0%, #059669 100%);
