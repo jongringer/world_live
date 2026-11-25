@@ -446,7 +446,7 @@ const CHANNEL_BY_ID = CHANNELS.reduce((m, c) => (m[c.id] = c, m), {});
    휴대폰이 옛 파일(브라우저 캐시)을 불러왔는지 이 한 줄로 확인할 수 있고,
    채널·소스를 고칠 때마다 이 값과 index.html의 ?v= 를 함께 올려 주세요. */
 const CHANNELS_BUILD = 'SRC 11-26a';
-const CHANNELS_BUILD_DETAIL = '2026-11-25 15시 라이브 점검(8개 현 라이브 교체) + 서울경제TV 탤리 수정 · YouTube 1×1 전체화면 우상단 볼륨/설정 가림 제거 · v8.7.0 릴리즈';
+const CHANNELS_BUILD_DETAIL = '2026-11-26 06시 라이브 점검(끊긴 고정 영상 6개 교체 — NBC·SBS·JTBC·TV조선·채널A·삼프로TV)';
 
 /* 다시 재생되지 않는 예전 소스 ID → 지금 쓰는 소스로 자동 교체
    (브라우저에 저장된 커스텀 소스에 옛 ID가 남아 있어도 되살아나지 않게) */
