@@ -89,9 +89,9 @@ const CHANNELS = [
      고정하고, 채널 ID는 끊겼을 때의 자동 전환용으로 함께 적어 둔다. ID가 오래되면 이 칸은
      OFFLINE이 되므로 주기적으로 갱신해야 한다(하단 ytChannel·web 참고). */
   { id:'nbc', name:'NBC NEWS NOW', short:'NBC', country:'미국', cc:'US', zone:'AMERICAS',
-    kind:'youtube-video', src:'9ERRSqJNoSQ', ytChannel:'UCeY0bbntWzzVIaj2z3QigXg', status:'live',
+    kind:'youtube-video', src:'dlQf_B0OGrA', ytChannel:'UCeY0bbntWzzVIaj2z3QigXg', status:'live',
     web:'https://www.youtube.com/@NBCNews/live',
-    note:'NBC News 공식 유튜브의 24시간 라이브 — NBC News는 하루에 한 번 새 라이브 영상으로 갈아 끼우기 때문에 고정 영상 ID(-LSuaW99Bn0 = 2026-11-26 06시 기준 라이브, \'LIVE: NBC News NOW - Nov. 25\')로 붙여 두었습니다. 방송일이 바뀌면 이 칸이 OFFLINE이 되므로 그때는 소스 변경에서 그날 라이브 ID를 넣거나 @NBCNews/live를 새 창으로 여세요.' },
+    note:'NBC News 공식 유튜브의 24시간 라이브 — NBC News는 하루에 한 번 새 라이브 영상으로 갈아 끼우기 때문에 고정 영상 ID(dlQf_B0OGrA = 2026-11-27 06시 기준 라이브, \'LIVE: NBC News NOW - Nov. 26\')로 붙여 두었습니다. 방송일이 바뀌면 이 칸이 OFFLINE이 되므로 그때는 소스 변경에서 그날 라이브 ID를 넣거나 @NBCNews/live를 새 창으로 여세요.' },
 
   { id:'ap', name:'AP (ASSOCIATED PRESS)', short:'AP', country:'미국', cc:'US', zone:'AMERICAS',
     kind:'youtube', src:'UC52X5wxOL_s5yw0dQk7NtgA', fallbackVideo:'aR9ZWFNQjCE', status:'live',
@@ -298,9 +298,9 @@ const CHANNELS = [
     note:'MBCNEWS 채널의 그때그때 라이브를 따라갑니다(채널 ID 방식). 고정 스트림이 끊겼을 때 대체 소스로 쓰세요.' },
 
   { id:'sbsnews', name:'SBS 뉴스', short:'SBS', country:'한국', cc:'KR', zone:'KOREA',
-    kind:'youtube-video', src:'fPR37xbV1Fc', status:'live', ytChannel:'UCkinYTS9IHqOEwR1Sze2JTw',
+    kind:'youtube-video', src:'PdveEbAsXDQ', status:'live', ytChannel:'UCkinYTS9IHqOEwR1Sze2JTw',
     web:'https://www.sbs.co.kr/live/S01',
-    note:'SBS 뉴스가 내보내는 \'SBS 실시간 라이브\'를 고정 영상으로 연결합니다(2026-11-26 06시 교체 — 이전 ID DVd9L41SiNY는 다시보기로 끝남, 현 라이브는 \'[LIVE] SBS 모닝와이드/ 11/26(목)\'). SBS는 실시간 라이브를 수시로 새 영상으로 갈아 끼우므로, 끊기면 소스 라이브러리에서\nSBS 실시간 라이브의 새 주소로 바꿔 주세요. SBS play 온에어 페이지는 60초 미리보기 뒤 로그인을 요구해 쓸 수 없습니다.' },
+    note:'SBS 뉴스가 내보내는 \'SBS 실시간 라이브\'를 고정 영상으로 연결합니다(2026-11-27 06시 교체 — 이전 ID fPR37xbV1Fc는 다시보기로 끝남, 현 라이브는 \'[LIVE] SBS 모닝와이드/ 11/27(금)\'). SBS는 실시간 라이브를 수시로 새 영상으로 갈아 끼우므로, 끊기면 소스 라이브러리에서\nSBS 실시간 라이브의 새 주소로 바꿔 주세요. SBS play 온에어 페이지는 60초 미리보기 뒤 로그인을 요구해 쓸 수 없습니다.' },
 
   { id:'sbsnews_auto', name:'SBS 뉴스 · 자동', short:'SBS', country:'한국', cc:'KR', zone:'KOREA',
     kind:'youtube', src:'UCkinYTS9IHqOEwR1Sze2JTw', status:'live', alt:true,
@@ -328,19 +328,19 @@ const CHANNELS = [
     note:'MBN News 공식 유튜브 채널의 그때그때 라이브(채널 ID 방식). 온에어 HLS가 막힐 때 대체 소스로 쓰세요.' },
 
   { id:'jtbcnews', name:'JTBC 뉴스', short:'JTBC', country:'한국', cc:'KR', zone:'KOREA',
-    kind:'youtube-video', src:'jS9Lmur6uj4', status:'live', ytChannel:'UCsU-I-vHLiaMfV_ceaYz5rQ',
+    kind:'youtube-video', src:'T766fBH1uAw', status:'live', ytChannel:'UCsU-I-vHLiaMfV_ceaYz5rQ',
     web:'https://onair.jtbc.co.kr/',
-    note:'JTBC 뉴스가 내보내는 실시간 라이브를 고정 영상으로 연결합니다(2026-11-26 06시 교체 — 이전 ID sAPSbaHz1l0은 다시보기로 끝남, 현 라이브는 미국 USTR 관세 15% 상한 유지 속보). JTBC 온에어 API는 외부 출처(CORS)를 거부해 페이지 안 재생이 불가합니다. 방송사가 새 라이브로 갈아 끼우면 소스 라이브러리에서 새 주소로 바꿔 주세요.' },
+    note:'JTBC 뉴스가 내보내는 실시간 라이브를 고정 영상으로 연결합니다(2026-11-27 06시 교체 — 이전 ID jS9Lmur6uj4는 이슈PLAY 다시보기로 끝남, 현 라이브는 이진우 리트 관련 단독 보도). JTBC 온에어 API는 외부 출처(CORS)를 거부해 페이지 안 재생이 불가합니다. 방송사가 새 라이브로 갈아 끼우면 소스 라이브러리에서 새 주소로 바꿔 주세요.' },
 
   { id:'tvchosun_news', name:'TV조선 뉴스', short:'TV조선', country:'한국', cc:'KR', zone:'KOREA',
-    kind:'youtube-video', src:'kNjmaq4AqGQ', status:'live', ytChannel:'UCWlV3Lz_55UaX4JsMj-z__Q',
+    kind:'youtube-video', src:'BfDQWinXFAg', status:'live', ytChannel:'UCWlV3Lz_55UaX4JsMj-z__Q',
     web:'https://broadcast.tvchosun.com/onair/on.cstv',
-    note:'뉴스TVCHOSUN이 내보내는 이슈PLAY 실시간 라이브를 고정 영상으로 연결합니다(2026-11-26 06시 교체 — 이전 ID f-vK8xAidcw는 다시보기로 끝남, 현 라이브는 한동훈 복당·법적 대응 시사 속보). TV조선 온에어 스트림은 http 전용·인증서 불일치로 https 화면에서 재생되지 않습니다. 방송사가 새 라이브로 갈아 끼우면 새 주소로 바꿔 주세요.' },
+    note:'뉴스TVCHOSUN이 내보내는 이슈PLAY 실시간 라이브를 고정 영상으로 연결합니다(2026-11-27 06시 교체 — 이전 ID kNjmaq4AqGQ는 다시보기로 끝남, 현 라이브는 국힘 의총·조작 징계 의혹 논의 속보). TV조선 온에어 스트림은 http 전용·인증서 불일치로 https 화면에서 재생되지 않습니다. 방송사가 새 라이브로 갈아 끼우면 새 주소로 바꿔 주세요.' },
 
   { id:'channela_news', name:'채널A 뉴스', short:'채널A', country:'한국', cc:'KR', zone:'KOREA',
-    kind:'youtube-video', src:'nb89DLTtYCw', status:'live', ytChannel:'UCfq4V1DAuaojnr2ryvWNysw',
+    kind:'youtube-video', src:'bjsFfNb7Q6w', status:'live', ytChannel:'UCfq4V1DAuaojnr2ryvWNysw',
     web:'https://www.ichannela.com/com/cmm/onair.do',
-    note:'채널A 뉴스가 내보내는 이슈를 켜라 실시간 라이브를 고정 영상으로 연결합니다(2026-11-26 06시 교체 — 이전 ID xwivjKVQ89k는 다시보기로 끝남, 현 라이브는 러 전략폭격기 영상 공개 속보). 방송사가 새 라이브로 갈아 끼우면 새 주소로 바꿔 주세요.' },
+    note:'채널A 뉴스가 내보내는 이슈를 켜라 실시간 라이브를 고정 영상으로 연결합니다(2026-11-27 06시 교체 — 이전 ID nb89DLTtYCw는 남동공단 화재 속보로 끝남, 현 라이브는 국힘 최고위 아수라장 속보). 방송사가 새 라이브로 갈아 끼우면 새 주소로 바꿔 주세요.' },
 
   /* ── 경제뉴스 9분할 전용 — 한국 경제 채널 (2026-11-25 실측)
      사용자 지시(2026-11-25 03:33): "한국은 한국경제 매일경제 삼프로 같은 유튜브 매체부터 라이브하는
@@ -361,9 +361,9 @@ const CHANNELS = [
     note:'매일경제TV 24시간 라이브(공식 유튜브 @mkeconomy_tv)를 고정 영상으로 연결합니다 — 2026-11-25 06:10 교체(이전 ID _as5avhckoM은 다시보기로 끝남).' },
 
   { id:'sampro', name:'삼프로TV', short:'삼프로', country:'한국', cc:'KR', zone:'KOREA',
-    kind:'youtube-video', src:'VzvtFMbVxi4', ytChannel:'UChlv4GSd7OQl3js-jkLOnFA', status:'live',
+    kind:'youtube-video', src:'eXAueXZo6dM', ytChannel:'UChlv4GSd7OQl3js-jkLOnFA', status:'live',
     web:'https://www.youtube.com/@3protv/live',
-    note:'삼프로TV(경제의 신과 함께) 라이브를 고정 영상으로 연결합니다 — 2026-11-26 06시 교체(이전 ID p7VzsJTeqmw는 25일 오후 방송 전체보기 다시보기, 현 라이브는 월스트리트 모닝브리핑 26.11.26). 장 마감 뒤에도 편성 라이브가 이어지고, 방송사가 새 라이브로 갈아 끼우면 채널 라이브로 자동 전환됩니다.' },
+    note:'삼프로TV(경제의 신과 함께) 라이브를 고정 영상으로 연결합니다 — 2026-11-27 06시 교체(이전 ID VzvtFMbVxi4는 26일 오후 방송 전체보기 다시보기, 현 라이브는 월스트리트 모닝브리핑 26.11.27). 장 마감 뒤에도 편성 라이브가 이어지고, 방송사가 새 라이브로 갈아 끼우면 채널 라이브로 자동 전환됩니다.' },
 
   { id:'osun', name:'오선의 미증시', short:'오선', country:'한국', cc:'KR', zone:'KOREA',
     kind:'youtube', src:'UC_JJ_NhRqPKcIOj5Ko3W_3w', status:'live',
@@ -445,8 +445,8 @@ const CHANNEL_BY_ID = CHANNELS.reduce((m, c) => (m[c.id] = c, m), {});
 /* 이 카탈로그의 빌드 표식 — 화면 하단 신호 스트립에 표시됩니다.
    휴대폰이 옛 파일(브라우저 캐시)을 불러왔는지 이 한 줄로 확인할 수 있고,
    채널·소스를 고칠 때마다 이 값과 index.html의 ?v= 를 함께 올려 주세요. */
-const CHANNELS_BUILD = 'SRC 11-26b';
-const CHANNELS_BUILD_DETAIL = '2026-11-26 15시 라이브 점검(끊긴 고정 영상 6개 교체 — NBC·SBS·JTBC·TV조선·채널A·삼프로TV / Fox Business·Euronews Business는 라이브 없어 유지)';
+const CHANNELS_BUILD = 'SRC 11-27a';
+const CHANNELS_BUILD_DETAIL = '2026-11-27 06시 라이브 점검(끊긴 고정 영상 6개 교체 — NBC·SBS·JTBC·TV조선·채널A·삼프로TV / Fox Business·Euronews Business는 라이브 없어 유지)';
 
 /* 다시 재생되지 않는 예전 소스 ID → 지금 쓰는 소스로 자동 교체
    (브라우저에 저장된 커스텀 소스에 옛 ID가 남아 있어도 되살아나지 않게) */
@@ -474,7 +474,14 @@ const RETIRED_SOURCES = {
   '0RFcERYa4Rc': 'jS9Lmur6uj4',   // JTBC 뉴스
   'uT2gq5O1XVI': 'kNjmaq4AqGQ',   // TV조선 뉴스
   'DIET0hTJkHk': 'nb89DLTtYCw',   // 채널A 뉴스
-  'KtnvpzjdIjg': 'VzvtFMbVxi4'    // 삼프로TV
+  'KtnvpzjdIjg': 'VzvtFMbVxi4',   // 삼프로TV
+  /* 2026-11-27 06시 라이브 점검 — 끝난 고정 영상 → 그 채널의 현 라이브 */
+  '9ERRSqJNoSQ': 'dlQf_B0OGrA',   // NBC NEWS NOW (Nov. 26 라이브)
+  'fPR37xbV1Fc': 'PdveEbAsXDQ',   // SBS 뉴스
+  'jS9Lmur6uj4': 'T766fBH1uAw',   // JTBC 뉴스
+  'kNjmaq4AqGQ': 'BfDQWinXFAg',   // TV조선 뉴스
+  'nb89DLTtYCw': 'bjsFfNb7Q6w',   // 채널A 뉴스
+  'VzvtFMbVxi4': 'eXAueXZo6dM'    // 삼프로TV
 };
 /* 유튜브 KBS NEWS 24 라이브 ID(nfnWxzTVJA4)는 2026-11-24 방송 종료로 재생 불가 —
    내장 채널은 공식 온에어(kind:'kbs')로 교체했고, 저장된 커스텀 소스에 남은 ID는
