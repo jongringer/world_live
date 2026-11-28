@@ -89,9 +89,9 @@ const CHANNELS = [
      고정하고, 채널 ID는 끊겼을 때의 자동 전환용으로 함께 적어 둔다. ID가 오래되면 이 칸은
      OFFLINE이 되므로 주기적으로 갱신해야 한다(하단 ytChannel·web 참고). */
   { id:'nbc', name:'NBC NEWS NOW', short:'NBC', country:'미국', cc:'US', zone:'AMERICAS',
-    kind:'youtube-video', src:'gKULTIDM-8s', ytChannel:'UCeY0bbntWzzVIaj2z3QigXg', status:'live',
+    kind:'youtube-video', src:'0vNukUbpBbU', ytChannel:'UCeY0bbntWzzVIaj2z3QigXg', status:'live',
     web:'https://www.youtube.com/@NBCNews/live',
-    note:'NBC News 공식 유튜브의 24시간 라이브 — NBC News는 하루에 한 번 새 라이브 영상으로 갈아 끼우기 때문에 고정 영상 ID(gKULTIDM-8s = 2026-11-28 06시 기준 라이브, \'LIVE: NBC News NOW - Nov. 27\' — 11-27 21:03 KST 시작, 이전 ID k_ygu0jVZ3o는 12시간 스트림이 끝나 다시보기로 전환됨)로 붙여 두었습니다. 방송일이 바뀌면 이 칸이 OFFLINE이 되므로 그때는 소스 변경에서 그날 라이브 ID를 넣거나 @NBCNews/live를 새 창으로 여세요.' },
+    note:'NBC News 공식 유튜브의 24시간 라이브 — NBC News는 하루에 한 번 새 라이브 영상으로 갈아 끼우기 때문에 고정 영상 ID(0vNukUbpBbU = 2026-11-28 15시 기준 라이브, \'LIVE: NBC News NOW\' — 15:07 현재 7시간째 송출(08시경 시작), 이전 ID gKULTIDM-8s는 18시간 전 종료)로 붙여 두었습니다. 방송일이 바뀌면 이 칸이 OFFLINE이 되므로 그때는 소스 변경에서 그날 라이브 ID를 넣거나 @NBCNews/live를 새 창으로 여세요.' },
 
   { id:'ap', name:'AP (ASSOCIATED PRESS)', short:'AP', country:'미국', cc:'US', zone:'AMERICAS',
     kind:'youtube', src:'UC52X5wxOL_s5yw0dQk7NtgA', fallbackVideo:'aR9ZWFNQjCE', status:'live',
@@ -298,9 +298,9 @@ const CHANNELS = [
     note:'MBCNEWS 채널의 그때그때 라이브를 따라갑니다(채널 ID 방식). 고정 스트림이 끊겼을 때 대체 소스로 쓰세요.' },
 
   { id:'sbsnews', name:'SBS 뉴스', short:'SBS', country:'한국', cc:'KR', zone:'KOREA',
-    kind:'youtube-video', src:'a8f5wbxcwzA', status:'live', ytChannel:'UCkinYTS9IHqOEwR1Sze2JTw',
+    kind:'youtube-video', src:'vgdaCp1Uyw8', status:'live', ytChannel:'UCkinYTS9IHqOEwR1Sze2JTw',
     web:'https://www.sbs.co.kr/live/S01',
-    note:'SBS 뉴스가 내보내는 \'SBS 실시간 라이브\'를 고정 영상으로 연결합니다(2026-11-28 06시 교체 — 이전 ID mZvubKQ0bFA는 전날 이슈 라이브로 끝남, 현 라이브는 \'[LIVE] SBS 모닝와이드/ 11/28(토)\'). SBS는 실시간 라이브를 수시로 새 영상으로 갈아 끼우므로, 끊기면 소스 라이브러리에서\nSBS 실시간 라이브의 새 주소로 바꿔 주세요. SBS play 온에어 페이지는 60초 미리보기 뒤 로그인을 요구해 쓸 수 없습니다.' },
+    note:'SBS 뉴스가 내보내는 \'SBS 실시간 라이브\'를 고정 영상으로 연결합니다(2026-11-28 15시 교체 — 이전 ID a8f5wbxcwzA는 9시간 전 종료(모닝와이드), 현 라이브는 \'[🔴LIVE] 이재명 대통령, 동해 AI 데이터센터 착공식 참석 / SBS 실시간 라이브\'). SBS는 실시간 라이브를 수시로 새 영상으로 갈아 끼우므로, 끊기면 소스 라이브러리에서\nSBS 실시간 라이브의 새 주소로 바꿔 주세요. SBS play 온에어 페이지는 60초 미리보기 뒤 로그인을 요구해 쓸 수 없습니다.' },
 
   { id:'sbsnews_auto', name:'SBS 뉴스 · 자동', short:'SBS', country:'한국', cc:'KR', zone:'KOREA',
     kind:'youtube', src:'UCkinYTS9IHqOEwR1Sze2JTw', status:'live', alt:true,
@@ -328,19 +328,19 @@ const CHANNELS = [
     note:'MBN News 공식 유튜브 채널의 그때그때 라이브(채널 ID 방식). 온에어 HLS가 막힐 때 대체 소스로 쓰세요.' },
 
   { id:'jtbcnews', name:'JTBC 뉴스', short:'JTBC', country:'한국', cc:'KR', zone:'KOREA',
-    kind:'youtube-video', src:'fxhsOjJ_beA', status:'live', ytChannel:'UCsU-I-vHLiaMfV_ceaYz5rQ',
+    kind:'youtube-video', src:'rK0dkuAAxIE', status:'live', ytChannel:'UCsU-I-vHLiaMfV_ceaYz5rQ',
     web:'https://onair.jtbc.co.kr/',
-    note:'JTBC 뉴스가 내보내는 실시간 라이브를 고정 영상으로 연결합니다(2026-11-28 06시 교체 — 이전 ID Ky2OIdSgjEc는 종료, 현 라이브는 \'난 마이너스인데 성과급 잔치 한다네…개미들 현타 / JTBC News\'). JTBC 온에어 API는 외부 출처(CORS)를 거부해 페이지 안 재생이 불가합니다. 방송사가 새 라이브로 갈아 끼우면 소스 라이브러리에서 새 주소로 바꿔 주세요.' },
+    note:'JTBC 뉴스가 내보내는 실시간 라이브를 고정 영상으로 연결합니다(2026-11-28 15시 교체 — 이전 ID fxhsOjJ_beA는 18시간 전 종료, 현 라이브는 \'[LIVE] 국민의힘 ‘조작기소 특검법’ 충청권 규탄대회 / JTBC News\'). JTBC 온에어 API는 외부 출처(CORS)를 거부해 페이지 안 재생이 불가합니다. 방송사가 새 라이브로 갈아 끼우면 소스 라이브러리에서 새 주소로 바꿔 주세요.' },
 
   { id:'tvchosun_news', name:'TV조선 뉴스', short:'TV조선', country:'한국', cc:'KR', zone:'KOREA',
-    kind:'youtube-video', src:'5Wb7e4XNX9I', status:'live', ytChannel:'UCWlV3Lz_55UaX4JsMj-z__Q',
+    kind:'youtube-video', src:'huqtPMvihjE', status:'live', ytChannel:'UCWlV3Lz_55UaX4JsMj-z__Q',
     web:'https://broadcast.tvchosun.com/onair/on.cstv',
-    note:'뉴스TVCHOSUN이 내보내는 무조건 간다 LIVE를 고정 영상으로 연결합니다(2026-11-28 06시 교체 — 이전 ID A285Br5wbSc는 종료, 현 라이브는 최민희 당원권 정지 2년 중징계 속보 [이슈PLAY]). TV조선 온에어 스트림은 http 전용·인증서 불일치로 https 화면에서 재생되지 않습니다. 방송사가 새 라이브로 갈아 끼우면 새 주소로 바꿔 주세요.' },
+    note:'뉴스TVCHOSUN이 내보내는 무조건 간다 LIVE를 고정 영상으로 연결합니다(2026-11-28 15시 교체 — 이전 ID 5Wb7e4XNX9I는 16시간 전 종료, 현 라이브는 \'11월 28일 (토) 시사팩트 플러스 - 김민석 퇴진 외치는 친청 / 최민희 2년 징계 / 한동훈 자료 유출 압수수색\'). TV조선 온에어 스트림은 http 전용·인증서 불일치로 https 화면에서 재생되지 않습니다. 방송사가 새 라이브로 갈아 끼우면 새 주소로 바꿔 주세요.' },
 
   { id:'channela_news', name:'채널A 뉴스', short:'채널A', country:'한국', cc:'KR', zone:'KOREA',
-    kind:'youtube-video', src:'cNMCb3fHENA', status:'live', ytChannel:'UCfq4V1DAuaojnr2ryvWNysw',
+    kind:'youtube-video', src:'BgSm7WRYIFs', status:'live', ytChannel:'UCfq4V1DAuaojnr2ryvWNysw',
     web:'https://www.ichannela.com/com/cmm/onair.do',
-    note:'채널A 뉴스가 내보내는 라이브를 켜라 실시간 라이브를 고정 영상으로 연결합니다(2026-11-28 06시 교체 — 이전 ID RwI0osLr8h8은 종료, 현 라이브는 사우디 정유시설 피격 속보 [이슈를 켜라]). 채널A는 같은 시각 \'최민희 징계 결론\' 라이브를 따로 송출 중이라 채널 /live가 고르는 쪽을 ID로 잡습니다. 방송사가 새 라이브로 갈아 끼우면 새 주소로 바꿔 주세요.' },
+    note:'채널A 뉴스가 내보내는 라이브를 켜라 실시간 라이브를 고정 영상으로 연결합니다(2026-11-28 15시 교체 — 이전 ID cNMCb3fHENA는 16시간 전 종료, 현 라이브는 \'[김종석의 주말LIVE] 최민희 당원권 2년 정지에 둘로 갈라진 민주당…친청계 김민석 퇴진 / 채널A\'). 채널A는 같은 시각 \'최민희 징계 결론\' 라이브를 따로 송출 중이라 채널 /live가 고르는 쪽을 ID로 잡습니다. 방송사가 새 라이브로 갈아 끼우면 새 주소로 바꿔 주세요.' },
 
   /* ── 경제뉴스 9분할 전용 — 한국 경제 채널 (2026-11-25 실측)
      사용자 지시(2026-11-25 03:33): "한국은 한국경제 매일경제 삼프로 같은 유튜브 매체부터 라이브하는
@@ -445,8 +445,8 @@ const CHANNEL_BY_ID = CHANNELS.reduce((m, c) => (m[c.id] = c, m), {});
 /* 이 카탈로그의 빌드 표식 — 화면 하단 신호 스트립에 표시됩니다.
    휴대폰이 옛 파일(브라우저 캐시)을 불러왔는지 이 한 줄로 확인할 수 있고,
    채널·소스를 고칠 때마다 이 값과 index.html의 ?v= 를 함께 올려 주세요. */
-const CHANNELS_BUILD = 'SRC 11-28a';
-const CHANNELS_BUILD_DETAIL = '2026-11-28 06시 라이브 점검(끊긴 고정 영상 5개 교체 — NBC·SBS·JTBC·TV조선·채널A / Fox Business·Euronews Business·삼프로TV는 라이브 없어 유지)';
+const CHANNELS_BUILD = 'SRC 11-28b';
+const CHANNELS_BUILD_DETAIL = '2026-11-28 15시 라이브 점검(끊긴 고정 영상 5개 교체 — NBC·SBS·JTBC·TV조선·채널A / Fox Business·Euronews Business·삼프로TV는 라이브 없어 유지)';
 
 /* 다시 재생되지 않는 예전 소스 ID → 지금 쓰는 소스로 자동 교체
    (브라우저에 저장된 커스텀 소스에 옛 ID가 남아 있어도 되살아나지 않게) */
@@ -494,7 +494,13 @@ const RETIRED_SOURCES = {
   'mZvubKQ0bFA': 'a8f5wbxcwzA',   // SBS 뉴스
   'Ky2OIdSgjEc': 'fxhsOjJ_beA',   // JTBC 뉴스
   'A285Br5wbSc': '5Wb7e4XNX9I',   // TV조선 뉴스
-  'RwI0osLr8h8': 'cNMCb3fHENA'    // 채널A 뉴스
+  'RwI0osLr8h8': 'cNMCb3fHENA',   // 채널A 뉴스
+  /* 2026-11-28 15시 라이브 점검 — 끝난 고정 영상 → 그 채널의 현 라이브 */
+  'gKULTIDM-8s': '0vNukUbpBbU',   // NBC NEWS NOW
+  'a8f5wbxcwzA': 'vgdaCp1Uyw8',   // SBS 뉴스
+  'fxhsOjJ_beA': 'rK0dkuAAxIE',   // JTBC 뉴스
+  '5Wb7e4XNX9I': 'huqtPMvihjE',   // TV조선 뉴스
+  'cNMCb3fHENA': 'BgSm7WRYIFs'    // 채널A 뉴스
 };
 /* 유튜브 KBS NEWS 24 라이브 ID(nfnWxzTVJA4)는 2026-11-24 방송 종료로 재생 불가 —
    내장 채널은 공식 온에어(kind:'kbs')로 교체했고, 저장된 커스텀 소스에 남은 ID는
